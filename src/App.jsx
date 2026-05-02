@@ -19,6 +19,9 @@ import Chat from './components/TabContent/Chat';
 // GitHub Service
 import { analyzeRepository } from './services/githubService';
 
+// Watsonx.ai Service
+import { generateText } from './services/watsonxService';
+
 function App() {
   const [repoUrl, setRepoUrl] = useState('');
   const [previousUrl, setPreviousUrl] = useState('');
@@ -62,6 +65,21 @@ function App() {
       }, 100);
     }
   }, [analysisComplete]);
+
+  // Test watsonx.ai integration on component mount
+  useEffect(() => {
+    const testWatsonxIntegration = async () => {
+      try {
+        console.log('🧪 Testing watsonx.ai integration...');
+        const response = await generateText('Say hello in one sentence');
+        console.log('✅ Watsonx.ai Response:', response);
+      } catch (error) {
+        console.error('❌ Watsonx.ai Test Failed:', error.message);
+      }
+    };
+    
+    testWatsonxIntegration();
+  }, []); // Run once on mount
 
   const handleAnalyze = async () => {
     if (!repoUrl.trim()) return;
