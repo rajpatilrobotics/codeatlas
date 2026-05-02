@@ -41,6 +41,9 @@ function App() {
   const [isIssuesLoading, setIsIssuesLoading] = useState(false);
   const [firstContributions, setFirstContributions] = useState([]);
   const [isContributionsLoading, setIsContributionsLoading] = useState(false);
+  const [architectureAnalysis, setArchitectureAnalysis] = useState(null);
+  const [isArchitectureLoading, setIsArchitectureLoading] = useState(false);
+  const [architectureError, setArchitectureError] = useState(null);
   const resultsRef = useRef(null);
 
   const tabs = [
@@ -82,6 +85,33 @@ ${fileStructure}
     `.trim();
   };
 
+  // Helper function to prepare concise input for architecture analysis
+  const prepareArchitectureInput = (repoData) => {
+    const { repoInfo, techStack, importantFiles, readme } = repoData;
+    
+    // Get only file names, not content
+    const keyFileNames = importantFiles.map(f => f.path).join(', ');
+    
+    // Get tech stack as comma-separated list
+    const allTech = Object.values(techStack).flat().join(', ');
+    
+    // Short README snippet (first 500 chars)
+    const readmeSnippet = readme && readme !== 'No README found'
+      ? readme.substring(0, 500)
+      : 'No README available';
+    
+    return `
+Repository: ${repoInfo.name}
+Description: ${repoInfo.description}
+Primary Language: ${repoInfo.language}
+Tech Stack: ${allTech || 'Not detected'}
+Key Files: ${keyFileNames}
+
+README Snippet:
+${readmeSnippet}
+    `.trim();
+  };
+
   // Reset logic when URL changes
   useEffect(() => {
     if (repoUrl !== previousUrl && previousUrl !== '') {
@@ -94,7 +124,8 @@ ${fileStructure}
       setQuickStartGuide('');
       setCommonIssues('');
       setFirstContributions([]);
-      setCommonIssues('');
+      setArchitectureAnalysis(null);
+      setArchitectureError(null);
     }
     setPreviousUrl(repoUrl);
   }, [repoUrl, previousUrl]);
@@ -285,6 +316,35 @@ Provide 3-5 suggestions.`;
         setIsContributionsLoading(false);
       }
       
+      // Step 6: Generate Architecture Analysis using watsonx.ai
+      setIsArchitectureLoading(true);
+      try {
+        const architectureInput = prepareArchitectureInput(data);
+        const architecturePrompt = `You are a software architect. Analyze this repository and provide:
+
+1. Component breakdown – major modules and their roles
+2. Technology architecture – frontend, backend, database, APIs
+3. Data flow – how data moves through the system
+4. Key dependencies and their purpose
+5. Folder structure explanation – what each main folder contains
+
+${architectureInput}
+
+Keep response structured, concise, and easy to scan using bullet points.`;
+
+        const architectureResponse = await generateText(architecturePrompt, {
+          maxNewTokens: 600,
+          temperature: 0.6
+        });
+        
+        setArchitectureAnalysis(architectureResponse);
+      } catch (architectureErr) {
+        console.error('Architecture analysis generation failed:', architectureErr);
+        setArchitectureError(architectureErr.message || 'Failed to generate architecture analysis');
+      } finally {
+        setIsArchitectureLoading(false);
+      }
+      
     } catch (err) {
       setError(err.message || 'An unexpected error occurred');
     } finally {
@@ -350,7 +410,14 @@ Provide 3-5 suggestions.`;
           />
         );
       case 'architecture':
-        return <Architecture />;
+        return (
+          <Architecture
+            repoData={repoData}
+            architectureAnalysis={architectureAnalysis}
+            isArchitectureLoading={isArchitectureLoading}
+            architectureError={architectureError}
+          />
+        );
       case 'onboarding':
         return <OnboardingGuide />;
       case 'documentation':
