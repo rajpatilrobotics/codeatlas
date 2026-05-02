@@ -1662,6 +1662,310 @@
 .mb-3 { margin-bottom: var(--spacing-md); }
 .mb-4 { margin-bottom: var(--spacing-lg); }
 
+
+/* ===================================
+   React Flow Diagram Styles
+   =================================== */
+
+.reactflow-wrapper {
+  position: relative;
+}
+
+.react-flow__node {
+  font-size: 13px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.react-flow__node:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+  z-index: 10;
+}
+
+.react-flow__edge-path {
+  stroke-width: 2;
+}
+
+.react-flow__edge.animated path {
+  stroke-dasharray: 5;
+  animation: dashdraw 0.5s linear infinite;
+}
+
+@keyframes dashdraw {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+.react-flow__edge-text {
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--text-primary);
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.react-flow__controls {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.react-flow__controls-button {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.react-flow__controls-button:hover {
+  background: var(--accent-primary);
+}
+
+.react-flow__minimap {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.react-flow__attribution {
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+/* ===================================
+   Mermaid Diagram Styles (Legacy)
+   =================================== */
+
+.mermaid-container {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  overflow-x: auto;
+}
+
+.mermaid {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  font-family: inherit !important;
+}
+
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.flow-description-box {
+  padding: var(--spacing-md);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--accent-primary);
+  margin-top: var(--spacing-md);
+}
+
+.flow-description {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.8;
+  margin: 0;
+}
+
+.flow-description strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ===================================
+   Data Flow Diagram Styles (Legacy - Keep for fallback)
+   =================================== */
+
+/* Main Data Flow Container */
+.data-flow-diagram {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: var(--spacing-lg);
+  background: linear-gradient(90deg, rgba(102, 126, 234, 0.03) 0%, rgba(118, 75, 162, 0.03) 100%);
+  border-radius: var(--radius-md);
+  flex-wrap: wrap;
+  margin-bottom: var(--spacing-md);
+}
+
+/* Flow Nodes */
+.flow-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  min-width: 120px;
+  transition: var(--transition-base);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.flow-node:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.flow-icon {
+  font-size: 2rem;
+}
+
+.flow-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.flow-tech {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* Node-specific colors */
+.user-node {
+  border-color: #a78bfa;
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.1) 0%, var(--bg-tertiary) 100%);
+}
+
+.user-node:hover {
+  box-shadow: 0 6px 20px rgba(167, 139, 250, 0.3);
+}
+
+.frontend-node {
+  border-color: #61dafb;
+  background: linear-gradient(135deg, rgba(97, 218, 251, 0.1) 0%, var(--bg-tertiary) 100%);
+}
+
+.frontend-node:hover {
+  box-shadow: 0 6px 20px rgba(97, 218, 251, 0.3);
+}
+
+.backend-node {
+  border-color: #68a063;
+  background: linear-gradient(135deg, rgba(104, 160, 99, 0.1) 0%, var(--bg-tertiary) 100%);
+}
+
+.backend-node:hover {
+  box-shadow: 0 6px 20px rgba(104, 160, 99, 0.3);
+}
+
+.database-node {
+  border-color: #f29111;
+  background: linear-gradient(135deg, rgba(242, 145, 17, 0.1) 0%, var(--bg-tertiary) 100%);
+}
+
+.database-node:hover {
+  box-shadow: 0 6px 20px rgba(242, 145, 17, 0.3);
+}
+
+/* Flow Arrows */
+.flow-arrow-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.arrow-line {
+  font-size: 1.5rem;
+  color: var(--accent-primary);
+  animation: pulse-flow 2s ease-in-out infinite;
+}
+
+.arrow-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-align: center;
+  white-space: nowrap;
+}
+
+@keyframes pulse-flow {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+}
+
+/* Return Flow Section */
+.data-flow-return {
+  padding: var(--spacing-md);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--success);
+}
+
+.return-arrow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.arrow-line-left {
+  font-size: 1.5rem;
+  color: var(--success);
+  animation: pulse-flow 2s ease-in-out infinite;
+}
+
+.flow-description {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Responsive Design for Data Flow */
+@media (max-width: 1024px) {
+  .data-flow-diagram {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .flow-arrow-right {
+    transform: rotate(90deg);
+  }
+  
+  .arrow-label {
+    transform: rotate(-90deg);
+  }
+}
+
+@media (max-width: 768px) {
+  .flow-node {
+    min-width: 100px;
+    padding: 0.875rem 1rem;
+  }
+  
+  .flow-icon {
+    font-size: 1.5rem;
+  }
+  
+  .flow-label {
+    font-size: 0.85rem;
+  }
+  
+  .flow-tech {
+    font-size: 0.75rem;
+  }
+}
+
 /* Made with Bob */
 /* ===================================
    Split-Screen Responsive

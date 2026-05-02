@@ -1,4 +1,135 @@
-import React from 'react';
+import React, { useCallback } from 'react';
+import ReactFlow, {
+  MiniMap,
+  Controls,
+  Background,
+  useNodesState,
+  useEdgesState,
+  MarkerType,
+} from 'reactflow';
+import 'reactflow/dist/style.css';
+
+// Data Flow Diagram Component
+function DataFlowDiagram({ techStack }) {
+  const frontendTech = techStack.frontend.length > 0 ? techStack.frontend[0] : 'React';
+  const backendTech = techStack.backend.length > 0 ? techStack.backend[0] : 'Node.js';
+  const databaseTech = techStack.database.length > 0 ? techStack.database[0] : 'Database';
+
+  const initialNodes = [
+    // Client Layer
+    { id: '1', type: 'input', data: { label: '👤 User Browser' }, position: { x: 50, y: 50 }, style: { background: '#a78bfa', color: '#fff', border: '2px solid #8b5cf6', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
+    { id: '2', data: { label: '🎨 UI Components' }, position: { x: 50, y: 150 }, style: { background: '#61dafb', color: '#000', border: '2px solid #4fa8c5', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
+    { id: '3', data: { label: '📦 State Manager' }, position: { x: 50, y: 250 }, style: { background: '#61dafb', color: '#000', border: '2px solid #4fa8c5', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
+    
+    // Frontend Layer
+    { id: '4', data: { label: `⚛️ ${frontendTech}` }, position: { x: 300, y: 50 }, style: { background: '#61dafb', color: '#000', border: '2px solid #4fa8c5', borderRadius: '8px', padding: '10px', fontWeight: 'bold', minWidth: '120px' } },
+    { id: '5', data: { label: '🔄 Redux/State' }, position: { x: 300, y: 150 }, style: { background: '#764ba2', color: '#fff', border: '2px solid #5a3678', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
+    { id: '6', data: { label: '📡 API Client' }, position: { x: 300, y: 250 }, style: { background: '#667eea', color: '#fff', border: '2px solid #4f5bd5', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
+    { id: '7', data: { label: '💾 Local Cache' }, position: { x: 300, y: 350 }, style: { background: '#f5af19', color: '#000', border: '2px solid #d69516', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
+    
+    // API Gateway
+    { id: '8', data: { label: '🔐 Authentication' }, position: { x: 550, y: 50 }, style: { background: '#9966ff', color: '#fff', border: '2px solid #7744cc', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
+    { id: '9', data: { label: '⚡ Rate Limiter' }, position: { x: 550, y: 150 }, style: { background: '#9966ff', color: '#fff', border: '2px solid #7744cc', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
+    { id: '10', data: { label: '⚖️ Load Balancer' }, position: { x: 550, y: 250 }, style: { background: '#9966ff', color: '#fff', border: '2px solid #7744cc', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
+    
+    // Backend Layer
+    { id: '11', data: { label: `⚙️ ${backendTech}` }, position: { x: 800, y: 50 }, style: { background: '#68a063', color: '#fff', border: '2px solid #4d7c48', borderRadius: '8px', padding: '10px', fontWeight: 'bold', minWidth: '120px' } },
+    { id: '12', data: { label: '🎯 Controllers' }, position: { x: 800, y: 150 }, style: { background: '#68a063', color: '#fff', border: '2px solid #4d7c48', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
+    { id: '13', data: { label: '🔧 Services' }, position: { x: 800, y: 250 }, style: { background: '#68a063', color: '#fff', border: '2px solid #4d7c48', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
+    { id: '14', data: { label: '✅ Validation' }, position: { x: 800, y: 350 }, style: { background: '#68a063', color: '#fff', border: '2px solid #4d7c48', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
+    
+    // Data Layer
+    { id: '15', data: { label: '🔴 Redis Cache' }, position: { x: 1050, y: 50 }, style: { background: '#f29111', color: '#fff', border: '2px solid #d67d0a', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
+    { id: '16', data: { label: `💾 ${databaseTech}` }, position: { x: 1050, y: 150 }, style: { background: '#f29111', color: '#fff', border: '2px solid #d67d0a', borderRadius: '8px', padding: '10px', fontWeight: 'bold', minWidth: '120px' } },
+    { id: '17', data: { label: '📊 Analytics DB' }, position: { x: 1050, y: 250 }, style: { background: '#f29111', color: '#fff', border: '2px solid #d67d0a', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
+    
+    // External Services
+    { id: '18', data: { label: '🤖 Watsonx.ai' }, position: { x: 1050, y: 400 }, style: { background: '#ff6b6b', color: '#fff', border: '2px solid #ee5a52', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
+    { id: '19', data: { label: '🐙 GitHub API' }, position: { x: 1050, y: 500 }, style: { background: '#ff6b6b', color: '#fff', border: '2px solid #ee5a52', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
+  ];
+
+  const initialEdges = [
+    // Client to Frontend
+    { id: 'e1-2', source: '1', target: '2', label: 'User Action', animated: true, style: { stroke: '#2f81f7' }, markerEnd: { type: MarkerType.ArrowClosed } },
+    { id: 'e2-3', source: '2', target: '3', label: 'Dispatch', animated: true, style: { stroke: '#2f81f7' }, markerEnd: { type: MarkerType.ArrowClosed } },
+    { id: 'e3-4', source: '3', target: '4', label: 'Render', animated: true, style: { stroke: '#2f81f7' }, markerEnd: { type: MarkerType.ArrowClosed } },
+    
+    // Frontend Flow
+    { id: 'e4-5', source: '4', target: '5', label: 'State Update', animated: true, style: { stroke: '#764ba2' }, markerEnd: { type: MarkerType.ArrowClosed } },
+    { id: 'e5-6', source: '5', target: '6', label: 'API Request', animated: true, style: { stroke: '#667eea' }, markerEnd: { type: MarkerType.ArrowClosed } },
+    { id: 'e6-7', source: '6', target: '7', label: 'Check Cache', style: { stroke: '#f5af19', strokeDasharray: '5,5' }, markerEnd: { type: MarkerType.ArrowClosed } },
+    
+    // API Gateway
+    { id: 'e6-8', source: '6', target: '8', label: 'HTTP Request', animated: true, style: { stroke: '#9966ff' }, markerEnd: { type: MarkerType.ArrowClosed } },
+    { id: 'e8-9', source: '8', target: '9', label: 'Validate', animated: true, style: { stroke: '#9966ff' }, markerEnd: { type: MarkerType.ArrowClosed } },
+    { id: 'e9-10', source: '9', target: '10', label: 'Forward', animated: true, style: { stroke: '#9966ff' }, markerEnd: { type: MarkerType.ArrowClosed } },
+    
+    // Backend Flow
+    { id: 'e10-11', source: '10', target: '11', label: 'Route', animated: true, style: { stroke: '#68a063' }, markerEnd: { type: MarkerType.ArrowClosed } },
+    { id: 'e11-12', source: '11', target: '12', label: 'Handle', animated: true, style: { stroke: '#68a063' }, markerEnd: { type: MarkerType.ArrowClosed } },
+    { id: 'e12-13', source: '12', target: '13', label: 'Process', animated: true, style: { stroke: '#68a063' }, markerEnd: { type: MarkerType.ArrowClosed } },
+    { id: 'e13-14', source: '13', target: '14', label: 'Validate', animated: true, style: { stroke: '#68a063' }, markerEnd: { type: MarkerType.ArrowClosed } },
+    
+    // Data Layer
+    { id: 'e14-15', source: '14', target: '15', label: 'Query Cache', style: { stroke: '#f29111', strokeDasharray: '5,5' }, markerEnd: { type: MarkerType.ArrowClosed } },
+    { id: 'e14-16', source: '14', target: '16', label: 'DB Query', animated: true, style: { stroke: '#f29111' }, markerEnd: { type: MarkerType.ArrowClosed } },
+    { id: 'e13-17', source: '13', target: '17', label: 'Log Analytics', style: { stroke: '#f29111', strokeDasharray: '5,5' }, markerEnd: { type: MarkerType.ArrowClosed } },
+    
+    // External Services
+    { id: 'e13-18', source: '13', target: '18', label: 'AI Request', animated: true, style: { stroke: '#ff6b6b' }, markerEnd: { type: MarkerType.ArrowClosed } },
+    { id: 'e13-19', source: '13', target: '19', label: 'Fetch Repo', animated: true, style: { stroke: '#ff6b6b' }, markerEnd: { type: MarkerType.ArrowClosed } },
+    
+    // Response Flow (back)
+    { id: 'e16-14', source: '16', target: '14', label: 'Data', animated: true, style: { stroke: '#3fb950' }, markerEnd: { type: MarkerType.ArrowClosed } },
+    { id: 'e14-6', source: '14', target: '6', label: 'Response', animated: true, style: { stroke: '#3fb950' }, markerEnd: { type: MarkerType.ArrowClosed } },
+    { id: 'e6-5', source: '6', target: '5', label: 'Update State', animated: true, style: { stroke: '#3fb950' }, markerEnd: { type: MarkerType.ArrowClosed } },
+    { id: 'e5-2', source: '5', target: '2', label: 'Re-render', animated: true, style: { stroke: '#3fb950' }, markerEnd: { type: MarkerType.ArrowClosed } },
+  ];
+
+  const [nodes, , onNodesChange] = useNodesState(initialNodes);
+  const [edges, , onEdgesChange] = useEdgesState(initialEdges);
+
+  return (
+    <div className="content-card">
+      <h2 className="card-title">🔄 Interactive Data Flow Diagram</h2>
+      <div className="card-content">
+        <div className="reactflow-wrapper" style={{ height: '700px', background: '#0f1419', borderRadius: '12px', border: '1px solid #373e47' }}>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            fitView
+            attributionPosition="bottom-left"
+          >
+            <Controls />
+            <MiniMap
+              nodeColor={(node) => {
+                if (node.style?.background) return node.style.background;
+                return '#667eea';
+              }}
+              maskColor="rgba(0, 0, 0, 0.6)"
+            />
+            <Background variant="dots" gap={12} size={1} color="#373e47" />
+          </ReactFlow>
+        </div>
+        <div className="flow-description-box" style={{ marginTop: '1rem' }}>
+          <p className="flow-description">
+            <strong>💡 Interactive Features:</strong><br/>
+            • <strong>Drag</strong> nodes to rearrange<br/>
+            • <strong>Zoom</strong> with mouse wheel or controls<br/>
+            • <strong>Pan</strong> by dragging the background<br/>
+            • <strong>Mini-map</strong> in bottom-right for navigation<br/>
+            <br/>
+            <strong>🔵 Blue arrows:</strong> Request flow<br/>
+            <strong>🟢 Green arrows:</strong> Response flow<br/>
+            <strong>⚪ Dashed lines:</strong> Cache/conditional paths
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, architectureError }) {
   // If no repoData, show placeholder
@@ -108,6 +239,9 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
           </div>
         </div>
       </div>
+
+      {/* Interactive Data Flow Diagram with React Flow */}
+      <DataFlowDiagram techStack={techStack} />
 
       {/* AI-Generated Architecture Analysis */}
       <div className="content-card">
