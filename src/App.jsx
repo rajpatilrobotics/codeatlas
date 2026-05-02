@@ -32,6 +32,15 @@ function App() {
   const [repoData, setRepoData] = useState(null);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const [aiSummary, setAiSummary] = useState('');
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState(null);
+  const [quickStartGuide, setQuickStartGuide] = useState('');
+  const [isQuickStartLoading, setIsQuickStartLoading] = useState(false);
+  const [commonIssues, setCommonIssues] = useState('');
+  const [isIssuesLoading, setIsIssuesLoading] = useState(false);
+  const [firstContributions, setFirstContributions] = useState([]);
+  const [isContributionsLoading, setIsContributionsLoading] = useState(false);
   const resultsRef = useRef(null);
 
   const tabs = [
@@ -43,6 +52,36 @@ function App() {
     { id: 'chat', label: 'Chat' }
   ];
 
+  // Helper function to prepare input for watsonx.ai
+  const prepareAIInput = (repoData) => {
+    const { repoInfo, readme, fileTree } = repoData;
+    
+    // Truncate README to 3000 characters to avoid token limits
+    const truncatedReadme = readme && readme !== 'No README found'
+      ? readme.substring(0, 3000) + (readme.length > 3000 ? '...' : '')
+      : 'No README available';
+    
+    // Format file structure (top-level files and folders only)
+    const topLevelItems = fileTree
+      .filter(path => !path.includes('/') || path.split('/').length <= 2)
+      .slice(0, 30); // Limit to 30 items
+    
+    const fileStructure = topLevelItems.join('\n');
+    
+    return `
+Repository: ${repoInfo.name}
+Description: ${repoInfo.description}
+Primary Language: ${repoInfo.language}
+Stars: ${repoInfo.stars}
+
+README Content:
+${truncatedReadme}
+
+File Structure (top-level):
+${fileStructure}
+    `.trim();
+  };
+
   // Reset logic when URL changes
   useEffect(() => {
     if (repoUrl !== previousUrl && previousUrl !== '') {
@@ -50,6 +89,12 @@ function App() {
       setActiveTab('summary');
       setError(null);
       setSuccessMessage('');
+      setAiSummary('');
+      setSummaryError(null);
+      setQuickStartGuide('');
+      setCommonIssues('');
+      setFirstContributions([]);
+      setCommonIssues('');
     }
     setPreviousUrl(repoUrl);
   }, [repoUrl, previousUrl]);
@@ -88,8 +133,12 @@ function App() {
     setAnalysisComplete(false);
     setError(null);
     setSuccessMessage('');
+    setAiSummary('');
+    setSummaryError(null);
+    setQuickStartGuide('');
     
     try {
+      // Step 1: Analyze repository using GitHub service
       const data = await analyzeRepository(repoUrl);
       
       if (data.error) {
@@ -109,11 +158,156 @@ function App() {
         setSuccessMessage('');
       }, 5000);
       
+      // Step 2: Generate AI summary using watsonx.ai
+      setIsSummaryLoading(true);
+      try {
+        const aiInput = prepareAIInput(data);
+        const prompt = `You are a developer onboarding assistant. Analyze this GitHub repository and provide a plain English summary covering:
+- What this project does
+- Who it is for
+- The main technology stack
+- The most important things a new developer should know
+
+Keep it clear, structured, and concise. Do not include unnecessary text.
+
+${aiInput}`;
+
+        const generatedSummary = await generateText(prompt, {
+          maxNewTokens: 500,
+          temperature: 0.7
+        });
+        
+        setAiSummary(generatedSummary);
+      } catch (summaryErr) {
+        console.error('AI Summary generation failed:', summaryErr);
+        setSummaryError(summaryErr.message || 'Failed to generate AI summary');
+      } finally {
+        setIsSummaryLoading(false);
+      }
+      
+      // Step 3: Generate Quick Start Guide using watsonx.ai
+      setIsQuickStartLoading(true);
+      try {
+        const packageJson = data.importantFiles.find(f => f.path === 'package.json');
+        const hasPackageJson = packageJson && !packageJson.error;
+        
+        const quickStartPrompt = `Generate a concise Quick Start Guide for this repository. Include:
+1. Prerequisites (Node.js version, etc.)
+2. Installation steps
+3. Configuration (environment variables)
+4. How to run the project
+5. Common commands
+
+Repository: ${data.repoInfo.name}
+Language: ${data.repoInfo.language}
+${hasPackageJson ? 'Has package.json with dependencies' : 'No package.json found'}
+
+Keep it practical and actionable. Use numbered steps.`;
+
+        const quickStart = await generateText(quickStartPrompt, {
+          maxNewTokens: 400,
+          temperature: 0.5
+        });
+        
+        setQuickStartGuide(quickStart);
+      } catch (quickStartErr) {
+        console.error('Quick Start generation failed:', quickStartErr);
+      } finally {
+        setIsQuickStartLoading(false);
+      }
+      
+      // Step 4: Generate Common Issues & Solutions using watsonx.ai
+      setIsIssuesLoading(true);
+      try {
+        const issuesPrompt = `Based on this repository, identify 3-4 common setup issues that new developers might face and provide solutions:
+
+Repository: ${data.repoInfo.name}
+Language: ${data.repoInfo.language}
+Has ${data.envVariables?.length || 0} environment variables
+
+Common categories:
+- Missing environment variables
+- Dependency installation problems
+- Port conflicts
+- Database connection issues
+- Permission errors
+
+Format as: "Issue: [problem] → Solution: [fix]"`;
+
+        const issues = await generateText(issuesPrompt, {
+          maxNewTokens: 400,
+          temperature: 0.6
+        });
+        
+        setCommonIssues(issues);
+      } catch (issuesErr) {
+        console.error('Common Issues generation failed:', issuesErr);
+      } finally {
+        setIsIssuesLoading(false);
+      }
+      
+      // Step 5: Generate First Contribution Suggestions using watsonx.ai
+      setIsContributionsLoading(true);
+      try {
+        const contributionsPrompt = `Analyze this repository and suggest 3-5 beginner-friendly tasks that a new developer could tackle as their first contribution. Be specific and actionable.
+
+Repository: ${data.repoInfo.name}
+Language: ${data.repoInfo.language}
+Tech Stack: ${Object.values(data.techStack || {}).flat().join(', ')}
+Has ${data.importantFiles?.length || 0} key files
+
+Suggest tasks like:
+- Add missing error handling in specific files
+- Write unit tests for untested functions
+- Improve documentation for complex functions
+- Add input validation
+- Refactor repetitive code patterns
+
+IMPORTANT: Write in plain text only. Format each suggestion as:
+"Task: [specific task]
+File: [filename]
+Difficulty: [Easy/Medium]
+Impact: [why this matters]"
+
+Provide 3-5 suggestions.`;
+
+        const suggestions = await generateText(contributionsPrompt, {
+          maxNewTokens: 600,
+          temperature: 0.7
+        });
+        
+        // Parse the suggestions into structured format
+        const parsedSuggestions = parseSuggestions(suggestions);
+        setFirstContributions(parsedSuggestions);
+      } catch (contributionsErr) {
+        console.error('First Contributions generation failed:', contributionsErr);
+      } finally {
+        setIsContributionsLoading(false);
+      }
+      
     } catch (err) {
       setError(err.message || 'An unexpected error occurred');
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  // Helper function to parse AI suggestions into structured format
+  const parseSuggestions = (text) => {
+    const suggestions = [];
+    const blocks = text.split(/Task:/i).filter(b => b.trim());
+    
+    blocks.forEach((block, index) => {
+      const lines = block.trim().split('\n');
+      const task = lines[0]?.trim() || `Contribution ${index + 1}`;
+      const file = lines.find(l => l.toLowerCase().includes('file:'))?.split(':')[1]?.trim() || 'Various files';
+      const difficulty = lines.find(l => l.toLowerCase().includes('difficulty:'))?.split(':')[1]?.trim() || 'Medium';
+      const impact = lines.find(l => l.toLowerCase().includes('impact:'))?.split(':')[1]?.trim() || 'Improves code quality';
+      
+      suggestions.push({ task, file, difficulty, impact });
+    });
+    
+    return suggestions.slice(0, 5); // Limit to 5 suggestions
   };
 
   const handleQuickOnboard = () => {
@@ -139,7 +333,22 @@ function App() {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'summary':
-        return <Summary repoUrl={repoUrl} repoSize={repoSize} repoData={repoData} />;
+        return (
+          <Summary
+            repoUrl={repoUrl}
+            repoSize={repoSize}
+            repoData={repoData}
+            aiSummary={aiSummary}
+            isSummaryLoading={isSummaryLoading}
+            summaryError={summaryError}
+            quickStartGuide={quickStartGuide}
+            isQuickStartLoading={isQuickStartLoading}
+            commonIssues={commonIssues}
+            isIssuesLoading={isIssuesLoading}
+            firstContributions={firstContributions}
+            isContributionsLoading={isContributionsLoading}
+          />
+        );
       case 'architecture':
         return <Architecture />;
       case 'onboarding':
@@ -254,3 +463,4 @@ function App() {
 export default App;
 
 // Made with Bob
+
