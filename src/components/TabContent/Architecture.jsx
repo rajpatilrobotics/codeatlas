@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React from 'react';
 import ReactFlow, {
   MiniMap,
   Controls,
@@ -8,6 +8,213 @@ import ReactFlow, {
   MarkerType,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+
+// Architecture Analysis Display Component with Enhanced Typography
+function ArchitectureAnalysisDisplay({ analysis }) {
+  // Parse the AI response into structured sections
+  const parseAnalysis = (text) => {
+    const sections = [];
+    const lines = text.split('\n');
+    let currentSection = null;
+    let currentContent = [];
+
+    const sectionIcons = {
+      'component': '🧩',
+      'technology': '⚡',
+      'tech': '⚡',
+      'data flow': '🔄',
+      'flow': '🔄',
+      'dependencies': '📦',
+      'dependency': '📦',
+      'folder': '📁',
+      'structure': '📁',
+      'architecture': '🏗️',
+      'overview': '📋',
+      'summary': '📝'
+    };
+
+    const getSectionIcon = (title) => {
+      const lowerTitle = title.toLowerCase();
+      for (const [key, icon] of Object.entries(sectionIcons)) {
+        if (lowerTitle.includes(key)) return icon;
+      }
+      return '📌';
+    };
+
+    lines.forEach((line, index) => {
+      const trimmedLine = line.trim();
+      
+      // Detect section headers (numbered or with special formatting)
+      const isHeader = /^(\d+\.|#{1,3}|\*\*|__)\s*(.+?)(\*\*|__)?:?\s*$/i.test(trimmedLine) ||
+                      (trimmedLine.length > 0 && trimmedLine.length < 60 &&
+                       (trimmedLine.endsWith(':') || /^[A-Z][^.!?]*$/.test(trimmedLine)));
+
+      if (isHeader && trimmedLine.length > 0) {
+        // Save previous section
+        if (currentSection) {
+          sections.push({
+            title: currentSection,
+            content: currentContent.join('\n').trim(),
+            icon: getSectionIcon(currentSection)
+          });
+        }
+        
+        // Start new section
+        currentSection = trimmedLine.replace(/^(\d+\.|#{1,3}|\*\*|__)\s*/, '').replace(/(\*\*|__|:)$/, '').trim();
+        currentContent = [];
+      } else if (trimmedLine.length > 0 && currentSection) {
+        currentContent.push(trimmedLine);
+      } else if (trimmedLine.length > 0 && !currentSection) {
+        // Content before any section header
+        if (!sections.length) {
+          sections.push({
+            title: 'Overview',
+            content: trimmedLine,
+            icon: '📋'
+          });
+        }
+      }
+    });
+
+    // Add last section
+    if (currentSection && currentContent.length > 0) {
+      sections.push({
+        title: currentSection,
+        content: currentContent.join('\n').trim(),
+        icon: getSectionIcon(currentSection)
+      });
+    }
+
+    return sections.length > 0 ? sections : [{
+      title: 'Architecture Analysis',
+      content: text,
+      icon: '🏗️'
+    }];
+  };
+
+  const sections = parseAnalysis(analysis);
+
+  // Format bullet points and content
+  const formatContent = (content) => {
+    return content.split('\n').map((line, idx) => {
+      const trimmed = line.trim();
+      
+      // Bullet points
+      if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')) {
+        const text = trimmed.substring(1).trim();
+        return (
+          <div key={idx} style={{
+            display: 'flex',
+            gap: '12px',
+            marginBottom: '10px',
+            paddingLeft: '8px'
+          }}>
+            <span style={{ color: '#667eea', fontSize: '18px', lineHeight: '1.6' }}>•</span>
+            <span style={{ flex: 1, lineHeight: '1.6' }}>{text}</span>
+          </div>
+        );
+      }
+      
+      // Sub-bullets (indented)
+      if (trimmed.startsWith('  -') || trimmed.startsWith('  •')) {
+        const text = trimmed.substring(3).trim();
+        return (
+          <div key={idx} style={{
+            display: 'flex',
+            gap: '12px',
+            marginBottom: '8px',
+            paddingLeft: '32px'
+          }}>
+            <span style={{ color: '#a0aec0', fontSize: '14px', lineHeight: '1.6' }}>◦</span>
+            <span style={{ flex: 1, lineHeight: '1.6', fontSize: '0.95rem', color: 'var(--text-secondary)' }}>{text}</span>
+          </div>
+        );
+      }
+      
+      // Regular paragraphs
+      if (trimmed.length > 0) {
+        return (
+          <p key={idx} style={{
+            marginBottom: '12px',
+            lineHeight: '1.7',
+            color: 'var(--text-secondary)'
+          }}>
+            {trimmed}
+          </p>
+        );
+      }
+      
+      return null;
+    }).filter(Boolean);
+  };
+
+  return (
+    <div style={{
+      display: 'grid',
+      gap: '1.5rem',
+      marginTop: '1rem'
+    }}>
+      {sections.map((section, index) => (
+        <div key={index} style={{
+          background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)',
+          border: '1px solid rgba(102, 126, 234, 0.2)',
+          borderRadius: '16px',
+          padding: '24px',
+          transition: 'all 0.3s ease',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = 'rgba(102, 126, 234, 0.4)';
+          e.currentTarget.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.15)';
+          e.currentTarget.style.transform = 'translateY(-2px)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = 'rgba(102, 126, 234, 0.2)';
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
+          e.currentTarget.style.transform = 'translateY(0)';
+        }}>
+          {/* Section Header */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            marginBottom: '20px',
+            paddingBottom: '16px',
+            borderBottom: '2px solid rgba(102, 126, 234, 0.15)'
+          }}>
+            <span style={{
+              fontSize: '32px',
+              lineHeight: 1,
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
+            }}>
+              {section.icon}
+            </span>
+            <h3 style={{
+              margin: 0,
+              fontSize: '1.4rem',
+              fontWeight: '700',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              letterSpacing: '-0.02em'
+            }}>
+              {section.title}
+            </h3>
+          </div>
+
+          {/* Section Content */}
+          <div style={{
+            fontSize: '0.95rem',
+            color: 'var(--text-primary)'
+          }}>
+            {formatContent(section.content)}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 // Data Flow Diagram Component
 function DataFlowDiagram({ techStack }) {
@@ -130,23 +337,533 @@ function DataFlowDiagram({ techStack }) {
     </div>
   );
 }
+// Technology Flow Diagram Component - COMPREHENSIVE VERSION
+function TechnologyFlowDiagram({ techStack, mainTechnologies }) {
+  const createTechFlowNodes = () => {
+    const nodes = [];
+    const categories = [
+      { key: 'frontend', label: 'Frontend', icon: '🎨', color: '#61dafb', y: 50 },
+      { key: 'backend', label: 'Backend', icon: '⚙️', color: '#68a063', y: 250 },
+      { key: 'database', label: 'Database', icon: '💾', color: '#f29111', y: 450 },
+      { key: 'testing', label: 'Testing', icon: '🧪', color: '#c678dd', y: 650 },
+      { key: 'devops', label: 'DevOps', icon: '🚀', color: '#56b6c2', y: 850 }
+    ];
 
-function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, architectureError }) {
-  // If no repoData, show placeholder
-  if (!repoData) {
-    return (
-      <div className="tab-content architecture-tab">
-        <div className="content-card">
-          <h2 className="card-title">System Architecture</h2>
-          <div className="card-content">
-            <p className="placeholder-text">Architecture analysis will appear here after repository analysis...</p>
-          </div>
+    categories.forEach((cat) => {
+      if (techStack[cat.key] && techStack[cat.key].length > 0) {
+        const allTechs = techStack[cat.key];
+        
+        // Category header node
+        nodes.push({
+          id: `flow-cat-${cat.key}`,
+          type: 'input',
+          data: {
+            label: (
+              <div style={{ textAlign: 'center', padding: '14px' }}>
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}>{cat.icon}</div>
+                <div style={{ fontWeight: 'bold', fontSize: '15px', marginBottom: '4px' }}>{cat.label}</div>
+                <div style={{ fontSize: '11px', opacity: 0.7 }}>{allTechs.length} {allTechs.length === 1 ? 'Technology' : 'Technologies'}</div>
+              </div>
+            )
+          },
+          position: { x: 50, y: cat.y },
+          style: {
+            background: `linear-gradient(135deg, ${cat.color}25 0%, #1e2530 100%)`,
+            border: `3px solid ${cat.color}`,
+            borderRadius: '16px',
+            width: 200,
+            color: '#fff',
+            boxShadow: `0 4px 12px ${cat.color}40`
+          }
+        });
+
+        // Individual technology nodes
+        allTechs.forEach((tech, techIndex) => {
+          nodes.push({
+            id: `flow-tech-${cat.key}-${techIndex}`,
+            type: 'default',
+            data: {
+              label: (
+                <div style={{ textAlign: 'center', padding: '10px' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '4px' }}>{tech}</div>
+                  <div style={{ fontSize: '10px', opacity: 0.6, textTransform: 'capitalize' }}>{cat.label}</div>
+                </div>
+              )
+            },
+            position: { x: 300 + (techIndex * 200), y: cat.y },
+            style: {
+              background: '#1e2530',
+              border: `2px solid ${cat.color}`,
+              borderRadius: '10px',
+              width: 170,
+              color: '#fff'
+            }
+          });
+        });
+      }
+    });
+
+    return nodes;
+  };
+
+  const createTechFlowEdges = () => {
+    const edges = [];
+    const categories = ['frontend', 'backend', 'database', 'testing', 'devops'];
+
+    categories.forEach(cat => {
+      if (techStack[cat] && techStack[cat].length > 0) {
+        // Connect category to each technology
+        techStack[cat].forEach((tech, techIndex) => {
+          edges.push({
+            id: `e-flow-${cat}-${techIndex}`,
+            source: `flow-cat-${cat}`,
+            target: `flow-tech-${cat}-${techIndex}`,
+            animated: true,
+            style: { stroke: '#667eea', strokeWidth: 2 },
+            type: 'smoothstep'
+          });
+        });
+
+        // Connect technologies within same category
+        for (let i = 0; i < techStack[cat].length - 1; i++) {
+          edges.push({
+            id: `e-flow-connect-${cat}-${i}`,
+            source: `flow-tech-${cat}-${i}`,
+            target: `flow-tech-${cat}-${i + 1}`,
+            style: { stroke: '#667eea50', strokeWidth: 1, strokeDasharray: '5,5' },
+            type: 'smoothstep'
+          });
+        }
+      }
+    });
+
+    // Connect categories vertically
+    const activeCategories = categories.filter(cat => techStack[cat] && techStack[cat].length > 0);
+    for (let i = 0; i < activeCategories.length - 1; i++) {
+      edges.push({
+        id: `e-flow-cat-${i}`,
+        source: `flow-cat-${activeCategories[i]}`,
+        target: `flow-cat-${activeCategories[i + 1]}`,
+        animated: true,
+        style: { stroke: '#667eea', strokeWidth: 3 },
+        label: 'Flow',
+        labelStyle: { fill: '#fff', fontSize: 12, fontWeight: 'bold' }
+      });
+    }
+
+    return edges;
+  };
+
+  const [techNodes, , onTechNodesChange] = useNodesState(createTechFlowNodes());
+  const [techEdges, , onTechEdgesChange] = useEdgesState(createTechFlowEdges());
+
+  return (
+    <div className="content-card">
+      <h2 className="card-title">📊 Comprehensive Technology Flow</h2>
+      <div className="card-content">
+        <div className="reactflow-wrapper" style={{
+          height: '800px',
+          background: '#0f1419',
+          borderRadius: '12px',
+          border: '1px solid rgba(102, 126, 234, 0.2)',
+          overflow: 'hidden'
+        }}>
+          <ReactFlow
+            nodes={techNodes}
+            edges={techEdges}
+            onNodesChange={onTechNodesChange}
+            onEdgesChange={onTechEdgesChange}
+            fitView
+            fitViewOptions={{ padding: 0.2 }}
+            attributionPosition="bottom-left"
+          >
+            <Controls style={{ bottom: 20, left: 20 }} />
+            <MiniMap
+              style={{ bottom: 20, right: 20 }}
+              nodeColor={(node) => node.style?.border?.split(' ')[2] || '#667eea'}
+              maskColor="rgba(0, 0, 0, 0.6)"
+            />
+            <Background variant="dots" gap={16} size={1} color="#373e47" />
+          </ReactFlow>
+        </div>
+        <div style={{
+          marginTop: '1rem',
+          padding: '12px 16px',
+          background: 'rgba(102, 126, 234, 0.08)',
+          borderRadius: '8px',
+          border: '1px solid rgba(102, 126, 234, 0.2)'
+        }}>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: '1.6' }}>
+            💡 <strong style={{ color: 'var(--text-primary)' }}>Interactive Features:</strong> Drag nodes • Zoom with wheel • Pan background<br/>
+            🔵 <strong>Solid arrows:</strong> Category flow • <strong>⚪ Dashed lines:</strong> Related technologies
+          </p>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  const { techStack, importantFiles, fileTree } = repoData;
+// Tech Stack Diagram Component - COMPREHENSIVE VERSION
+function TechStackDiagram({ techStack }) {
+  const createTechStackNodes = () => {
+    const nodes = [];
+    const categories = [
+      { key: 'frontend', label: 'Frontend Technologies', icon: '🎨', color: '#61dafb', desc: 'UI & Client-Side' },
+      { key: 'backend', label: 'Backend Technologies', icon: '⚙️', color: '#68a063', desc: 'Server & Logic' },
+      { key: 'database', label: 'Database & Storage', icon: '💾', color: '#f29111', desc: 'Data Persistence' },
+      { key: 'testing', label: 'Testing & QA', icon: '🧪', color: '#c678dd', desc: 'Quality Assurance' },
+      { key: 'devops', label: 'DevOps & Tools', icon: '🚀', color: '#56b6c2', desc: 'CI/CD & Deployment' }
+    ];
+
+    let yOffset = 50;
+    const yGap = 200;
+
+    categories.forEach((cat) => {
+      if (techStack[cat.key] && techStack[cat.key].length > 0) {
+        const allTechs = techStack[cat.key];
+        
+        // Category header node with count
+        nodes.push({
+          id: `stack-cat-${cat.key}`,
+          type: 'input',
+          data: {
+            label: (
+              <div style={{ textAlign: 'center', padding: '16px' }}>
+                <div style={{ fontSize: '36px', marginBottom: '10px' }}>{cat.icon}</div>
+                <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '6px' }}>{cat.label}</div>
+                <div style={{ fontSize: '11px', opacity: 0.8, marginBottom: '8px' }}>{cat.desc}</div>
+                <div style={{
+                  background: `${cat.color}30`,
+                  padding: '4px 12px',
+                  borderRadius: '12px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  border: `1px solid ${cat.color}`
+                }}>
+                  {allTechs.length} {allTechs.length === 1 ? 'Technology' : 'Technologies'}
+                </div>
+              </div>
+            )
+          },
+          position: { x: 50, y: yOffset },
+          style: {
+            background: `linear-gradient(135deg, ${cat.color}30 0%, #1e2530 100%)`,
+            border: `3px solid ${cat.color}`,
+            borderRadius: '16px',
+            width: 240,
+            color: '#fff',
+            boxShadow: `0 6px 16px ${cat.color}50`
+          }
+        });
+
+        // Individual technology nodes with enhanced styling
+        allTechs.forEach((tech, techIndex) => {
+          const row = Math.floor(techIndex / 4); // 4 techs per row
+          const col = techIndex % 4;
+          
+          nodes.push({
+            id: `stack-tech-${cat.key}-${techIndex}`,
+            type: 'default',
+            data: {
+              label: (
+                <div style={{ textAlign: 'center', padding: '12px' }}>
+                  <div style={{
+                    fontWeight: 'bold',
+                    fontSize: '14px',
+                    marginBottom: '6px',
+                    color: cat.color
+                  }}>
+                    {tech}
+                  </div>
+                  <div style={{
+                    fontSize: '10px',
+                    opacity: 0.6,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>
+                    {cat.key}
+                  </div>
+                </div>
+              )
+            },
+            position: {
+              x: 350 + (col * 200),
+              y: yOffset + (row * 100)
+            },
+            style: {
+              background: `linear-gradient(135deg, #1e2530 0%, ${cat.color}10 100%)`,
+              border: `2px solid ${cat.color}`,
+              borderRadius: '12px',
+              width: 180,
+              color: '#fff',
+              boxShadow: `0 2px 8px ${cat.color}30`
+            }
+          });
+        });
+
+        // Calculate next category position based on number of rows needed
+        const rowsNeeded = Math.ceil(allTechs.length / 4);
+        yOffset += Math.max(yGap, rowsNeeded * 100 + 50);
+      }
+    });
+
+    return nodes;
+  };
+
+  const createTechStackEdges = () => {
+    const edges = [];
+    const categories = ['frontend', 'backend', 'database', 'testing', 'devops'];
+    const colors = {
+      frontend: '#61dafb',
+      backend: '#68a063',
+      database: '#f29111',
+      testing: '#c678dd',
+      devops: '#56b6c2'
+    };
+
+    categories.forEach(cat => {
+      if (techStack[cat] && techStack[cat].length > 0) {
+        // Connect category to each technology
+        techStack[cat].forEach((tech, techIndex) => {
+          edges.push({
+            id: `e-stack-${cat}-${techIndex}`,
+            source: `stack-cat-${cat}`,
+            target: `stack-tech-${cat}-${techIndex}`,
+            animated: true,
+            style: {
+              stroke: colors[cat],
+              strokeWidth: 2
+            },
+            type: 'smoothstep'
+          });
+        });
+
+        // Connect technologies in same row
+        const techsPerRow = 4;
+        for (let i = 0; i < techStack[cat].length; i++) {
+          if ((i + 1) % techsPerRow !== 0 && i + 1 < techStack[cat].length) {
+            edges.push({
+              id: `e-stack-row-${cat}-${i}`,
+              source: `stack-tech-${cat}-${i}`,
+              target: `stack-tech-${cat}-${i + 1}`,
+              style: {
+                stroke: `${colors[cat]}40`,
+                strokeWidth: 1,
+                strokeDasharray: '5,5'
+              }
+            });
+          }
+        }
+      }
+    });
+
+    return edges;
+  };
+
+  const [stackNodes, , onStackNodesChange] = useNodesState(createTechStackNodes());
+  const [stackEdges, , onStackEdgesChange] = useEdgesState(createTechStackEdges());
+
+  // Count total technologies
+  const totalTechs = Object.values(techStack).reduce((sum, arr) => sum + arr.length, 0);
+
+  return (
+    <div className="content-card">
+      <h2 className="card-title">🛠️ Comprehensive Technology Stack</h2>
+      <div className="card-content">
+        <div style={{
+          marginBottom: '1rem',
+          padding: '14px 18px',
+          background: 'rgba(102, 126, 234, 0.08)',
+          borderRadius: '10px',
+          border: '1px solid rgba(102, 126, 234, 0.2)'
+        }}>
+          <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: '15px', fontWeight: '600' }}>
+            📊 Total Technologies Detected: <span style={{ color: '#667eea' }}>{totalTechs}</span>
+          </p>
+          <p style={{ margin: '10px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: '1.5' }}>
+            Organized into {Object.values(techStack).filter(arr => arr.length > 0).length} categories •
+            Grid layout with 4 technologies per row •
+            Interactive connections
+          </p>
+        </div>
+        <div className="reactflow-wrapper" style={{
+          height: '900px',
+          background: '#0f1419',
+          borderRadius: '12px',
+          border: '1px solid rgba(102, 126, 234, 0.2)',
+          overflow: 'hidden'
+        }}>
+          <ReactFlow
+            nodes={stackNodes}
+            edges={stackEdges}
+            onNodesChange={onStackNodesChange}
+            onEdgesChange={onStackEdgesChange}
+            fitView
+            fitViewOptions={{ padding: 0.15 }}
+            attributionPosition="bottom-left"
+          >
+            <Controls />
+            <MiniMap maskColor="rgba(0, 0, 0, 0.6)" />
+            <Background variant="dots" gap={12} size={1} color="#373e47" />
+          </ReactFlow>
+        </div>
+        <p style={{ marginTop: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+          💡 Each category connects to its technologies • Drag to explore • Zoom for details
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// Folder Structure Diagram Component
+function FolderStructureDiagram({ folders }) {
+  const getFolderInfo = (folder) => {
+    const info = {
+      src: { icon: '📦', desc: 'Source code', color: '#61dafb' },
+      public: { icon: '🌐', desc: 'Static assets', color: '#68a063' },
+      components: { icon: '🧩', desc: 'React components', color: '#61dafb' },
+      pages: { icon: '📄', desc: 'Page components', color: '#61dafb' },
+      styles: { icon: '🎨', desc: 'CSS/styling', color: '#c678dd' },
+      utils: { icon: '🔧', desc: 'Utilities', color: '#56b6c2' },
+      services: { icon: '🔌', desc: 'API services', color: '#68a063' },
+      tests: { icon: '🧪', desc: 'Test files', color: '#c678dd' },
+      docs: { icon: '📚', desc: 'Documentation', color: '#e5c07b' },
+      config: { icon: '⚙️', desc: 'Configuration', color: '#56b6c2' },
+      build: { icon: '🏗️', desc: 'Build output', color: '#f29111' },
+      dist: { icon: '📦', desc: 'Distribution', color: '#f29111' },
+      node_modules: { icon: '📚', desc: 'Dependencies', color: '#98c379' }
+    };
+    return info[folder] || { icon: '📁', desc: 'Project folder', color: '#667eea' };
+  };
+
+  const createFolderNodes = () => {
+    const nodes = [];
+    const cols = 3;
+    const xGap = 250;
+    const yGap = 150;
+
+    // Root node
+    nodes.push({
+      id: 'root',
+      type: 'input',
+      data: {
+        label: (
+          <div style={{ textAlign: 'center', padding: '12px' }}>
+            <div style={{ fontSize: '28px', marginBottom: '6px' }}>📂</div>
+            <div style={{ fontWeight: 'bold', fontSize: '14px' }}>Project Root</div>
+          </div>
+        )
+      },
+      position: { x: 400, y: 50 },
+      style: {
+        background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, #1e2530 100%)',
+        border: '2px solid #667eea',
+        borderRadius: '12px',
+        width: 180,
+        color: '#fff'
+      }
+    });
+
+    // Folder nodes
+    folders.forEach((folder, index) => {
+      const info = getFolderInfo(folder);
+      const row = Math.floor(index / cols);
+      const col = index % cols;
+      const x = 100 + (col * xGap);
+      const y = 200 + (row * yGap);
+
+      nodes.push({
+        id: `folder-${index}`,
+        type: 'default',
+        data: {
+          label: (
+            <div style={{ textAlign: 'center', padding: '10px' }}>
+              <div style={{ fontSize: '24px', marginBottom: '6px' }}>{info.icon}</div>
+              <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>{folder}/</div>
+              <div style={{ fontSize: '10px', opacity: 0.7 }}>{info.desc}</div>
+            </div>
+          )
+        },
+        position: { x, y },
+        style: {
+          background: `linear-gradient(135deg, ${info.color}15 0%, #1e2530 100%)`,
+          border: `2px solid ${info.color}`,
+          borderRadius: '12px',
+          width: 180,
+          color: '#fff'
+        }
+      });
+    });
+
+    return nodes;
+  };
+
+  const createFolderEdges = () => {
+    return folders.map((folder, index) => ({
+      id: `e-root-${index}`,
+      source: 'root',
+      target: `folder-${index}`,
+      style: { stroke: '#667eea', strokeWidth: 1.5 },
+      type: 'smoothstep'
+    }));
+  };
+
+  const [folderNodes, , onFolderNodesChange] = useNodesState(createFolderNodes());
+  const [folderEdges, , onFolderEdgesChange] = useEdgesState(createFolderEdges());
+
+  return (
+    <div className="content-card">
+      <h2 className="card-title">📁 Interactive Folder Structure</h2>
+      <div className="card-content">
+        <div className="reactflow-wrapper" style={{
+          height: '500px',
+          background: '#0f1419',
+          borderRadius: '12px',
+          border: '1px solid rgba(102, 126, 234, 0.2)',
+          overflow: 'hidden'
+        }}>
+          <ReactFlow
+            nodes={folderNodes}
+            edges={folderEdges}
+            onNodesChange={onFolderNodesChange}
+            onEdgesChange={onFolderEdgesChange}
+            fitView
+            fitViewOptions={{ padding: 0.2 }}
+            attributionPosition="bottom-left"
+          >
+            <Controls style={{ bottom: 20, left: 20 }} />
+            <MiniMap
+              style={{ bottom: 20, right: 20 }}
+              nodeColor={(node) => node.style?.border?.split(' ')[2] || '#667eea'}
+              maskColor="rgba(0, 0, 0, 0.6)"
+            />
+            <Background variant="dots" gap={16} size={1} color="#373e47" />
+          </ReactFlow>
+        </div>
+        <div style={{
+          marginTop: '1rem',
+          padding: '12px 16px',
+          background: 'rgba(102, 126, 234, 0.08)',
+          borderRadius: '8px',
+          border: '1px solid rgba(102, 126, 234, 0.2)'
+        }}>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: '1.6' }}>
+            💡 <strong style={{ color: 'var(--text-primary)' }}>Project Structure:</strong> {folders.length} top-level folders •
+            Star topology from root •
+            Color-coded by folder type
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, architectureError }) {
+  // Extract data with defaults (must be before any hooks or returns)
+  const techStack = repoData?.techStack || { frontend: [], backend: [], database: [], testing: [], devops: [] };
+  const importantFiles = repoData?.importantFiles || [];
+  const fileTree = repoData?.fileTree || [];
 
   // Extract main technologies for dependency graph
   const getMainTechnologies = () => {
@@ -186,56 +903,292 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
 
   const topLevelFolders = getTopLevelFolders();
 
+  // Create React Flow nodes for System Architecture
+  const createArchitectureNodes = () => {
+    const nodes = [];
+    const xCenter = 400;
+    let yPos = 50;
+    const yGap = 180;
+
+    // Layer 1: Client
+    nodes.push({
+      id: 'client',
+      type: 'default',
+      data: {
+        label: (
+          <div style={{ textAlign: 'center', padding: '10px' }}>
+            <div style={{ fontSize: '24px', marginBottom: '8px' }}>👤</div>
+            <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>Client Layer</div>
+            <div style={{ fontSize: '11px', display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '8px' }}>Web</span>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '8px' }}>Mobile</span>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '8px' }}>Desktop</span>
+            </div>
+          </div>
+        )
+      },
+      position: { x: xCenter, y: yPos },
+      style: {
+        background: 'linear-gradient(135deg, rgba(255, 107, 157, 0.15) 0%, #1e2530 100%)',
+        border: '2px solid #ff6b9d',
+        borderRadius: '12px',
+        width: 280,
+        color: '#fff',
+        fontSize: '13px'
+      }
+    });
+    yPos += yGap;
+
+    // Layer 2: Frontend
+    nodes.push({
+      id: 'frontend',
+      type: 'default',
+      data: {
+        label: (
+          <div style={{ textAlign: 'center', padding: '10px' }}>
+            <div style={{ fontSize: '24px', marginBottom: '8px' }}>🎨</div>
+            <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>Frontend Layer</div>
+            <div style={{ fontSize: '11px', display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '8px' }}>
+                {techStack.frontend.length > 0 ? techStack.frontend[0] : 'React'}
+              </span>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '8px' }}>State</span>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '8px' }}>Router</span>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '8px' }}>Components</span>
+            </div>
+          </div>
+        )
+      },
+      position: { x: xCenter, y: yPos },
+      style: {
+        background: 'linear-gradient(135deg, rgba(97, 218, 251, 0.15) 0%, #1e2530 100%)',
+        border: '2px solid #61dafb',
+        borderRadius: '12px',
+        width: 280,
+        color: '#fff',
+        fontSize: '13px'
+      }
+    });
+    yPos += yGap;
+
+    // Layer 3: API Gateway
+    nodes.push({
+      id: 'api',
+      type: 'default',
+      data: {
+        label: (
+          <div style={{ textAlign: 'center', padding: '10px' }}>
+            <div style={{ fontSize: '24px', marginBottom: '8px' }}>🔌</div>
+            <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>API Gateway</div>
+            <div style={{ fontSize: '11px', display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '8px' }}>Auth</span>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '8px' }}>Rate Limit</span>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '8px' }}>Load Balancer</span>
+            </div>
+          </div>
+        )
+      },
+      position: { x: xCenter, y: yPos },
+      style: {
+        background: 'linear-gradient(135deg, rgba(153, 102, 255, 0.15) 0%, #1e2530 100%)',
+        border: '2px solid #9966ff',
+        borderRadius: '12px',
+        width: 280,
+        color: '#fff',
+        fontSize: '13px'
+      }
+    });
+    yPos += yGap;
+
+    // Layer 4: Backend
+    nodes.push({
+      id: 'backend',
+      type: 'default',
+      data: {
+        label: (
+          <div style={{ textAlign: 'center', padding: '10px' }}>
+            <div style={{ fontSize: '24px', marginBottom: '8px' }}>⚙️</div>
+            <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>Backend Layer</div>
+            <div style={{ fontSize: '11px', display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '8px' }}>
+                {techStack.backend.length > 0 ? techStack.backend[0] : 'Node.js'}
+              </span>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '8px' }}>Controllers</span>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '8px' }}>Services</span>
+            </div>
+          </div>
+        )
+      },
+      position: { x: xCenter, y: yPos },
+      style: {
+        background: 'linear-gradient(135deg, rgba(104, 160, 99, 0.15) 0%, #1e2530 100%)',
+        border: '2px solid #68a063',
+        borderRadius: '12px',
+        width: 280,
+        color: '#fff',
+        fontSize: '13px'
+      }
+    });
+    yPos += yGap;
+
+    // Layer 5: Cache
+    nodes.push({
+      id: 'cache',
+      type: 'default',
+      data: {
+        label: (
+          <div style={{ textAlign: 'center', padding: '10px' }}>
+            <div style={{ fontSize: '24px', marginBottom: '8px' }}>⚡</div>
+            <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>Cache Layer</div>
+            <div style={{ fontSize: '11px', display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '8px' }}>Redis</span>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '8px' }}>Memcached</span>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '8px' }}>CDN</span>
+            </div>
+          </div>
+        )
+      },
+      position: { x: xCenter, y: yPos },
+      style: {
+        background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, #1e2530 100%)',
+        border: '2px solid #ffd700',
+        borderRadius: '12px',
+        width: 280,
+        color: '#fff',
+        fontSize: '13px'
+      }
+    });
+    yPos += yGap;
+
+    // Layer 6: Database
+    nodes.push({
+      id: 'database',
+      type: 'default',
+      data: {
+        label: (
+          <div style={{ textAlign: 'center', padding: '10px' }}>
+            <div style={{ fontSize: '24px', marginBottom: '8px' }}>💾</div>
+            <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>Data Layer</div>
+            <div style={{ fontSize: '11px', display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '8px' }}>
+                {techStack.database.length > 0 ? techStack.database[0] : 'Database'}
+              </span>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '8px' }}>Storage</span>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '8px' }}>Backup</span>
+            </div>
+          </div>
+        )
+      },
+      position: { x: xCenter, y: yPos },
+      style: {
+        background: 'linear-gradient(135deg, rgba(242, 145, 17, 0.15) 0%, #1e2530 100%)',
+        border: '2px solid #f29111',
+        borderRadius: '12px',
+        width: 280,
+        color: '#fff',
+        fontSize: '13px'
+      }
+    });
+    yPos += yGap;
+
+    // Layer 7: External Services
+    nodes.push({
+      id: 'external',
+      type: 'default',
+      data: {
+        label: (
+          <div style={{ textAlign: 'center', padding: '10px' }}>
+            <div style={{ fontSize: '24px', marginBottom: '8px' }}>🌐</div>
+            <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>External Services</div>
+            <div style={{ fontSize: '11px', display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '8px' }}>Watsonx.ai</span>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '8px' }}>GitHub</span>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '8px' }}>Analytics</span>
+            </div>
+          </div>
+        )
+      },
+      position: { x: xCenter, y: yPos },
+      style: {
+        background: 'linear-gradient(135deg, rgba(0, 212, 255, 0.15) 0%, #1e2530 100%)',
+        border: '2px solid #00d4ff',
+        borderRadius: '12px',
+        width: 280,
+        color: '#fff',
+        fontSize: '13px'
+      }
+    });
+
+    return nodes;
+  };
+
+  const createArchitectureEdges = () => {
+    return [
+      { id: 'e-client-frontend', source: 'client', target: 'frontend', animated: true, style: { stroke: '#667eea', strokeWidth: 2 } },
+      { id: 'e-frontend-api', source: 'frontend', target: 'api', animated: true, style: { stroke: '#667eea', strokeWidth: 2 } },
+      { id: 'e-api-backend', source: 'api', target: 'backend', animated: true, style: { stroke: '#667eea', strokeWidth: 2 } },
+      { id: 'e-backend-cache', source: 'backend', target: 'cache', animated: true, style: { stroke: '#667eea', strokeWidth: 2 } },
+      { id: 'e-cache-database', source: 'cache', target: 'database', animated: true, style: { stroke: '#667eea', strokeWidth: 2 } },
+      { id: 'e-backend-external', source: 'backend', target: 'external', animated: true, style: { stroke: '#00d4ff', strokeWidth: 2, strokeDasharray: '5,5' } },
+    ];
+  };
+
+  const [archNodes, , onArchNodesChange] = useNodesState(createArchitectureNodes());
+  const [archEdges, , onArchEdgesChange] = useEdgesState(createArchitectureEdges());
+  // If no repoData, show placeholder
+  if (!repoData) {
+    return (
+      <div className="tab-content architecture-tab">
+        <div className="content-card">
+          <h2 className="card-title">System Architecture</h2>
+          <div className="card-content">
+            <p className="placeholder-text">Architecture analysis will appear here after repository analysis...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+
   return (
     <div className="tab-content architecture-tab">
-      {/* System Architecture Diagram */}
+      {/* Interactive System Architecture with React Flow */}
       <div className="content-card">
-        <h2 className="card-title">🏗️ System Architecture Diagram</h2>
+        <h2 className="card-title">🏗️ Interactive System Architecture</h2>
         <div className="card-content">
-          <div className="architecture-diagram">
-            <div className="arch-layer">
-              <div className="arch-box frontend-layer">
-                <div className="layer-icon">🎨</div>
-                <div className="layer-title">Frontend Layer</div>
-                <div className="layer-tech">
-                  {techStack.frontend.length > 0
-                    ? techStack.frontend.join(', ')
-                    : 'User Interface'}
-                </div>
-              </div>
-            </div>
-            <div className="arch-arrow">↓</div>
-            <div className="arch-layer">
-              <div className="arch-box api-layer">
-                <div className="layer-icon">🔌</div>
-                <div className="layer-title">API Layer</div>
-                <div className="layer-tech">REST API / GraphQL</div>
-              </div>
-            </div>
-            <div className="arch-arrow">↓</div>
-            <div className="arch-layer">
-              <div className="arch-box backend-layer">
-                <div className="layer-icon">⚙️</div>
-                <div className="layer-title">Business Logic</div>
-                <div className="layer-tech">
-                  {techStack.backend.length > 0
-                    ? techStack.backend.join(', ')
-                    : 'Application Server'}
-                </div>
-              </div>
-            </div>
-            <div className="arch-arrow">↓</div>
-            <div className="arch-layer">
-              <div className="arch-box data-layer">
-                <div className="layer-icon">💾</div>
-                <div className="layer-title">Data Layer</div>
-                <div className="layer-tech">
-                  {techStack.database.length > 0
-                    ? techStack.database.join(', ')
-                    : 'Database / Storage'}
-                </div>
-              </div>
-            </div>
+          <div className="reactflow-wrapper" style={{ height: '1400px', background: '#0f1419', borderRadius: '8px' }}>
+            <ReactFlow
+              nodes={archNodes}
+              edges={archEdges}
+              onNodesChange={onArchNodesChange}
+              onEdgesChange={onArchEdgesChange}
+              fitView
+              attributionPosition="bottom-left"
+            >
+              <Controls />
+              <MiniMap
+                nodeColor={(node) => {
+                  if (node.style?.border) {
+                    return node.style.border.split(' ')[2];
+                  }
+                  return '#667eea';
+                }}
+                maskColor="rgba(0, 0, 0, 0.6)"
+              />
+              <Background variant="dots" gap={12} size={1} color="#373e47" />
+            </ReactFlow>
+          </div>
+          <div className="flow-description-box" style={{ marginTop: '1rem' }}>
+            <p className="flow-description">
+              <strong>💡 Interactive Features:</strong><br/>
+              • <strong>Drag</strong> nodes to rearrange the architecture<br/>
+              • <strong>Zoom</strong> with mouse wheel or controls<br/>
+              • <strong>Pan</strong> by dragging the background<br/>
+              • <strong>Mini-map</strong> in bottom-right for navigation<br/>
+              <br/>
+              <strong>🔵 Solid arrows:</strong> Main data flow<br/>
+              <strong>⚪ Dashed lines:</strong> External service connections
+            </p>
           </div>
         </div>
       </div>
@@ -266,9 +1219,7 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
           
           {architectureAnalysis && !isArchitectureLoading && (
             <div className="architecture-analysis-content">
-              <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', lineHeight: '1.8' }}>
-                {architectureAnalysis}
-              </pre>
+              <ArchitectureAnalysisDisplay analysis={architectureAnalysis} />
             </div>
           )}
           
@@ -278,96 +1229,11 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
         </div>
       </div>
 
-      {/* Visual Dependency Graph */}
-      {mainTechnologies.length > 0 && (
-        <div className="content-card">
-          <h2 className="card-title">📊 Technology Flow</h2>
-          <div className="card-content">
-            <div className="dependency-graph">
-              {mainTechnologies.map((tech, index) => (
-                <React.Fragment key={index}>
-                  <div className={`tech-node ${tech.category}`}>
-                    <div className="tech-node-icon">
-                      {tech.category === 'frontend' && '🎨'}
-                      {tech.category === 'backend' && '⚙️'}
-                      {tech.category === 'database' && '💾'}
-                    </div>
-                    <div className="tech-node-name">{tech.name}</div>
-                    <div className="tech-node-label">{tech.category}</div>
-                  </div>
-                  {index < mainTechnologies.length - 1 && (
-                    <div className="tech-arrow">→</div>
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
-            <p className="graph-description">
-              Data flows from {mainTechnologies[0]?.name} through the system to {mainTechnologies[mainTechnologies.length - 1]?.name}
-            </p>
-          </div>
-        </div>
-      )}
+      {/* Interactive Technology Flow with React Flow */}
+      {mainTechnologies.length > 0 && <TechnologyFlowDiagram techStack={techStack} mainTechnologies={mainTechnologies} />}
 
-      {/* Technology Stack Breakdown */}
-      {techStack && (Object.values(techStack).some(arr => arr.length > 0)) && (
-        <div className="content-card">
-          <h2 className="card-title">🛠️ Technology Stack</h2>
-          <div className="card-content">
-            <div className="tech-stack-grid">
-              {techStack.frontend.length > 0 && (
-                <div className="tech-category-section">
-                  <h3 className="tech-category-title">Frontend</h3>
-                  <div className="tech-badges">
-                    {techStack.frontend.map((tech, idx) => (
-                      <span key={idx} className="tech-badge frontend">{tech}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {techStack.backend.length > 0 && (
-                <div className="tech-category-section">
-                  <h3 className="tech-category-title">Backend</h3>
-                  <div className="tech-badges">
-                    {techStack.backend.map((tech, idx) => (
-                      <span key={idx} className="tech-badge backend">{tech}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {techStack.database.length > 0 && (
-                <div className="tech-category-section">
-                  <h3 className="tech-category-title">Database</h3>
-                  <div className="tech-badges">
-                    {techStack.database.map((tech, idx) => (
-                      <span key={idx} className="tech-badge database">{tech}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {techStack.testing.length > 0 && (
-                <div className="tech-category-section">
-                  <h3 className="tech-category-title">Testing</h3>
-                  <div className="tech-badges">
-                    {techStack.testing.map((tech, idx) => (
-                      <span key={idx} className="tech-badge testing">{tech}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {techStack.devops.length > 0 && (
-                <div className="tech-category-section">
-                  <h3 className="tech-category-title">DevOps</h3>
-                  <div className="tech-badges">
-                    {techStack.devops.map((tech, idx) => (
-                      <span key={idx} className="tech-badge devops">{tech}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Interactive Technology Stack with React Flow */}
+      {techStack && (Object.values(techStack).some(arr => arr.length > 0)) && <TechStackDiagram techStack={techStack} />}
 
       {/* Key Files & Components */}
       {importantFiles && importantFiles.length > 0 && (
@@ -398,38 +1264,8 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
         </div>
       )}
 
-      {/* Folder Structure */}
-      {topLevelFolders.length > 0 && (
-        <div className="content-card">
-          <h2 className="card-title">📁 Folder Structure</h2>
-          <div className="card-content">
-            <div className="folder-structure">
-              {topLevelFolders.map((folder, index) => (
-                <div key={index} className="folder-item">
-                  <span className="folder-icon">📂</span>
-                  <span className="folder-name">{folder}/</span>
-                  <span className="folder-description">
-                    {folder === 'src' && 'Source code'}
-                    {folder === 'public' && 'Static assets'}
-                    {folder === 'components' && 'React components'}
-                    {folder === 'pages' && 'Page components'}
-                    {folder === 'styles' && 'CSS/styling files'}
-                    {folder === 'utils' && 'Utility functions'}
-                    {folder === 'services' && 'API services'}
-                    {folder === 'tests' && 'Test files'}
-                    {folder === 'docs' && 'Documentation'}
-                    {folder === 'config' && 'Configuration files'}
-                    {folder === 'build' && 'Build output'}
-                    {folder === 'dist' && 'Distribution files'}
-                    {folder === 'node_modules' && 'Dependencies'}
-                    {!['src', 'public', 'components', 'pages', 'styles', 'utils', 'services', 'tests', 'docs', 'config', 'build', 'dist', 'node_modules'].includes(folder) && 'Project folder'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Interactive Folder Structure with React Flow */}
+      {topLevelFolders.length > 0 && <FolderStructureDiagram folders={topLevelFolders} />}
     </div>
   );
 }
