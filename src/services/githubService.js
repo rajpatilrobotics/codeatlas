@@ -207,7 +207,24 @@ export function detectTechStack(fileTree, importantFiles) {
     backend: [],
     database: [],
     devops: [],
-    testing: []
+    testing: [],
+    cache: [],
+    messageQueue: [],
+    authentication: [],
+    orm: []
+  };
+
+  // Use Set to avoid duplicates
+  const detected = {
+    frontend: new Set(),
+    backend: new Set(),
+    database: new Set(),
+    devops: new Set(),
+    testing: new Set(),
+    cache: new Set(),
+    messageQueue: new Set(),
+    authentication: new Set(),
+    orm: new Set()
   };
 
   // Check package.json for dependencies
@@ -217,52 +234,551 @@ export function detectTechStack(fileTree, importantFiles) {
       const pkg = JSON.parse(packageJson.content);
       const allDeps = { ...pkg.dependencies, ...pkg.devDependencies };
       
-      // Frontend frameworks
-      if (allDeps.react) techStack.frontend.push('React');
-      if (allDeps.vue) techStack.frontend.push('Vue.js');
-      if (allDeps.angular || allDeps['@angular/core']) techStack.frontend.push('Angular');
-      if (allDeps.svelte) techStack.frontend.push('Svelte');
-      if (allDeps.next) techStack.frontend.push('Next.js');
+      // Frontend frameworks & libraries
+      if (allDeps.react) detected.frontend.add('React');
+      if (allDeps['react-dom']) detected.frontend.add('React DOM');
+      if (allDeps['react-router'] || allDeps['react-router-dom']) detected.frontend.add('React Router');
+      if (allDeps.redux || allDeps['@reduxjs/toolkit']) detected.frontend.add('Redux');
+      if (allDeps['react-query'] || allDeps['@tanstack/react-query']) detected.frontend.add('React Query');
+      if (allDeps.vue) detected.frontend.add('Vue.js');
+      if (allDeps['vue-router']) detected.frontend.add('Vue Router');
+      if (allDeps.vuex || allDeps.pinia) detected.frontend.add('Vuex/Pinia');
+      if (allDeps.angular || allDeps['@angular/core']) detected.frontend.add('Angular');
+      if (allDeps.svelte) detected.frontend.add('Svelte');
+      if (allDeps.next) detected.frontend.add('Next.js');
+      if (allDeps.nuxt) detected.frontend.add('Nuxt.js');
+      if (allDeps.gatsby) detected.frontend.add('Gatsby');
+      if (allDeps.remix) detected.frontend.add('Remix');
       
-      // Backend frameworks
-      if (allDeps.express) techStack.backend.push('Express.js');
-      if (allDeps.fastify) techStack.backend.push('Fastify');
-      if (allDeps.koa) techStack.backend.push('Koa');
-      if (allDeps.nestjs || allDeps['@nestjs/core']) techStack.backend.push('NestJS');
+      // UI Libraries
+      if (allDeps['@mui/material'] || allDeps['@material-ui/core']) detected.frontend.add('Material-UI');
+      if (allDeps['antd']) detected.frontend.add('Ant Design');
+      if (allDeps['bootstrap'] || allDeps['react-bootstrap']) detected.frontend.add('Bootstrap');
+      if (allDeps['tailwindcss']) detected.frontend.add('Tailwind CSS');
+      if (allDeps['styled-components']) detected.frontend.add('Styled Components');
+      if (allDeps['@emotion/react']) detected.frontend.add('Emotion');
+      if (allDeps['chakra-ui'] || allDeps['@chakra-ui/react']) detected.frontend.add('Chakra UI');
       
-      // Databases
-      if (allDeps.mongoose) techStack.database.push('MongoDB');
-      if (allDeps.pg || allDeps.postgres) techStack.database.push('PostgreSQL');
-      if (allDeps.mysql || allDeps.mysql2) techStack.database.push('MySQL');
-      if (allDeps.redis) techStack.database.push('Redis');
-      if (allDeps.sqlite3) techStack.database.push('SQLite');
+      // Build tools
+      if (allDeps.webpack || pkg.devDependencies?.webpack) detected.devops.add('Webpack');
+      if (allDeps.vite) detected.devops.add('Vite');
+      if (allDeps.parcel) detected.devops.add('Parcel');
+      if (allDeps.rollup) detected.devops.add('Rollup');
+      if (allDeps.esbuild) detected.devops.add('esbuild');
       
-      // Testing
-      if (allDeps.jest) techStack.testing.push('Jest');
-      if (allDeps.mocha) techStack.testing.push('Mocha');
-      if (allDeps.cypress) techStack.testing.push('Cypress');
-      if (allDeps.playwright) techStack.testing.push('Playwright');
+      // TypeScript
+      if (allDeps.typescript || fileTree.some(f => f.endsWith('.ts') || f.endsWith('.tsx'))) {
+        detected.frontend.add('TypeScript');
+      }
       
-      // DevOps
-      if (allDeps.docker || fileTree.includes('Dockerfile')) techStack.devops.push('Docker');
-      if (fileTree.includes('.github/workflows')) techStack.devops.push('GitHub Actions');
+      // Backend frameworks (Node.js)
+      if (allDeps.express) detected.backend.add('Express.js');
+      if (allDeps.fastify) detected.backend.add('Fastify');
+      if (allDeps.koa) detected.backend.add('Koa');
+      if (allDeps.hapi || allDeps['@hapi/hapi']) detected.backend.add('Hapi');
+      if (allDeps.nestjs || allDeps['@nestjs/core']) detected.backend.add('NestJS');
+      if (allDeps.socket || allDeps['socket.io']) detected.backend.add('Socket.IO');
+      if (allDeps.graphql || allDeps['apollo-server']) detected.backend.add('GraphQL');
+      if (allDeps['@apollo/server']) detected.backend.add('Apollo Server');
+      if (allDeps.trpc || allDeps['@trpc/server']) detected.backend.add('tRPC');
+      
+      // API & Data fetching
+      if (allDeps.axios) detected.backend.add('Axios');
+      if (allDeps.fetch || allDeps['node-fetch']) detected.backend.add('Fetch API');
+      if (allDeps.prisma || allDeps['@prisma/client']) detected.backend.add('Prisma');
+      if (allDeps.typeorm) detected.backend.add('TypeORM');
+      if (allDeps.sequelize) detected.backend.add('Sequelize');
+      
+      // Databases & ORMs
+      if (allDeps.mongoose) detected.database.add('MongoDB');
+      if (allDeps.mongodb) detected.database.add('MongoDB Driver');
+      if (allDeps.pg || allDeps.postgres) detected.database.add('PostgreSQL');
+      if (allDeps.mysql || allDeps.mysql2) detected.database.add('MySQL');
+      if (allDeps.redis || allDeps['ioredis']) {
+        detected.database.add('Redis');
+        detected.cache.add('Redis');
+      }
+      if (allDeps.sqlite3 || allDeps['better-sqlite3']) detected.database.add('SQLite');
+      if (allDeps.firebase || allDeps['firebase-admin']) detected.database.add('Firebase');
+      if (allDeps.supabase || allDeps['@supabase/supabase-js']) detected.database.add('Supabase');
+      if (allDeps.dynamodb || allDeps['aws-sdk']) detected.database.add('DynamoDB');
+      
+      // Cache detection
+      if (allDeps.memcached) detected.cache.add('Memcached');
+      if (allDeps['node-cache']) detected.cache.add('Node-Cache');
+      
+      // Message Queue detection
+      if (allDeps.amqplib || allDeps.rabbitmq) detected.messageQueue.add('RabbitMQ');
+      if (allDeps.kafkajs || allDeps.kafka) detected.messageQueue.add('Kafka');
+      if (allDeps.bull || allDeps.bullmq) detected.messageQueue.add('Bull/BullMQ');
+      if (allDeps.bee || allDeps['bee-queue']) detected.messageQueue.add('Bee Queue');
+      if (allDeps.celery) detected.messageQueue.add('Celery');
+      
+      // Authentication detection
+      if (allDeps.passport || allDeps['passport-local']) detected.authentication.add('Passport.js');
+      if (allDeps.jsonwebtoken || allDeps.jwt) detected.authentication.add('JWT');
+      if (allDeps['express-session']) detected.authentication.add('Express Session');
+      if (allDeps.bcrypt || allDeps.bcryptjs) detected.authentication.add('Bcrypt');
+      if (allDeps.auth0 || allDeps['@auth0/auth0-react']) detected.authentication.add('Auth0');
+      if (allDeps['next-auth']) detected.authentication.add('NextAuth.js');
+      if (allDeps.clerk || allDeps['@clerk/nextjs']) detected.authentication.add('Clerk');
+      
+      // ORM/ODM detection
+      if (allDeps.prisma || allDeps['@prisma/client']) detected.orm.add('Prisma');
+      if (allDeps.typeorm) detected.orm.add('TypeORM');
+      if (allDeps.sequelize) detected.orm.add('Sequelize');
+      if (allDeps.mongoose) detected.orm.add('Mongoose');
+      if (allDeps.typegoose || allDeps['@typegoose/typegoose']) detected.orm.add('Typegoose');
+      if (allDeps.drizzle || allDeps['drizzle-orm']) detected.orm.add('Drizzle ORM');
+      
+      // Testing frameworks
+      if (allDeps.jest) detected.testing.add('Jest');
+      if (allDeps.mocha) detected.testing.add('Mocha');
+      if (allDeps.chai) detected.testing.add('Chai');
+      if (allDeps.jasmine) detected.testing.add('Jasmine');
+      if (allDeps.vitest) detected.testing.add('Vitest');
+      if (allDeps.cypress) detected.testing.add('Cypress');
+      if (allDeps.playwright) detected.testing.add('Playwright');
+      if (allDeps.puppeteer) detected.testing.add('Puppeteer');
+      if (allDeps['@testing-library/react']) detected.testing.add('React Testing Library');
+      if (allDeps.enzyme) detected.testing.add('Enzyme');
+      
+      // DevOps & CI/CD
+      if (allDeps.docker || fileTree.some(f => f.includes('Dockerfile'))) detected.devops.add('Docker');
+      if (fileTree.some(f => f.includes('docker-compose'))) detected.devops.add('Docker Compose');
+      if (fileTree.some(f => f.includes('.github/workflows'))) detected.devops.add('GitHub Actions');
+      if (fileTree.some(f => f.includes('.gitlab-ci'))) detected.devops.add('GitLab CI');
+      if (fileTree.some(f => f.includes('Jenkinsfile'))) detected.devops.add('Jenkins');
+      if (fileTree.some(f => f.includes('.circleci'))) detected.devops.add('CircleCI');
+      if (allDeps.pm2) detected.devops.add('PM2');
+      if (allDeps.nodemon) detected.devops.add('Nodemon');
+      
+      // Linting & Formatting
+      if (allDeps.eslint) detected.devops.add('ESLint');
+      if (allDeps.prettier) detected.devops.add('Prettier');
+      if (allDeps.husky) detected.devops.add('Husky');
+      if (allDeps['lint-staged']) detected.devops.add('lint-staged');
+      
     } catch (e) {
       // Invalid JSON, skip
     }
   }
   
-  // Check for Python requirements
-  if (fileTree.includes('requirements.txt')) {
-    techStack.backend.push('Python');
+  // Check for Python
+  if (fileTree.some(f => f.includes('requirements.txt'))) {
+    detected.backend.add('Python');
+    // Check for Python frameworks
+    const reqFile = importantFiles.find(f => f.path.includes('requirements.txt'));
+    if (reqFile && !reqFile.error) {
+      const content = reqFile.content.toLowerCase();
+      if (content.includes('django')) detected.backend.add('Django');
+      if (content.includes('flask')) detected.backend.add('Flask');
+      if (content.includes('fastapi')) detected.backend.add('FastAPI');
+      if (content.includes('tornado')) detected.backend.add('Tornado');
+      if (content.includes('pyramid')) detected.backend.add('Pyramid');
+    }
   }
   
-  // Check for other languages
-  if (fileTree.some(f => f.endsWith('.go'))) techStack.backend.push('Go');
-  if (fileTree.some(f => f.endsWith('.rs'))) techStack.backend.push('Rust');
-  if (fileTree.some(f => f.endsWith('.java'))) techStack.backend.push('Java');
-  if (fileTree.some(f => f.endsWith('.php'))) techStack.backend.push('PHP');
+  // Check for other languages by file extensions
+  if (fileTree.some(f => f.endsWith('.go'))) detected.backend.add('Go');
+  if (fileTree.some(f => f.endsWith('.rs'))) detected.backend.add('Rust');
+  if (fileTree.some(f => f.endsWith('.java'))) detected.backend.add('Java');
+  if (fileTree.some(f => f.endsWith('.kt'))) detected.backend.add('Kotlin');
+  if (fileTree.some(f => f.endsWith('.php'))) detected.backend.add('PHP');
+  if (fileTree.some(f => f.endsWith('.rb'))) detected.backend.add('Ruby');
+  if (fileTree.some(f => f.endsWith('.cs'))) detected.backend.add('C#');
+  if (fileTree.some(f => f.endsWith('.swift'))) detected.backend.add('Swift');
+  
+  // Check for specific config files
+  if (fileTree.some(f => f.includes('next.config'))) detected.frontend.add('Next.js');
+  if (fileTree.some(f => f.includes('nuxt.config'))) detected.frontend.add('Nuxt.js');
+  if (fileTree.some(f => f.includes('vite.config'))) detected.devops.add('Vite');
+  if (fileTree.some(f => f.includes('webpack.config'))) detected.devops.add('Webpack');
+  if (fileTree.some(f => f.includes('tailwind.config'))) detected.frontend.add('Tailwind CSS');
+  if (fileTree.some(f => f.includes('tsconfig.json'))) detected.frontend.add('TypeScript');
+  
+  // Check for Python frameworks in requirements.txt for authentication/ORM
+  const reqFile = importantFiles.find(f => f.path.includes('requirements.txt'));
+  if (reqFile && !reqFile.error) {
+    const content = reqFile.content.toLowerCase();
+    if (content.includes('sqlalchemy')) detected.orm.add('SQLAlchemy');
+    if (content.includes('django')) detected.orm.add('Django ORM');
+    if (content.includes('flask-login')) detected.authentication.add('Flask-Login');
+    if (content.includes('django-allauth')) detected.authentication.add('Django Allauth');
+  }
+  
+  // Convert Sets back to arrays
+  techStack.frontend = Array.from(detected.frontend);
+  techStack.backend = Array.from(detected.backend);
+  techStack.database = Array.from(detected.database);
+  techStack.devops = Array.from(detected.devops);
+  techStack.testing = Array.from(detected.testing);
+  techStack.cache = Array.from(detected.cache);
+  techStack.messageQueue = Array.from(detected.messageQueue);
+  techStack.authentication = Array.from(detected.authentication);
+  techStack.orm = Array.from(detected.orm);
   
   return techStack;
+}
+
+/**
+ * Analyze repository architecture in detail
+ * Detects API endpoints, database models, components, patterns, and metrics
+ * @param {Array} fileTree - Array of file paths
+ * @param {Array} importantFiles - Array of important file objects with content
+ * @returns {Object} - Detailed architecture analysis
+ */
+export function analyzeArchitecture(fileTree, importantFiles) {
+  const analysis = {
+    apiEndpoints: [],
+    databaseModels: [],
+    components: [],
+    middleware: [],
+    patterns: {
+      architecture: 'Unknown',
+      features: []
+    },
+    metrics: {
+      totalFiles: fileTree.length,
+      componentCount: 0,
+      apiEndpointCount: 0,
+      modelCount: 0,
+      middlewareCount: 0
+    },
+    folderStructure: {}
+  };
+
+  // Detect API Endpoints
+  analysis.apiEndpoints = detectAPIEndpoints(importantFiles, fileTree);
+  analysis.metrics.apiEndpointCount = analysis.apiEndpoints.length;
+
+  // Detect Database Models
+  analysis.databaseModels = detectDatabaseModels(importantFiles, fileTree);
+  analysis.metrics.modelCount = analysis.databaseModels.length;
+
+  // Detect Components
+  analysis.components = detectComponents(fileTree);
+  analysis.metrics.componentCount = analysis.components.length;
+
+  // Detect Middleware
+  analysis.middleware = detectMiddleware(importantFiles, fileTree);
+  analysis.metrics.middlewareCount = analysis.middleware.length;
+
+  // Detect Architectural Pattern
+  analysis.patterns = detectArchitecturalPattern(fileTree);
+
+  // Analyze Folder Structure
+  analysis.folderStructure = analyzeFolderStructure(fileTree);
+
+  return analysis;
+}
+
+/**
+ * Detect API endpoints from route files
+ */
+function detectAPIEndpoints(importantFiles, fileTree) {
+  const endpoints = [];
+  const routePatterns = [
+    // Express.js patterns
+    { regex: /(?:app|router)\.(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]/g, framework: 'Express' },
+    // NestJS patterns
+    { regex: /@(Get|Post|Put|Delete|Patch)\s*\(\s*['"`]([^'"`]*)['"`]\s*\)/g, framework: 'NestJS' },
+    // Django patterns
+    { regex: /path\s*\(\s*['"`]([^'"`]+)['"`]/g, framework: 'Django' },
+    // FastAPI patterns
+    { regex: /@app\.(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]/g, framework: 'FastAPI' },
+    // Flask patterns
+    { regex: /@app\.route\s*\(\s*['"`]([^'"`]+)['"`].*methods\s*=\s*\[['"`]([^'"`]+)['"`]\]/g, framework: 'Flask' }
+  ];
+
+  // Check route files
+  const routeFiles = fileTree.filter(f =>
+    f.includes('route') || f.includes('controller') || f.includes('api') ||
+    f.includes('views.py') || f.includes('urls.py') || f.includes('main.py')
+  ).slice(0, 20); // Limit to first 20 route files
+
+  routeFiles.forEach(filePath => {
+    const file = importantFiles.find(f => f.path === filePath);
+    if (file && !file.error && file.content) {
+      routePatterns.forEach(pattern => {
+        let match;
+        const regex = new RegExp(pattern.regex);
+        while ((match = regex.exec(file.content)) !== null) {
+          const method = match[1] ? match[1].toUpperCase() : 'GET';
+          const path = match[2] || match[1];
+          if (path && path.length > 0 && path.length < 100) {
+            endpoints.push({
+              method,
+              path: path.startsWith('/') ? path : `/${path}`,
+              file: filePath.split('/').pop(),
+              framework: pattern.framework
+            });
+          }
+        }
+      });
+    }
+  });
+
+  // Remove duplicates and limit
+  const uniqueEndpoints = Array.from(new Set(endpoints.map(e => `${e.method} ${e.path}`)))
+    .map(key => endpoints.find(e => `${e.method} ${e.path}` === key))
+    .slice(0, 15); // Limit to 15 endpoints
+
+  return uniqueEndpoints;
+}
+
+/**
+ * Detect database models and schemas
+ */
+function detectDatabaseModels(importantFiles, fileTree) {
+  const models = [];
+  
+  // Find model files
+  const modelFiles = fileTree.filter(f =>
+    f.includes('model') || f.includes('schema') || f.includes('entity')
+  ).slice(0, 15);
+
+  const modelPatterns = [
+    // Mongoose
+    { regex: /const\s+(\w+)Schema\s*=\s*new\s+Schema\s*\(\s*\{([^}]+)\}/g, type: 'Mongoose' },
+    // Prisma
+    { regex: /model\s+(\w+)\s*\{([^}]+)\}/g, type: 'Prisma' },
+    // TypeORM
+    { regex: /@Entity\s*\(\s*[^)]*\)\s*(?:export\s+)?class\s+(\w+)/g, type: 'TypeORM' },
+    // Django
+    { regex: /class\s+(\w+)\s*\(\s*models\.Model\s*\)/g, type: 'Django' },
+    // SQLAlchemy
+    { regex: /class\s+(\w+)\s*\(\s*Base\s*\)/g, type: 'SQLAlchemy' }
+  ];
+
+  modelFiles.forEach(filePath => {
+    const file = importantFiles.find(f => f.path === filePath);
+    if (file && !file.error && file.content) {
+      modelPatterns.forEach(pattern => {
+        let match;
+        const regex = new RegExp(pattern.regex);
+        while ((match = regex.exec(file.content)) !== null) {
+          const modelName = match[1];
+          const fields = match[2] ? extractFields(match[2]) : [];
+          if (modelName && modelName.length < 50) {
+            models.push({
+              name: modelName,
+              fields: fields.slice(0, 6), // Limit fields
+              file: filePath.split('/').pop(),
+              type: pattern.type
+            });
+          }
+        }
+      });
+    }
+  });
+
+  return models.slice(0, 10); // Limit to 10 models
+}
+
+/**
+ * Extract fields from model definition
+ */
+function extractFields(fieldString) {
+  const fields = [];
+  const fieldPatterns = [
+    /(\w+)\s*:\s*(\w+)/g, // TypeScript/Prisma style
+    /['"`](\w+)['"`]\s*:\s*\{?\s*type\s*:\s*(\w+)/g, // Mongoose style
+    /(\w+)\s*=\s*models\.(\w+Field)/g // Django style
+  ];
+
+  fieldPatterns.forEach(pattern => {
+    let match;
+    const regex = new RegExp(pattern);
+    while ((match = regex.exec(fieldString)) !== null) {
+      if (match[1] && match[1].length < 30) {
+        fields.push({
+          name: match[1],
+          type: match[2] || 'Unknown'
+        });
+      }
+    }
+  });
+
+  return fields;
+}
+
+/**
+ * Detect React/Vue/Angular components
+ */
+function detectComponents(fileTree) {
+  const components = [];
+  
+  // React components
+  const reactComponents = fileTree.filter(f =>
+    (f.endsWith('.jsx') || f.endsWith('.tsx')) &&
+    f.includes('component') || f.includes('src/')
+  ).slice(0, 20);
+
+  reactComponents.forEach(path => {
+    const name = path.split('/').pop().replace(/\.(jsx|tsx)$/, '');
+    if (name && name.length < 50) {
+      components.push({
+        name,
+        type: 'React',
+        path: path.replace(/^.*\/src\//, 'src/')
+      });
+    }
+  });
+
+  // Vue components
+  const vueComponents = fileTree.filter(f => f.endsWith('.vue')).slice(0, 20);
+  vueComponents.forEach(path => {
+    const name = path.split('/').pop().replace('.vue', '');
+    if (name && name.length < 50) {
+      components.push({
+        name,
+        type: 'Vue',
+        path: path.replace(/^.*\/src\//, 'src/')
+      });
+    }
+  });
+
+  // Angular components
+  const angularComponents = fileTree.filter(f =>
+    f.endsWith('.component.ts')
+  ).slice(0, 20);
+  angularComponents.forEach(path => {
+    const name = path.split('/').pop().replace('.component.ts', '');
+    if (name && name.length < 50) {
+      components.push({
+        name,
+        type: 'Angular',
+        path: path.replace(/^.*\/src\//, 'src/')
+      });
+    }
+  });
+
+  return components.slice(0, 15); // Limit to 15 components
+}
+
+/**
+ * Detect middleware from package.json and files
+ */
+function detectMiddleware(importantFiles, fileTree) {
+  const middleware = [];
+  
+  const packageJson = importantFiles.find(f => f.path === 'package.json');
+  if (packageJson && !packageJson.error) {
+    try {
+      const pkg = JSON.parse(packageJson.content);
+      const allDeps = { ...pkg.dependencies, ...pkg.devDependencies };
+      
+      const middlewareMap = {
+        'cors': 'CORS',
+        'helmet': 'Security Headers',
+        'morgan': 'HTTP Logging',
+        'compression': 'Response Compression',
+        'express-rate-limit': 'Rate Limiting',
+        'body-parser': 'Body Parsing',
+        'cookie-parser': 'Cookie Parsing',
+        'express-session': 'Session Management',
+        'passport': 'Authentication',
+        'multer': 'File Upload',
+        'express-validator': 'Input Validation',
+        'winston': 'Application Logging',
+        'pino': 'Fast Logging'
+      };
+
+      Object.keys(middlewareMap).forEach(dep => {
+        if (allDeps[dep]) {
+          middleware.push({
+            name: middlewareMap[dep],
+            package: dep
+          });
+        }
+      });
+    } catch (e) {
+      // Invalid JSON
+    }
+  }
+
+  return middleware;
+}
+
+/**
+ * Detect architectural pattern from folder structure
+ */
+function detectArchitecturalPattern(fileTree) {
+  const patterns = {
+    architecture: 'Unknown',
+    features: []
+  };
+
+  const folders = fileTree.map(f => f.split('/')[0]).filter(Boolean);
+  const uniqueFolders = [...new Set(folders)];
+
+  // MVC Pattern
+  if (uniqueFolders.includes('models') && uniqueFolders.includes('views') && uniqueFolders.includes('controllers')) {
+    patterns.architecture = 'MVC (Model-View-Controller)';
+    patterns.features.push('Separation of Concerns', 'Traditional Web Architecture');
+  }
+  // Clean Architecture
+  else if (uniqueFolders.includes('domain') || uniqueFolders.includes('application') || uniqueFolders.includes('infrastructure')) {
+    patterns.architecture = 'Clean Architecture';
+    patterns.features.push('Domain-Driven Design', 'Dependency Inversion');
+  }
+  // Microservices
+  else if (uniqueFolders.includes('services') && fileTree.some(f => f.includes('docker-compose'))) {
+    patterns.architecture = 'Microservices';
+    patterns.features.push('Service-Oriented', 'Containerized');
+  }
+  // Monorepo
+  else if (uniqueFolders.includes('packages') || uniqueFolders.includes('apps')) {
+    patterns.architecture = 'Monorepo';
+    patterns.features.push('Multi-Package', 'Shared Dependencies');
+  }
+  // Layered Architecture
+  else if (uniqueFolders.includes('api') && uniqueFolders.includes('business') && uniqueFolders.includes('data')) {
+    patterns.architecture = 'Layered Architecture';
+    patterns.features.push('Horizontal Layers', 'Clear Boundaries');
+  }
+  // Component-Based (React/Vue)
+  else if (uniqueFolders.includes('components') || uniqueFolders.includes('src')) {
+    patterns.architecture = 'Component-Based';
+    patterns.features.push('Reusable Components', 'Modern Frontend');
+  }
+  // Default
+  else {
+    patterns.architecture = 'Standard Structure';
+    patterns.features.push('Conventional Layout');
+  }
+
+  return patterns;
+}
+
+/**
+ * Analyze folder structure
+ */
+function analyzeFolderStructure(fileTree) {
+  const structure = {};
+  
+  fileTree.forEach(path => {
+    const parts = path.split('/');
+    if (parts.length > 0) {
+      const topLevel = parts[0];
+      if (!structure[topLevel]) {
+        structure[topLevel] = 0;
+      }
+      structure[topLevel]++;
+    }
+  });
+
+  // Get top 10 folders by file count
+  const sortedFolders = Object.entries(structure)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .reduce((obj, [key, value]) => {
+      obj[key] = value;
+      return obj;
+    }, {});
+
+  return sortedFolders;
 }
 
 /**

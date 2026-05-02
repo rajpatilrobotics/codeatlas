@@ -5,7 +5,6 @@ import ReactFlow, {
   Background,
   useNodesState,
   useEdgesState,
-  MarkerType,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
@@ -216,127 +215,273 @@ function ArchitectureAnalysisDisplay({ analysis }) {
   );
 }
 
-// Data Flow Diagram Component
-function DataFlowDiagram({ techStack }) {
-  const frontendTech = techStack.frontend.length > 0 ? techStack.frontend[0] : 'React';
-  const backendTech = techStack.backend.length > 0 ? techStack.backend[0] : 'Node.js';
-  const databaseTech = techStack.database.length > 0 ? techStack.database[0] : 'Database';
+// Unified Comprehensive Technology Stack Diagram - Combines Flow + Details
+function UnifiedTechStackDiagram({ techStack }) {
+  const createUnifiedNodes = () => {
+    const nodes = [];
+    const categories = [
+      { key: 'frontend', label: 'Frontend Technologies', icon: '🎨', color: '#61dafb', desc: 'UI & Client-Side' },
+      { key: 'backend', label: 'Backend Technologies', icon: '⚙️', color: '#68a063', desc: 'Server & Logic' },
+      { key: 'database', label: 'Database & Storage', icon: '💾', color: '#f29111', desc: 'Data Persistence' },
+      { key: 'testing', label: 'Testing & QA', icon: '🧪', color: '#c678dd', desc: 'Quality Assurance' },
+      { key: 'devops', label: 'DevOps & Tools', icon: '🚀', color: '#56b6c2', desc: 'CI/CD & Deployment' }
+    ];
 
-  const initialNodes = [
-    // Client Layer
-    { id: '1', type: 'input', data: { label: '👤 User Browser' }, position: { x: 50, y: 50 }, style: { background: '#a78bfa', color: '#fff', border: '2px solid #8b5cf6', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
-    { id: '2', data: { label: '🎨 UI Components' }, position: { x: 50, y: 150 }, style: { background: '#61dafb', color: '#000', border: '2px solid #4fa8c5', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
-    { id: '3', data: { label: '📦 State Manager' }, position: { x: 50, y: 250 }, style: { background: '#61dafb', color: '#000', border: '2px solid #4fa8c5', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
-    
-    // Frontend Layer
-    { id: '4', data: { label: `⚛️ ${frontendTech}` }, position: { x: 300, y: 50 }, style: { background: '#61dafb', color: '#000', border: '2px solid #4fa8c5', borderRadius: '8px', padding: '10px', fontWeight: 'bold', minWidth: '120px' } },
-    { id: '5', data: { label: '🔄 Redux/State' }, position: { x: 300, y: 150 }, style: { background: '#764ba2', color: '#fff', border: '2px solid #5a3678', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
-    { id: '6', data: { label: '📡 API Client' }, position: { x: 300, y: 250 }, style: { background: '#667eea', color: '#fff', border: '2px solid #4f5bd5', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
-    { id: '7', data: { label: '💾 Local Cache' }, position: { x: 300, y: 350 }, style: { background: '#f5af19', color: '#000', border: '2px solid #d69516', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
-    
-    // API Gateway
-    { id: '8', data: { label: '🔐 Authentication' }, position: { x: 550, y: 50 }, style: { background: '#9966ff', color: '#fff', border: '2px solid #7744cc', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
-    { id: '9', data: { label: '⚡ Rate Limiter' }, position: { x: 550, y: 150 }, style: { background: '#9966ff', color: '#fff', border: '2px solid #7744cc', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
-    { id: '10', data: { label: '⚖️ Load Balancer' }, position: { x: 550, y: 250 }, style: { background: '#9966ff', color: '#fff', border: '2px solid #7744cc', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
-    
-    // Backend Layer
-    { id: '11', data: { label: `⚙️ ${backendTech}` }, position: { x: 800, y: 50 }, style: { background: '#68a063', color: '#fff', border: '2px solid #4d7c48', borderRadius: '8px', padding: '10px', fontWeight: 'bold', minWidth: '120px' } },
-    { id: '12', data: { label: '🎯 Controllers' }, position: { x: 800, y: 150 }, style: { background: '#68a063', color: '#fff', border: '2px solid #4d7c48', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
-    { id: '13', data: { label: '🔧 Services' }, position: { x: 800, y: 250 }, style: { background: '#68a063', color: '#fff', border: '2px solid #4d7c48', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
-    { id: '14', data: { label: '✅ Validation' }, position: { x: 800, y: 350 }, style: { background: '#68a063', color: '#fff', border: '2px solid #4d7c48', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
-    
-    // Data Layer
-    { id: '15', data: { label: '🔴 Redis Cache' }, position: { x: 1050, y: 50 }, style: { background: '#f29111', color: '#fff', border: '2px solid #d67d0a', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
-    { id: '16', data: { label: `💾 ${databaseTech}` }, position: { x: 1050, y: 150 }, style: { background: '#f29111', color: '#fff', border: '2px solid #d67d0a', borderRadius: '8px', padding: '10px', fontWeight: 'bold', minWidth: '120px' } },
-    { id: '17', data: { label: '📊 Analytics DB' }, position: { x: 1050, y: 250 }, style: { background: '#f29111', color: '#fff', border: '2px solid #d67d0a', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
-    
-    // External Services
-    { id: '18', data: { label: '🤖 Watsonx.ai' }, position: { x: 1050, y: 400 }, style: { background: '#ff6b6b', color: '#fff', border: '2px solid #ee5a52', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
-    { id: '19', data: { label: '🐙 GitHub API' }, position: { x: 1050, y: 500 }, style: { background: '#ff6b6b', color: '#fff', border: '2px solid #ee5a52', borderRadius: '8px', padding: '10px', fontWeight: 'bold' } },
-  ];
+    let yOffset = 50;
 
-  const initialEdges = [
-    // Client to Frontend
-    { id: 'e1-2', source: '1', target: '2', label: 'User Action', animated: true, style: { stroke: '#2f81f7' }, markerEnd: { type: MarkerType.ArrowClosed } },
-    { id: 'e2-3', source: '2', target: '3', label: 'Dispatch', animated: true, style: { stroke: '#2f81f7' }, markerEnd: { type: MarkerType.ArrowClosed } },
-    { id: 'e3-4', source: '3', target: '4', label: 'Render', animated: true, style: { stroke: '#2f81f7' }, markerEnd: { type: MarkerType.ArrowClosed } },
-    
-    // Frontend Flow
-    { id: 'e4-5', source: '4', target: '5', label: 'State Update', animated: true, style: { stroke: '#764ba2' }, markerEnd: { type: MarkerType.ArrowClosed } },
-    { id: 'e5-6', source: '5', target: '6', label: 'API Request', animated: true, style: { stroke: '#667eea' }, markerEnd: { type: MarkerType.ArrowClosed } },
-    { id: 'e6-7', source: '6', target: '7', label: 'Check Cache', style: { stroke: '#f5af19', strokeDasharray: '5,5' }, markerEnd: { type: MarkerType.ArrowClosed } },
-    
-    // API Gateway
-    { id: 'e6-8', source: '6', target: '8', label: 'HTTP Request', animated: true, style: { stroke: '#9966ff' }, markerEnd: { type: MarkerType.ArrowClosed } },
-    { id: 'e8-9', source: '8', target: '9', label: 'Validate', animated: true, style: { stroke: '#9966ff' }, markerEnd: { type: MarkerType.ArrowClosed } },
-    { id: 'e9-10', source: '9', target: '10', label: 'Forward', animated: true, style: { stroke: '#9966ff' }, markerEnd: { type: MarkerType.ArrowClosed } },
-    
-    // Backend Flow
-    { id: 'e10-11', source: '10', target: '11', label: 'Route', animated: true, style: { stroke: '#68a063' }, markerEnd: { type: MarkerType.ArrowClosed } },
-    { id: 'e11-12', source: '11', target: '12', label: 'Handle', animated: true, style: { stroke: '#68a063' }, markerEnd: { type: MarkerType.ArrowClosed } },
-    { id: 'e12-13', source: '12', target: '13', label: 'Process', animated: true, style: { stroke: '#68a063' }, markerEnd: { type: MarkerType.ArrowClosed } },
-    { id: 'e13-14', source: '13', target: '14', label: 'Validate', animated: true, style: { stroke: '#68a063' }, markerEnd: { type: MarkerType.ArrowClosed } },
-    
-    // Data Layer
-    { id: 'e14-15', source: '14', target: '15', label: 'Query Cache', style: { stroke: '#f29111', strokeDasharray: '5,5' }, markerEnd: { type: MarkerType.ArrowClosed } },
-    { id: 'e14-16', source: '14', target: '16', label: 'DB Query', animated: true, style: { stroke: '#f29111' }, markerEnd: { type: MarkerType.ArrowClosed } },
-    { id: 'e13-17', source: '13', target: '17', label: 'Log Analytics', style: { stroke: '#f29111', strokeDasharray: '5,5' }, markerEnd: { type: MarkerType.ArrowClosed } },
-    
-    // External Services
-    { id: 'e13-18', source: '13', target: '18', label: 'AI Request', animated: true, style: { stroke: '#ff6b6b' }, markerEnd: { type: MarkerType.ArrowClosed } },
-    { id: 'e13-19', source: '13', target: '19', label: 'Fetch Repo', animated: true, style: { stroke: '#ff6b6b' }, markerEnd: { type: MarkerType.ArrowClosed } },
-    
-    // Response Flow (back)
-    { id: 'e16-14', source: '16', target: '14', label: 'Data', animated: true, style: { stroke: '#3fb950' }, markerEnd: { type: MarkerType.ArrowClosed } },
-    { id: 'e14-6', source: '14', target: '6', label: 'Response', animated: true, style: { stroke: '#3fb950' }, markerEnd: { type: MarkerType.ArrowClosed } },
-    { id: 'e6-5', source: '6', target: '5', label: 'Update State', animated: true, style: { stroke: '#3fb950' }, markerEnd: { type: MarkerType.ArrowClosed } },
-    { id: 'e5-2', source: '5', target: '2', label: 'Re-render', animated: true, style: { stroke: '#3fb950' }, markerEnd: { type: MarkerType.ArrowClosed } },
-  ];
+    categories.forEach((cat) => {
+      if (techStack[cat.key] && techStack[cat.key].length > 0) {
+        const allTechs = techStack[cat.key];
+        
+        // Category header node with enhanced styling
+        nodes.push({
+          id: `unified-cat-${cat.key}`,
+          type: 'input',
+          data: {
+            label: (
+              <div style={{ textAlign: 'center', padding: '20px' }}>
+                <div style={{ fontSize: '40px', marginBottom: '12px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>{cat.icon}</div>
+                <div style={{ fontWeight: 'bold', fontSize: '18px', marginBottom: '6px', letterSpacing: '-0.02em' }}>{cat.label}</div>
+                <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '10px', color: '#a0aec0' }}>{cat.desc}</div>
+                <div style={{
+                  background: `${cat.color}40`,
+                  padding: '6px 14px',
+                  borderRadius: '16px',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  border: `2px solid ${cat.color}`,
+                  boxShadow: `0 2px 8px ${cat.color}30`
+                }}>
+                  {allTechs.length} {allTechs.length === 1 ? 'Technology' : 'Technologies'}
+                </div>
+              </div>
+            )
+          },
+          position: { x: 50, y: yOffset },
+          style: {
+            background: `linear-gradient(135deg, ${cat.color}25 0%, #1e2530 100%)`,
+            border: `3px solid ${cat.color}`,
+            borderRadius: '20px',
+            width: 280,
+            color: '#fff',
+            boxShadow: `0 8px 24px ${cat.color}40`
+          }
+        });
 
-  const [nodes, , onNodesChange] = useNodesState(initialNodes);
-  const [edges, , onEdgesChange] = useEdgesState(initialEdges);
+        // Individual technology nodes in grid layout (5 per row)
+        const techsPerRow = 5;
+        allTechs.forEach((tech, techIndex) => {
+          const row = Math.floor(techIndex / techsPerRow);
+          const col = techIndex % techsPerRow;
+          
+          nodes.push({
+            id: `unified-tech-${cat.key}-${techIndex}`,
+            type: 'default',
+            data: {
+              label: (
+                <div style={{ textAlign: 'center', padding: '14px 10px' }}>
+                  <div style={{
+                    fontWeight: 'bold',
+                    fontSize: '14px',
+                    marginBottom: '6px',
+                    color: cat.color,
+                    textShadow: `0 0 10px ${cat.color}50`
+                  }}>
+                    {tech}
+                  </div>
+                  <div style={{
+                    fontSize: '10px',
+                    opacity: 0.6,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    color: '#718096'
+                  }}>
+                    {cat.key}
+                  </div>
+                </div>
+              )
+            },
+            position: {
+              x: 380 + (col * 190),
+              y: yOffset + (row * 100)
+            },
+            style: {
+              background: `linear-gradient(135deg, #1e2530 0%, ${cat.color}08 100%)`,
+              border: `2px solid ${cat.color}`,
+              borderRadius: '14px',
+              width: 170,
+              color: '#fff',
+              boxShadow: `0 4px 12px ${cat.color}25`,
+              transition: 'all 0.3s ease'
+            }
+          });
+        });
+
+        // Calculate next category position based on rows needed
+        const rowsNeeded = Math.ceil(allTechs.length / techsPerRow);
+        yOffset += Math.max(220, rowsNeeded * 100 + 80);
+      }
+    });
+
+    return nodes;
+  };
+
+  const createUnifiedEdges = () => {
+    const edges = [];
+    const categories = ['frontend', 'backend', 'database', 'testing', 'devops'];
+
+    categories.forEach(cat => {
+      if (techStack[cat] && techStack[cat].length > 0) {
+        // Connect category to each technology with animated edges
+        techStack[cat].forEach((tech, techIndex) => {
+          edges.push({
+            id: `e-unified-${cat}-${techIndex}`,
+            source: `unified-cat-${cat}`,
+            target: `unified-tech-${cat}-${techIndex}`,
+            animated: true,
+            style: {
+              stroke: '#667eea',
+              strokeWidth: 2,
+              opacity: 0.6
+            },
+            type: 'smoothstep'
+          });
+        });
+      }
+    });
+
+    // Connect categories vertically with flow arrows
+    const activeCategories = categories.filter(cat => techStack[cat] && techStack[cat].length > 0);
+    for (let i = 0; i < activeCategories.length - 1; i++) {
+      edges.push({
+        id: `e-unified-cat-${i}`,
+        source: `unified-cat-${activeCategories[i]}`,
+        target: `unified-cat-${activeCategories[i + 1]}`,
+        animated: true,
+        style: {
+          stroke: '#667eea',
+          strokeWidth: 4,
+          strokeDasharray: '10,5'
+        },
+        label: '⬇ Stack Flow',
+        labelStyle: {
+          fill: '#fff',
+          fontSize: 13,
+          fontWeight: 'bold',
+          background: '#667eea',
+          padding: '4px 8px',
+          borderRadius: '8px'
+        },
+        labelBgStyle: { fill: '#667eea', fillOpacity: 0.9 }
+      });
+    }
+
+    return edges;
+  };
+
+  const [nodes, , onNodesChange] = useNodesState(createUnifiedNodes());
+  const [edges, , onEdgesChange] = useEdgesState(createUnifiedEdges());
+
+  // Calculate total technologies
+  const totalTechs = Object.values(techStack).reduce((sum, arr) => sum + arr.length, 0);
 
   return (
     <div className="content-card">
-      <h2 className="card-title">🔄 Interactive Data Flow Diagram</h2>
+      <h2 className="card-title">🏗️ Comprehensive Technology Stack & Architecture</h2>
       <div className="card-content">
-        <div className="reactflow-wrapper" style={{ height: '700px', background: '#0f1419', borderRadius: '12px', border: '1px solid #373e47' }}>
+        {/* Summary Stats */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+          gap: '12px',
+          marginBottom: '20px'
+        }}>
+          {Object.entries(techStack).map(([key, techs]) => techs.length > 0 && (
+            <div key={key} style={{
+              background: 'rgba(102, 126, 234, 0.08)',
+              border: '1px solid rgba(102, 126, 234, 0.2)',
+              borderRadius: '12px',
+              padding: '12px',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '24px', marginBottom: '4px', fontWeight: 'bold', color: '#667eea' }}>
+                {techs.length}
+              </div>
+              <div style={{ fontSize: '12px', textTransform: 'capitalize', color: 'var(--text-secondary)' }}>
+                {key}
+              </div>
+            </div>
+          ))}
+          <div style={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            borderRadius: '12px',
+            padding: '12px',
+            textAlign: 'center',
+            color: '#fff'
+          }}>
+            <div style={{ fontSize: '24px', marginBottom: '4px', fontWeight: 'bold' }}>
+              {totalTechs}
+            </div>
+            <div style={{ fontSize: '12px' }}>
+              Total Technologies
+            </div>
+          </div>
+        </div>
+
+        {/* Interactive Diagram */}
+        <div className="reactflow-wrapper" style={{
+          height: '1000px',
+          background: '#0f1419',
+          borderRadius: '16px',
+          border: '2px solid rgba(102, 126, 234, 0.3)',
+          overflow: 'hidden',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+        }}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             fitView
+            fitViewOptions={{ padding: 0.15 }}
             attributionPosition="bottom-left"
           >
-            <Controls />
+            <Controls style={{ bottom: 20, left: 20 }} />
             <MiniMap
-              nodeColor={(node) => {
-                if (node.style?.background) return node.style.background;
-                return '#667eea';
-              }}
-              maskColor="rgba(0, 0, 0, 0.6)"
+              style={{ bottom: 20, right: 20, border: '2px solid #667eea' }}
+              nodeColor={(node) => node.style?.border?.split(' ')[2] || '#667eea'}
+              maskColor="rgba(0, 0, 0, 0.7)"
             />
-            <Background variant="dots" gap={12} size={1} color="#373e47" />
+            <Background variant="dots" gap={20} size={1.5} color="#373e47" />
           </ReactFlow>
         </div>
-        <div className="flow-description-box" style={{ marginTop: '1rem' }}>
-          <p className="flow-description">
-            <strong>💡 Interactive Features:</strong><br/>
-            • <strong>Drag</strong> nodes to rearrange<br/>
-            • <strong>Zoom</strong> with mouse wheel or controls<br/>
+
+        {/* Enhanced Info Box */}
+        <div style={{
+          marginTop: '20px',
+          padding: '16px 20px',
+          background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
+          borderRadius: '12px',
+          border: '1px solid rgba(102, 126, 234, 0.3)'
+        }}>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.8' }}>
+            <strong style={{ color: 'var(--text-primary)', fontSize: '1rem' }}>💡 Interactive Features:</strong><br/>
+            • <strong>Drag</strong> any node to rearrange the layout<br/>
+            • <strong>Zoom</strong> with mouse wheel or use controls<br/>
             • <strong>Pan</strong> by dragging the background<br/>
-            • <strong>Mini-map</strong> in bottom-right for navigation<br/>
+            • <strong>Mini-map</strong> in bottom-right for quick navigation<br/>
             <br/>
-            <strong>🔵 Blue arrows:</strong> Request flow<br/>
-            <strong>🟢 Green arrows:</strong> Response flow<br/>
-            <strong>⚪ Dashed lines:</strong> Cache/conditional paths
+            <strong style={{ color: 'var(--text-primary)' }}>🎨 Visual Guide:</strong><br/>
+            🔵 <strong>Solid arrows:</strong> Technology connections •
+            ⚪ <strong>Dashed arrows:</strong> Category flow •
+            📊 <strong>Grid layout:</strong> 5 technologies per row
           </p>
         </div>
       </div>
     </div>
   );
 }
+
 // Technology Flow Diagram Component - COMPREHENSIVE VERSION
 function TechnologyFlowDiagram({ techStack, mainTechnologies }) {
   const createTechFlowNodes = () => {
@@ -715,6 +860,523 @@ function TechStackDiagram({ techStack }) {
   );
 }
 
+// Professional Data Flow Diagram Component - Detailed and accurate for all repos
+function DataFlowDiagram({ techStack }) {
+  const createDetailedDataFlowNodes = () => {
+    const nodes = [];
+    let yPos = 50;
+    const xCenter = 500;
+    const yGap = 200;
+    const nodeWidth = 320;
+
+    // Detect layers
+    const hasFrontend = techStack.frontend && techStack.frontend.length > 0;
+    const hasBackend = techStack.backend && techStack.backend.length > 0;
+    const hasDatabase = techStack.database && techStack.database.length > 0;
+    const hasCache = techStack.cache && techStack.cache.length > 0;
+    const hasMessageQueue = techStack.messageQueue && techStack.messageQueue.length > 0;
+    const hasAuth = techStack.authentication && techStack.authentication.length > 0;
+    const hasOrm = techStack.orm && techStack.orm.length > 0;
+
+    // Layer 1: Client Layer (Always present)
+    nodes.push({
+      id: 'client',
+      type: 'input',
+      data: {
+        label: (
+          <div style={{ padding: '16px', textAlign: 'left' }}>
+            <div style={{ fontWeight: 'bold', fontSize: '15px', marginBottom: '10px', borderBottom: '2px solid rgba(255,255,255,0.2)', paddingBottom: '8px' }}>
+              CLIENT LAYER
+            </div>
+            <div style={{ fontSize: '12px', lineHeight: '1.8' }}>
+              <div style={{ marginBottom: '4px' }}>• Browser Application</div>
+              <div style={{ marginBottom: '4px' }}>• Mobile Application</div>
+              <div>• Desktop Client</div>
+            </div>
+          </div>
+        )
+      },
+      position: { x: xCenter, y: yPos },
+      style: {
+        background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)',
+        border: '2px solid #3b82f6',
+        borderRadius: '8px',
+        width: nodeWidth,
+        color: '#fff',
+        boxShadow: '0 4px 16px rgba(59, 130, 246, 0.4)'
+      }
+    });
+    yPos += yGap;
+
+    // Layer 2: Frontend Layer (if detected)
+    if (hasFrontend) {
+      const frameworks = techStack.frontend.filter(t =>
+        ['React', 'Vue.js', 'Angular', 'Svelte', 'Next.js', 'Nuxt.js'].includes(t)
+      ).slice(0, 2);
+      const uiLibs = techStack.frontend.filter(t =>
+        ['Material-UI', 'Ant Design', 'Tailwind CSS', 'Bootstrap', 'Chakra UI'].includes(t)
+      ).slice(0, 2);
+      const stateManagement = techStack.frontend.filter(t =>
+        ['Redux', 'Vuex/Pinia', 'React Query'].includes(t)
+      ).slice(0, 1);
+
+      nodes.push({
+        id: 'frontend',
+        type: 'default',
+        data: {
+          label: (
+            <div style={{ padding: '16px', textAlign: 'left' }}>
+              <div style={{ fontWeight: 'bold', fontSize: '15px', marginBottom: '10px', borderBottom: '2px solid rgba(255,255,255,0.2)', paddingBottom: '8px' }}>
+                FRONTEND LAYER
+              </div>
+              <div style={{ fontSize: '12px', lineHeight: '1.8' }}>
+                {frameworks.length > 0 && <div style={{ marginBottom: '4px' }}>• UI Framework: {frameworks.join(', ')}</div>}
+                {stateManagement.length > 0 && <div style={{ marginBottom: '4px' }}>• State: {stateManagement.join(', ')}</div>}
+                {uiLibs.length > 0 && <div style={{ marginBottom: '4px' }}>• Styling: {uiLibs.join(', ')}</div>}
+                <div>• Component Rendering</div>
+              </div>
+              <div style={{ marginTop: '10px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {techStack.frontend.slice(0, 4).map((tech, i) => (
+                  <span key={i} style={{ background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '6px', fontSize: '10px', fontWeight: '600' }}>
+                    {tech}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )
+        },
+        position: { x: xCenter, y: yPos },
+        style: {
+          background: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)',
+          border: '2px solid #a78bfa',
+          borderRadius: '8px',
+          width: nodeWidth,
+          color: '#fff',
+          boxShadow: '0 4px 16px rgba(167, 139, 250, 0.4)'
+        }
+      });
+      yPos += yGap;
+    }
+
+    // Layer 3: Authentication Layer (if detected)
+    if (hasAuth) {
+      nodes.push({
+        id: 'auth',
+        type: 'default',
+        data: {
+          label: (
+            <div style={{ padding: '16px', textAlign: 'left' }}>
+              <div style={{ fontWeight: 'bold', fontSize: '15px', marginBottom: '10px', borderBottom: '2px solid rgba(255,255,255,0.2)', paddingBottom: '8px' }}>
+                AUTHENTICATION LAYER
+              </div>
+              <div style={{ fontSize: '12px', lineHeight: '1.8' }}>
+                <div style={{ marginBottom: '4px' }}>• User Authentication</div>
+                <div style={{ marginBottom: '4px' }}>• Session Management</div>
+                <div>• Authorization & Access Control</div>
+              </div>
+              <div style={{ marginTop: '10px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {techStack.authentication.slice(0, 3).map((tech, i) => (
+                  <span key={i} style={{ background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '6px', fontSize: '10px', fontWeight: '600' }}>
+                    {tech}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )
+        },
+        position: { x: xCenter, y: yPos },
+        style: {
+          background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+          border: '2px solid #34d399',
+          borderRadius: '8px',
+          width: nodeWidth,
+          color: '#fff',
+          boxShadow: '0 4px 16px rgba(52, 211, 153, 0.4)'
+        }
+      });
+      yPos += yGap;
+    }
+
+    // Layer 4: Backend/API Layer (if detected)
+    if (hasBackend) {
+      const frameworks = techStack.backend.filter(t =>
+        ['Express.js', 'NestJS', 'Fastify', 'Django', 'FastAPI', 'Flask'].includes(t)
+      ).slice(0, 2);
+      const apis = techStack.backend.filter(t =>
+        ['GraphQL', 'Apollo Server', 'tRPC', 'Socket.IO'].includes(t)
+      ).slice(0, 2);
+
+      nodes.push({
+        id: 'backend',
+        type: 'default',
+        data: {
+          label: (
+            <div style={{ padding: '16px', textAlign: 'left' }}>
+              <div style={{ fontWeight: 'bold', fontSize: '15px', marginBottom: '10px', borderBottom: '2px solid rgba(255,255,255,0.2)', paddingBottom: '8px' }}>
+                BACKEND / API LAYER
+              </div>
+              <div style={{ fontSize: '12px', lineHeight: '1.8' }}>
+                {frameworks.length > 0 && <div style={{ marginBottom: '4px' }}>• Framework: {frameworks.join(', ')}</div>}
+                {apis.length > 0 && <div style={{ marginBottom: '4px' }}>• API: {apis.join(', ')}</div>}
+                <div style={{ marginBottom: '4px' }}>• Business Logic</div>
+                <div>• Request Processing</div>
+              </div>
+              <div style={{ marginTop: '10px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {techStack.backend.slice(0, 4).map((tech, i) => (
+                  <span key={i} style={{ background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '6px', fontSize: '10px', fontWeight: '600' }}>
+                    {tech}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )
+        },
+        position: { x: xCenter, y: yPos },
+        style: {
+          background: 'linear-gradient(135deg, #0891b2 0%, #06b6d4 100%)',
+          border: '2px solid #22d3ee',
+          borderRadius: '8px',
+          width: nodeWidth,
+          color: '#fff',
+          boxShadow: '0 4px 16px rgba(34, 211, 238, 0.4)'
+        }
+      });
+      yPos += yGap;
+    }
+
+    // Layer 5: Message Queue Layer (if detected)
+    if (hasMessageQueue) {
+      nodes.push({
+        id: 'queue',
+        type: 'default',
+        data: {
+          label: (
+            <div style={{ padding: '16px', textAlign: 'left' }}>
+              <div style={{ fontWeight: 'bold', fontSize: '15px', marginBottom: '10px', borderBottom: '2px solid rgba(255,255,255,0.2)', paddingBottom: '8px' }}>
+                MESSAGE QUEUE LAYER
+              </div>
+              <div style={{ fontSize: '12px', lineHeight: '1.8' }}>
+                <div style={{ marginBottom: '4px' }}>• Asynchronous Processing</div>
+                <div style={{ marginBottom: '4px' }}>• Background Jobs</div>
+                <div>• Event-Driven Architecture</div>
+              </div>
+              <div style={{ marginTop: '10px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {techStack.messageQueue.map((tech, i) => (
+                  <span key={i} style={{ background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '6px', fontSize: '10px', fontWeight: '600' }}>
+                    {tech}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )
+        },
+        position: { x: xCenter, y: yPos },
+        style: {
+          background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
+          border: '2px solid #fb923c',
+          borderRadius: '8px',
+          width: nodeWidth,
+          color: '#fff',
+          boxShadow: '0 4px 16px rgba(251, 146, 60, 0.4)'
+        }
+      });
+      yPos += yGap;
+    }
+
+    // Layer 6: Cache Layer (if detected)
+    if (hasCache) {
+      nodes.push({
+        id: 'cache',
+        type: 'default',
+        data: {
+          label: (
+            <div style={{ padding: '16px', textAlign: 'left' }}>
+              <div style={{ fontWeight: 'bold', fontSize: '15px', marginBottom: '10px', borderBottom: '2px solid rgba(255,255,255,0.2)', paddingBottom: '8px' }}>
+                CACHE LAYER
+              </div>
+              <div style={{ fontSize: '12px', lineHeight: '1.8' }}>
+                <div style={{ marginBottom: '4px' }}>• Data Caching</div>
+                <div style={{ marginBottom: '4px' }}>• Session Storage</div>
+                <div>• Performance Optimization</div>
+              </div>
+              <div style={{ marginTop: '10px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {techStack.cache.map((tech, i) => (
+                  <span key={i} style={{ background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '6px', fontSize: '10px', fontWeight: '600' }}>
+                    {tech}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )
+        },
+        position: { x: xCenter, y: yPos },
+        style: {
+          background: 'linear-gradient(135deg, #ca8a04 0%, #eab308 100%)',
+          border: '2px solid #facc15',
+          borderRadius: '8px',
+          width: nodeWidth,
+          color: '#fff',
+          boxShadow: '0 4px 16px rgba(250, 204, 21, 0.4)'
+        }
+      });
+      yPos += yGap;
+    }
+
+    // Layer 7: Database Layer (if detected)
+    if (hasDatabase) {
+      const databases = techStack.database.filter(t =>
+        !['Redis'].includes(t) // Redis already shown in cache
+      );
+      
+      nodes.push({
+        id: 'database',
+        type: 'output',
+        data: {
+          label: (
+            <div style={{ padding: '16px', textAlign: 'left' }}>
+              <div style={{ fontWeight: 'bold', fontSize: '15px', marginBottom: '10px', borderBottom: '2px solid rgba(255,255,255,0.2)', paddingBottom: '8px' }}>
+                DATABASE LAYER
+              </div>
+              <div style={{ fontSize: '12px', lineHeight: '1.8' }}>
+                {hasOrm && <div style={{ marginBottom: '4px' }}>• ORM: {techStack.orm.slice(0, 2).join(', ')}</div>}
+                <div style={{ marginBottom: '4px' }}>• Data Persistence</div>
+                <div style={{ marginBottom: '4px' }}>• Query Processing</div>
+                <div>• Transaction Management</div>
+              </div>
+              <div style={{ marginTop: '10px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {databases.slice(0, 4).map((tech, i) => (
+                  <span key={i} style={{ background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '6px', fontSize: '10px', fontWeight: '600' }}>
+                    {tech}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )
+        },
+        position: { x: xCenter, y: yPos },
+        style: {
+          background: 'linear-gradient(135deg, #be123c 0%, #e11d48 100%)',
+          border: '2px solid #f43f5e',
+          borderRadius: '8px',
+          width: nodeWidth,
+          color: '#fff',
+          boxShadow: '0 4px 16px rgba(244, 63, 94, 0.4)'
+        }
+      });
+    }
+
+    return nodes;
+  };
+
+  const createDetailedDataFlowEdges = () => {
+    const edges = [];
+    const hasFrontend = techStack.frontend && techStack.frontend.length > 0;
+    const hasBackend = techStack.backend && techStack.backend.length > 0;
+    const hasDatabase = techStack.database && techStack.database.length > 0;
+    const hasCache = techStack.cache && techStack.cache.length > 0;
+    const hasMessageQueue = techStack.messageQueue && techStack.messageQueue.length > 0;
+    const hasAuth = techStack.authentication && techStack.authentication.length > 0;
+
+    let currentSource = 'client';
+
+    // Client to Frontend or Backend
+    if (hasFrontend) {
+      edges.push({
+        id: 'e-client-frontend',
+        source: currentSource,
+        target: 'frontend',
+        animated: true,
+        label: 'HTTP/HTTPS Request',
+        style: { stroke: '#3b82f6', strokeWidth: 2.5 },
+        labelStyle: { fill: '#3b82f6', fontWeight: 600, fontSize: 11 },
+        labelBgStyle: { fill: '#0f1419', fillOpacity: 0.95 }
+      });
+      currentSource = 'frontend';
+    }
+
+    // Frontend/Client to Auth
+    if (hasAuth) {
+      edges.push({
+        id: `e-${currentSource}-auth`,
+        source: currentSource,
+        target: 'auth',
+        animated: true,
+        label: 'Authentication',
+        style: { stroke: '#34d399', strokeWidth: 2.5 },
+        labelStyle: { fill: '#34d399', fontWeight: 600, fontSize: 11 },
+        labelBgStyle: { fill: '#0f1419', fillOpacity: 0.95 }
+      });
+      currentSource = 'auth';
+    }
+
+    // Auth/Frontend to Backend
+    if (hasBackend) {
+      edges.push({
+        id: `e-${currentSource}-backend`,
+        source: currentSource,
+        target: 'backend',
+        animated: true,
+        label: hasFrontend ? 'REST/GraphQL API' : 'Direct API Call',
+        style: { stroke: '#22d3ee', strokeWidth: 2.5 },
+        labelStyle: { fill: '#22d3ee', fontWeight: 600, fontSize: 11 },
+        labelBgStyle: { fill: '#0f1419', fillOpacity: 0.95 }
+      });
+      currentSource = 'backend';
+    }
+
+    // Backend to Message Queue
+    if (hasMessageQueue && hasBackend) {
+      edges.push({
+        id: 'e-backend-queue',
+        source: 'backend',
+        target: 'queue',
+        animated: true,
+        label: 'Async Jobs',
+        style: { stroke: '#fb923c', strokeWidth: 2.5, strokeDasharray: '5,5' },
+        labelStyle: { fill: '#fb923c', fontWeight: 600, fontSize: 11 },
+        labelBgStyle: { fill: '#0f1419', fillOpacity: 0.95 }
+      });
+    }
+
+    // Backend to Cache
+    if (hasCache && hasBackend) {
+      edges.push({
+        id: 'e-backend-cache',
+        source: 'backend',
+        target: 'cache',
+        animated: true,
+        label: 'Cache Lookup',
+        style: { stroke: '#facc15', strokeWidth: 2.5 },
+        labelStyle: { fill: '#facc15', fontWeight: 600, fontSize: 11 },
+        labelBgStyle: { fill: '#0f1419', fillOpacity: 0.95 }
+      });
+    }
+
+    // Cache to Database or Backend to Database
+    if (hasDatabase) {
+      if (hasCache && hasBackend) {
+        edges.push({
+          id: 'e-cache-database',
+          source: 'cache',
+          target: 'database',
+          animated: true,
+          label: 'Cache Miss → DB Query',
+          style: { stroke: '#f43f5e', strokeWidth: 2.5 },
+          labelStyle: { fill: '#f43f5e', fontWeight: 600, fontSize: 11 },
+          labelBgStyle: { fill: '#0f1419', fillOpacity: 0.95 }
+        });
+      } else if (hasBackend) {
+        edges.push({
+          id: 'e-backend-database',
+          source: 'backend',
+          target: 'database',
+          animated: true,
+          label: 'Database Query',
+          style: { stroke: '#f43f5e', strokeWidth: 2.5 },
+          labelStyle: { fill: '#f43f5e', fontWeight: 600, fontSize: 11 },
+          labelBgStyle: { fill: '#0f1419', fillOpacity: 0.95 }
+        });
+      } else if (hasFrontend) {
+        // Direct frontend to database (serverless)
+        edges.push({
+          id: 'e-frontend-database',
+          source: 'frontend',
+          target: 'database',
+          animated: true,
+          label: 'Direct DB Access',
+          style: { stroke: '#f43f5e', strokeWidth: 2.5 },
+          labelStyle: { fill: '#f43f5e', fontWeight: 600, fontSize: 11 },
+          labelBgStyle: { fill: '#0f1419', fillOpacity: 0.95 }
+        });
+      }
+    }
+
+    // Message Queue to Database
+    if (hasMessageQueue && hasDatabase && !hasCache) {
+      edges.push({
+        id: 'e-queue-database',
+        source: 'queue',
+        target: 'database',
+        animated: true,
+        label: 'Background Write',
+        style: { stroke: '#fb923c', strokeWidth: 2.5, strokeDasharray: '5,5' },
+        labelStyle: { fill: '#fb923c', fontWeight: 600, fontSize: 11 },
+        labelBgStyle: { fill: '#0f1419', fillOpacity: 0.95 }
+      });
+    }
+
+    return edges;
+  };
+
+  const [nodes, , onNodesChange] = useNodesState(createDetailedDataFlowNodes());
+  const [edges, , onEdgesChange] = useEdgesState(createDetailedDataFlowEdges());
+
+  // Calculate height dynamically
+  const layerCount = 1 +
+    (techStack.frontend?.length > 0 ? 1 : 0) +
+    (techStack.authentication?.length > 0 ? 1 : 0) +
+    (techStack.backend?.length > 0 ? 1 : 0) +
+    (techStack.messageQueue?.length > 0 ? 1 : 0) +
+    (techStack.cache?.length > 0 ? 1 : 0) +
+    (techStack.database?.length > 0 ? 1 : 0);
+  
+  const diagramHeight = Math.max(600, layerCount * 200 + 100);
+
+  return (
+    <div className="content-card">
+      <h2 className="card-title">📊 Data Flow Architecture</h2>
+      <div className="card-content">
+        <div className="reactflow-wrapper" style={{ height: `${diagramHeight}px`, background: '#0f1419', borderRadius: '8px', border: '1px solid #2d3748' }}>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            fitView
+            attributionPosition="bottom-left"
+          >
+            <Controls />
+            <MiniMap
+              nodeColor={(node) => {
+                if (node.style?.border) {
+                  return node.style.border.split(' ')[2];
+                }
+                return '#3b82f6';
+              }}
+              maskColor="rgba(0, 0, 0, 0.7)"
+            />
+            <Background variant="dots" gap={12} size={1} color="#373e47" />
+          </ReactFlow>
+        </div>
+        <div style={{
+          marginTop: '1rem',
+          padding: '1rem',
+          background: 'rgba(59, 130, 246, 0.08)',
+          borderRadius: '8px',
+          border: '1px solid rgba(59, 130, 246, 0.2)'
+        }}>
+          <div style={{ fontSize: '13px', lineHeight: '1.8', color: '#e2e8f0' }}>
+            <strong style={{ color: '#3b82f6' }}>📊 Architecture Layers:</strong> {layerCount} layers detected
+            <br/>
+            <strong style={{ color: '#3b82f6' }}>🔄 Data Flow:</strong> {
+              [
+                techStack.frontend?.length > 0 && 'Frontend',
+                techStack.authentication?.length > 0 && 'Auth',
+                techStack.backend?.length > 0 && 'Backend',
+                techStack.messageQueue?.length > 0 && 'Queue',
+                techStack.cache?.length > 0 && 'Cache',
+                techStack.database?.length > 0 && 'Database'
+              ].filter(Boolean).join(' → ')
+            }
+            <br/>
+            <strong style={{ color: '#3b82f6' }}>💡 Interactive:</strong> Drag nodes • Zoom with mouse wheel • Pan background • View mini-map
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Folder Structure Diagram Component
 function FolderStructureDiagram({ folders }) {
   const getFolderInfo = (folder) => {
@@ -864,30 +1526,6 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
   const techStack = repoData?.techStack || { frontend: [], backend: [], database: [], testing: [], devops: [] };
   const importantFiles = repoData?.importantFiles || [];
   const fileTree = repoData?.fileTree || [];
-
-  // Extract main technologies for dependency graph
-  const getMainTechnologies = () => {
-    const technologies = [];
-    
-    // Frontend
-    if (techStack.frontend.length > 0) {
-      technologies.push({ name: techStack.frontend[0], category: 'frontend' });
-    }
-    
-    // Backend
-    if (techStack.backend.length > 0) {
-      technologies.push({ name: techStack.backend[0], category: 'backend' });
-    }
-    
-    // Database
-    if (techStack.database.length > 0) {
-      technologies.push({ name: techStack.database[0], category: 'database' });
-    }
-    
-    return technologies;
-  };
-
-  const mainTechnologies = getMainTechnologies();
 
   // Get folder structure (top-level folders only)
   const getTopLevelFolders = () => {
@@ -1193,9 +1831,6 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
         </div>
       </div>
 
-      {/* Interactive Data Flow Diagram with React Flow */}
-      <DataFlowDiagram techStack={techStack} />
-
       {/* AI-Generated Architecture Analysis */}
       <div className="content-card">
         <h2 className="card-title">📋 Architecture Analysis</h2>
@@ -1229,11 +1864,11 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
         </div>
       </div>
 
-      {/* Interactive Technology Flow with React Flow */}
-      {mainTechnologies.length > 0 && <TechnologyFlowDiagram techStack={techStack} mainTechnologies={mainTechnologies} />}
+      {/* Data Flow Diagram - Shows actual data flow through detected technologies */}
+      {techStack && (Object.values(techStack).some(arr => arr.length > 0)) && <DataFlowDiagram techStack={techStack} />}
 
-      {/* Interactive Technology Stack with React Flow */}
-      {techStack && (Object.values(techStack).some(arr => arr.length > 0)) && <TechStackDiagram techStack={techStack} />}
+      {/* Unified Comprehensive Technology Stack Visualization */}
+      {techStack && (Object.values(techStack).some(arr => arr.length > 0)) && <UnifiedTechStackDiagram techStack={techStack} />}
 
       {/* Key Files & Components */}
       {importantFiles && importantFiles.length > 0 && (
