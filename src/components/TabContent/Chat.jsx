@@ -76,33 +76,68 @@ function Chat({ repoData }) {
     return 'Core component';
   };
 
-  // Build system prompt for watsonx
-  const buildSystemPrompt = (userQuestion, chatHistory) => {
+  // PHASE 1: Intent Detection
+  const detectIntent = (question) => {
+    const lower = question.toLowerCase();
+    
+    if (/explain|what is|how does|tell me about|describe/i.test(question)) {
+      return 'explain';
+    }
+    if (/error|bug|fix|issue|problem|not working|broken|fail/i.test(question)) {
+      return 'debug';
+    }
+    if (/optimize|better|improve|refactor|enhance|performance/i.test(question)) {
+      return 'improve';
+    }
+    if (/install|setup|configure|run|start|deploy|build/i.test(question)) {
+      return 'setup';
+    }
+    if (/where|which file|locate|find|search/i.test(question)) {
+      return 'find';
+    }
+    if (/security|vulnerability|secure|auth|permission/i.test(question)) {
+      return 'security';
+    }
+    if (/architecture|structure|design|pattern|organize/i.test(question)) {
+      return 'architecture';
+    }
+    
+    return 'general';
+  };
+
+  // PHASE 1: Role-Based System Prompts
+  const getRoleBasedPrompt = (intent) => {
+    const roles = {
+      explain: `You are a senior software engineer who excels at explaining complex code concepts in simple terms.`,
+      debug: `You are an expert debugger with years of experience identifying and fixing code issues.`,
+      improve: `You are a code optimization specialist focused on performance, maintainability, and best practices.`,
+      setup: `You are a DevOps engineer who provides clear, step-by-step setup and deployment instructions.`,
+      find: `You are a codebase navigator who helps developers locate specific files and functionality.`,
+      security: `You are a security specialist who identifies vulnerabilities and suggests secure coding practices.`,
+      architecture: `You are a software architect who explains system design, patterns, and code organization.`,
+      general: `You are a senior software engineer with deep expertise in ${repoContext?.tech_stack || 'software development'}.`
+    };
+    
+    return roles[intent] || roles.general;
+  };
+
+  // PHASE 1: Enhanced System Prompt Builder
+  const buildEnhancedSystemPrompt = (userQuestion, intent, chatHistory) => {
     if (!repoContext) return '';
+    
+    const rolePrompt = getRoleBasedPrompt(intent);
     
     const filesList = repoContext.key_files
       .map(f => `- ${f.name}: ${f.purpose}`)
       .join('\n');
     
-    const recentHistory = chatHistory.slice(-6); // Last 3 exchanges (6 messages)
+    // Get last 3 exchanges (6 messages) for context
+    const recentHistory = chatHistory.slice(-6);
     const historyStr = recentHistory
       .map(m => `${m.sender === 'user' ? 'User' : 'Assistant'}: ${m.text}`)
       .join('\n');
     
-    return `You are a senior software engineer assistant who has fully analyzed a GitHub repository.
-Your job is to answer questions about this codebase accurately and helpfully.
-
-STRICT RULES:
-- Answer ONLY based on the repository context provided
-- Do NOT hallucinate features, files, or logic
-- If information is missing, say: "Not enough information in the repository"
-- Keep answers concise (max 120 words)
-- Reference file names, folders, or components when possible
-- Prefer practical explanations over theory
-- Use bullet points when helpful
-- Always suggest a follow up question at the end
-- Format code snippets with proper labels
-- If asked about setup always include exact commands
+    return `${rolePrompt}
 
 REPOSITORY CONTEXT:
 Name: ${repoContext.repo_name}
@@ -112,16 +147,63 @@ Key Files:
 ${filesList}
 Summary: ${repoContext.short_summary}
 
-CHAT HISTORY (last 3 messages only):
+CONVERSATION HISTORY (last 3 exchanges):
 ${historyStr || 'No previous messages'}
 
-USER QUESTION:
+STRICT RULES:
+1. Answer ONLY based on the repository context provided above
+2. Do NOT hallucinate features, files, or functionality not mentioned
+3. If information is missing, explicitly say: "Not enough information in the repository"
+4. Keep responses concise (max 120 words)
+5. Reference specific files when possible using format: \`filename.ext\`
+6. Use bullet points for lists
+7. Include code examples only if relevant
+8. End with a helpful follow-up question
+
+USER QUESTION (Intent: ${intent}):
 ${userQuestion}
 
 RESPONSE FORMAT:
 - Start with direct answer
-- Support with specific file references
-- End with: 💡 You might also want to ask: [suggested follow up question]`;
+- Support with file references if applicable
+- Provide example if helpful
+- End with: 💡 You might also want to ask: [relevant follow-up question]`;
+  };
+
+  // PHASE 1: Response Validation
+  const validateResponse = (response) => {
+    if (!repoContext) return response;
+    
+    // Check for file references in backticks
+    const filePattern = /`([^`]+\.(js|jsx|ts|tsx|py|java|go|rs|json|md|yml|yaml|xml|html|css))`/gi;
+    const matches = response.match(filePattern);
+    
+    if (matches) {
+      // Validate each file reference
+      matches.forEach(match => {
+        const filename = match.replace(/`/g, '');
+        const exists = repoContext.key_files.some(f => f.name.includes(filename));
+        
+        if (!exists) {
+          console.warn(`⚠️ AI mentioned file that may not exist: ${filename}`);
+        }
+      });
+    }
+    
+    // Check for hallucination indicators
+    const hallucinations = [
+      /I can see in the code/i,
+      /Looking at the implementation/i,
+      /The code shows/i
+    ];
+    
+    const mightBeHallucinating = hallucinations.some(pattern => pattern.test(response));
+    
+    if (mightBeHallucinating && !matches) {
+      console.warn('⚠️ AI might be hallucinating - no file references but claims to see code');
+    }
+    
+    return response;
   };
 
   // Format AI message with better structure
@@ -199,6 +281,7 @@ RESPONSE FORMAT:
     };
     
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = inputValue;
     setInputValue('');
     setIsTyping(true);
 
@@ -206,8 +289,12 @@ RESPONSE FORMAT:
     await new Promise(resolve => setTimeout(resolve, 800));
 
     try {
-      // Build prompt with context
-      const prompt = buildSystemPrompt(inputValue, messages);
+      // PHASE 1: Detect intent
+      const intent = detectIntent(currentInput);
+      console.log(`🎯 Detected intent: ${intent}`);
+      
+      // PHASE 1: Build enhanced prompt with role-based system message
+      const prompt = buildEnhancedSystemPrompt(currentInput, intent, messages);
       
       // Call watsonx.ai
       const response = await generateText(prompt, {
@@ -216,11 +303,15 @@ RESPONSE FORMAT:
         topP: 0.9
       });
 
+      // PHASE 1: Validate response
+      const validatedResponse = validateResponse(response);
+
       const botMessage = {
         id: Date.now() + 1,
-        text: response,
+        text: validatedResponse,
         sender: 'bot',
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        intent: intent // Store intent for analytics
       };
       
       setMessages(prev => [...prev, botMessage]);
@@ -281,6 +372,9 @@ RESPONSE FORMAT:
                     <div className="message-header">
                       <span className="message-avatar-icon">🤖</span>
                       <span className="message-sender">AI Assistant</span>
+                      {message.intent && (
+                        <span className="intent-badge">{message.intent}</span>
+                      )}
                     </div>
                   )}
                   <div className="message-content">
@@ -331,7 +425,7 @@ RESPONSE FORMAT:
               <input
                 type="text"
                 className="chat-input"
-                placeholder="Ask anything about this codebase..."
+                placeholder="Ask anything about this repository..."
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
@@ -348,6 +442,78 @@ RESPONSE FORMAT:
               disabled={!inputValue.trim() || isTyping || isOverLimit}
             >
               <span className="send-icon">➤</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="content-card">
+        <h3 className="card-title">🎯 Quick Actions</h3>
+        <div className="card-content">
+          <div className="intent-presets">
+            <button
+              className="intent-preset-chip explain"
+              onClick={() => handleSuggestionClick("Explain how this project works")}
+              disabled={isTyping}
+              title="Get explanations about the codebase"
+            >
+              📖 Explain
+            </button>
+            <button
+              className="intent-preset-chip debug"
+              onClick={() => handleSuggestionClick("Help me debug an issue")}
+              disabled={isTyping}
+              title="Get help fixing bugs and errors"
+            >
+              🐛 Debug
+            </button>
+            <button
+              className="intent-preset-chip improve"
+              onClick={() => handleSuggestionClick("Suggest improvements for the code")}
+              disabled={isTyping}
+              title="Get optimization suggestions"
+            >
+              ⚡ Improve
+            </button>
+            <button
+              className="intent-preset-chip setup"
+              onClick={() => handleSuggestionClick("How do I set up this project?")}
+              disabled={isTyping}
+              title="Get setup and installation help"
+            >
+              🛠️ Setup
+            </button>
+            <button
+              className="intent-preset-chip find"
+              onClick={() => handleSuggestionClick("Where can I find specific functionality?")}
+              disabled={isTyping}
+              title="Locate files and features"
+            >
+              🔍 Find
+            </button>
+            <button
+              className="intent-preset-chip security"
+              onClick={() => handleSuggestionClick("Check for security issues")}
+              disabled={isTyping}
+              title="Security analysis and recommendations"
+            >
+              🔒 Security
+            </button>
+            <button
+              className="intent-preset-chip architecture"
+              onClick={() => handleSuggestionClick("Explain the architecture")}
+              disabled={isTyping}
+              title="Understand system design and structure"
+            >
+              🏗️ Architecture
+            </button>
+            <button
+              className="intent-preset-chip general"
+              onClick={() => handleSuggestionClick("Tell me about this repository")}
+              disabled={isTyping}
+              title="General questions about the project"
+            >
+              💬 General
             </button>
           </div>
         </div>
