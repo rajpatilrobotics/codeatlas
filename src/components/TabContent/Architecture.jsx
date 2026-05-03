@@ -1914,35 +1914,6 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
       {/* Unified Comprehensive Technology Stack Visualization */}
       {techStack && (Object.values(techStack).some(arr => arr.length > 0)) && <UnifiedTechStackDiagram techStack={techStack} />}
 
-      {/* Key Files & Components */}
-      {importantFiles && importantFiles.length > 0 && (
-        <div className="content-card">
-          <h2 className="card-title">📦 Key Components</h2>
-          <div className="card-content">
-            <div className="key-files-list">
-              {importantFiles.map((file, index) => (
-                <div key={index} className="key-file-item">
-                  <span className="file-icon">📄</span>
-                  <span className="file-name">{file.path}</span>
-                  <span className="file-badge">
-                    {file.path.includes('package.json') && 'Dependencies'}
-                    {file.path.includes('README') && 'Documentation'}
-                    {file.path.includes('index') && 'Entry Point'}
-                    {file.path.includes('App') && 'Main Component'}
-                    {file.path.includes('.env') && 'Configuration'}
-                    {!file.path.includes('package.json') && 
-                     !file.path.includes('README') && 
-                     !file.path.includes('index') && 
-                     !file.path.includes('App') && 
-                     !file.path.includes('.env') && 'Core File'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Code Analysis - Detected Patterns & Structure */}
       {codeAnalysis && codeAnalysis.summary && (
         <div className="content-card">
@@ -2192,6 +2163,35 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
 
       {/* Interactive Folder Structure with React Flow */}
       {topLevelFolders.length > 0 && <FolderStructureDiagram folders={topLevelFolders} />}
+
+      {/* Key Files & Components - Moved to bottom after all diagrams */}
+      {importantFiles && importantFiles.length > 0 && (
+        <div className="content-card">
+          <h2 className="card-title">📦 Key Components</h2>
+          <div className="card-content">
+            <div className="key-files-list">
+              {importantFiles.map((file, index) => (
+                <div key={index} className="key-file-item">
+                  <span className="file-icon">📄</span>
+                  <span className="file-name">{file.path}</span>
+                  <span className="file-badge">
+                    {file.path.includes('package.json') && 'Dependencies'}
+                    {file.path.includes('README') && 'Documentation'}
+                    {file.path.includes('index') && 'Entry Point'}
+                    {file.path.includes('App') && 'Main Component'}
+                    {file.path.includes('.env') && 'Configuration'}
+                    {!file.path.includes('package.json') &&
+                     !file.path.includes('README') &&
+                     !file.path.includes('index') &&
+                     !file.path.includes('App') &&
+                     !file.path.includes('.env') && 'Core File'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
