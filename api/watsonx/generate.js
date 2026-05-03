@@ -1,48 +1,17 @@
-// Express backend server for watsonx.ai API proxy
-// This server handles IBM IAM authentication and watsonx.ai API calls
-// to avoid CORS issues in the browser
+// Vercel Serverless Function for Watsonx AI
+// This proxies IBM Watsonx AI API calls with server-side authentication
+// Handles IAM token management and prevents API key exposure
 
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
 const fetch = require('node-fetch');
 
-const app = express();
-const PORT = process.env.PORT || 5001;
-
-// Simple CORS middleware - allow everything
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  
-  // Handle preflight
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  
-  next();
-});
-
-// Parse JSON bodies
-app.use(express.json());
-
-// Configuration from environment variables
-const WATSONX_CONFIG = {
-  apiKey: process.env.REACT_APP_WATSONX_API_KEY,
-  projectId: process.env.REACT_APP_WATSONX_PROJECT_ID,
-  regionUrl: process.env.REACT_APP_WATSONX_REGION_URL,
-  modelId: process.env.REACT_APP_WATSONX_MODEL_ID,
-};
-
-// Token cache
+// Token cache (in-memory for serverless)
 let cachedToken = null;
 let tokenExpiry = null;
 
 /**
  * Get IBM IAM access token
  */
-async function getAccessToken() {
+async function getAccessToken(apiKey) {
   // Return cached token if still valid (with 5 minute buffer)
   if (cachedToken && tokenExpiry && Date.now() < tokenExpiry - 300000) {
     console.log('Using cached IAM token');
@@ -60,7 +29,7 @@ async function getAccessToken() {
       },
       body: new URLSearchParams({
         grant_type: 'urn:ibm:params:oauth:grant-type:apikey',
-        apikey: WATSONX_CONFIG.apiKey,
+        apikey: apiKey,
       }),
     });
 
@@ -90,10 +59,20 @@ async function getAccessToken() {
   }
 }
 
-/**
- * API endpoint to generate text using watsonx.ai
- */
-app.post('/api/watsonx/generate', async (req, res) => {
+module.exports = async (req, res) => {
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
     const { prompt, options = {} } = req.body;
 
@@ -101,10 +80,23 @@ app.post('/api/watsonx/generate', async (req, res) => {
       return res.status(400).json({ error: 'Prompt is required' });
     }
 
-    console.log('Generating text for prompt:', prompt.substring(0, 50) + '...');
+    // Get environment variables
+    const WATSONX_API_KEY = process.env.WATSONX_API_KEY;
+    const WATSONX_PROJECT_ID = process.env.WATSONX_PROJECT_ID;
+    const WATSONX_REGION_URL = process.env.WATSONX_REGION_URL || 'https://us-south.ml.cloud.ibm.com';
+    const WATSONX_MODEL_ID = process.env.WATSONX_MODEL_ID || 'ibm/granite-13b-chat-v2';
+
+    if (!WATSONX_API_KEY || !WATSONX_PROJECT_ID) {
+      console.error('Watsonx credentials not configured');
+      return res.status(500).json({ 
+        error: 'Watsonx credentials not configured on server. Please add WATSONX_API_KEY and WATSONX_PROJECT_ID to environment variables.' 
+      });
+    }
+
+    console.log('Generating text with Watsonx AI...');
 
     // Get access token
-    const accessToken = await getAccessToken();
+    const accessToken = await getAccessToken(WATSONX_API_KEY);
 
     // Prepare request body
     const requestBody = {
@@ -116,8 +108,8 @@ app.post('/api/watsonx/generate', async (req, res) => {
         stop_sequences: options.stopSequences || [],
         repetition_penalty: options.repetitionPenalty || 1.0,
       },
-      model_id: WATSONX_CONFIG.modelId,
-      project_id: WATSONX_CONFIG.projectId,
+      model_id: WATSONX_MODEL_ID,
+      project_id: WATSONX_PROJECT_ID,
     };
 
     // Add optional parameters
@@ -131,9 +123,9 @@ app.post('/api/watsonx/generate', async (req, res) => {
       requestBody.parameters.top_k = options.topK;
     }
 
-    // Call watsonx.ai API
+    // Call Watsonx API
     const response = await fetch(
-      `${WATSONX_CONFIG.regionUrl}/ml/v1/text/generation?version=2023-05-29`,
+      `${WATSONX_REGION_URL}/ml/v1/text/generation?version=2023-05-29`,
       {
         method: 'POST',
         headers: {
@@ -147,17 +139,17 @@ app.post('/api/watsonx/generate', async (req, res) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Watsonx.ai API error:', errorText);
+      console.error('Watsonx API error:', errorText);
       
       if (response.status === 401) {
         // Token expired, clear cache
         cachedToken = null;
         tokenExpiry = null;
-        return res.status(401).json({ error: 'Authentication token expired' });
+        return res.status(401).json({ error: 'Authentication token expired. Please retry.' });
       }
       
       return res.status(response.status).json({ 
-        error: `Watsonx.ai API error: ${errorText}` 
+        error: `Watsonx API error: ${errorText}` 
       });
     }
 
@@ -168,42 +160,21 @@ app.post('/api/watsonx/generate', async (req, res) => {
       const generatedText = data.results[0].generated_text.trim();
       console.log('✓ Text generated successfully');
       
-      return res.json({
+      return res.status(200).json({
         success: true,
         text: generatedText,
-        model: WATSONX_CONFIG.modelId,
+        model: WATSONX_MODEL_ID,
       });
     } else {
       return res.status(500).json({ error: 'No generated text in response' });
     }
 
   } catch (error) {
-    console.error('Server error:', error);
-    res.status(500).json({ 
+    console.error('Watsonx generation error:', error);
+    return res.status(500).json({ 
       error: error.message || 'Internal server error' 
     });
   }
-});
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    message: 'Watsonx.ai proxy server is running',
-    config: {
-      hasApiKey: !!WATSONX_CONFIG.apiKey,
-      hasProjectId: !!WATSONX_CONFIG.projectId,
-      regionUrl: WATSONX_CONFIG.regionUrl,
-      modelId: WATSONX_CONFIG.modelId,
-    }
-  });
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`\n🚀 Watsonx.ai proxy server running on http://localhost:${PORT}`);
-  console.log(`📡 API endpoint: http://localhost:${PORT}/api/watsonx/generate`);
-  console.log(`💚 Health check: http://localhost:${PORT}/api/health\n`);
-});
+};
 
 // Made with Bob

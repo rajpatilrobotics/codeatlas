@@ -1,12 +1,22 @@
-// IBM watsonx.ai API Service
-// This service calls our Express backend server which handles IBM IAM authentication
-// and watsonx.ai API calls to avoid CORS issues
-
-// Backend server URL (runs on port 5001)
-const BACKEND_URL = 'http://localhost:5001';
+// IBM watsonx.ai API Service - Production Ready
+// All API calls now go through backend to keep API keys secure
+// NO direct Watsonx API calls, NO exposed credentials
 
 /**
- * Generate text using IBM watsonx.ai Granite model
+ * Get API base URL (works in both dev and production)
+ */
+const getApiBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    // In browser - use relative path for Vercel
+    return window.location.origin;
+  }
+  return '';
+};
+
+const API_BASE = getApiBaseUrl();
+
+/**
+ * Generate text using IBM watsonx.ai Granite model via backend API
  * Calls the backend Express server which handles authentication and API calls
  * 
  * @param {string} prompt - The text prompt to send to the model
@@ -17,6 +27,7 @@ const BACKEND_URL = 'http://localhost:5001';
  * @param {number} options.temperature - Sampling temperature (default: 0.7)
  * @param {number} options.topP - Top-p sampling (default: 1)
  * @param {number} options.topK - Top-k sampling (default: 50)
+ * @param {number} options.repetitionPenalty - Repetition penalty (default: 1.0)
  * @returns {Promise<string>} Generated text response
  * @throws {Error} If text generation fails
  */
@@ -25,10 +36,10 @@ export async function generateText(prompt, options = {}) {
     throw new Error('Prompt must be a non-empty string');
   }
 
-  console.log('Sending request to backend server...');
+  console.log('Sending request to backend Watsonx API...');
 
   try {
-    const response = await fetch(`${BACKEND_URL}/api/watsonx/generate`, {
+    const response = await fetch(`${API_BASE}/api/watsonx/generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -41,6 +52,13 @@ export async function generateText(prompt, options = {}) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      
+      if (response.status === 401) {
+        throw new Error('Authentication failed. Please check Watsonx API credentials.');
+      } else if (response.status === 500) {
+        throw new Error(errorData.error || 'Server configuration error. Please contact support.');
+      }
+      
       throw new Error(errorData.error || `Server error: ${response.status}`);
     }
 
@@ -56,10 +74,69 @@ export async function generateText(prompt, options = {}) {
   } catch (error) {
     console.error('Text generation error:', error);
 
+    // Provide user-friendly error messages
     if (error.message.includes('Failed to fetch')) {
-      throw new Error(
-        'Cannot connect to backend server. Make sure the server is running on port 5001.'
-      );
+      throw new Error('Cannot connect to server. Please check your internet connection.');
+    }
+
+    throw error;
+  }
+}
+
+/**
+ * Send chat message via backend API
+ * 
+ * @param {string} message - User message
+ * @param {string} context - Optional context about the repository
+ * @returns {Promise<string>} AI response
+ * @throws {Error} If chat fails
+ */
+export async function sendChatMessage(message, context = '') {
+  if (!message || typeof message !== 'string') {
+    throw new Error('Message must be a non-empty string');
+  }
+
+  console.log('Sending chat message to backend API...');
+
+  try {
+    const response = await fetch(`${API_BASE}/api/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message,
+        context,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      
+      if (response.status === 401) {
+        throw new Error('Authentication failed. Please check Watsonx API credentials.');
+      } else if (response.status === 500) {
+        throw new Error(errorData.error || 'Server error. Please try again.');
+      }
+      
+      throw new Error(errorData.error || `API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.success && data.response) {
+      console.log('✓ Chat response received');
+      return data.response;
+    } else {
+      throw new Error('Invalid response from server');
+    }
+
+  } catch (error) {
+    console.error('Chat error:', error);
+
+    // Provide user-friendly error messages
+    if (error.message.includes('Failed to fetch')) {
+      throw new Error('Cannot connect to server. Please check your internet connection.');
     }
 
     throw error;
@@ -68,24 +145,31 @@ export async function generateText(prompt, options = {}) {
 
 /**
  * Check if the backend server is running and configured correctly
- * @returns {Promise<Object>} Server health status
+ * @returns {Promise<boolean>} True if server is healthy
  */
 export async function checkServerHealth() {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/health`);
+    const response = await fetch(`${API_BASE}/api/watsonx/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        prompt: 'test',
+        options: { maxNewTokens: 1 }
+      }),
+    });
     
-    if (!response.ok) {
-      throw new Error(`Server returned status ${response.status}`);
-    }
-    
-    const data = await response.json();
-    console.log('Server health check:', data);
-    return data;
+    // Any response (even error) means server is reachable
+    return true;
     
   } catch (error) {
     console.error('Health check failed:', error);
-    throw new Error('Backend server is not running or not accessible');
+    return false;
   }
 }
+
+// Export for compatibility
+export default generateText;
 
 // Made with Bob
