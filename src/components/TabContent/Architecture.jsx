@@ -860,522 +860,558 @@ function TechStackDiagram({ techStack }) {
   );
 }
 
-// Professional Data Flow Diagram Component - Detailed and accurate for all repos
-function DataFlowDiagram({ techStack }) {
-  const createDetailedDataFlowNodes = () => {
-    const nodes = [];
-    let yPos = 50;
-    const xCenter = 500;
-    const yGap = 200;
-    const nodeWidth = 320;
+// ULTRA-COMPREHENSIVE Data Flow Diagram with Custom React Flow Nodes
+// Clean, Beautiful Data Flow Diagram with Comprehensive GitHub Repo Data
+function DataFlowDiagram({ techStack, detailedArchitecture }) {
+  
+  // Clean Node Component - Shows all data directly, no expandable sections
+  const CleanLayerNode = ({ title, icon, color, data }) => {
+    return (
+      <div style={{
+        background: `linear-gradient(135deg, ${color}20 0%, ${color}08 100%)`,
+        border: `2px solid ${color}`,
+        borderRadius: '12px',
+        padding: '16px',
+        minWidth: '280px',
+        maxWidth: '320px',
+        boxShadow: `0 4px 20px ${color}40`,
+        textAlign: 'left'
+      }}>
+        {/* Header */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          marginBottom: '14px',
+          paddingBottom: '10px',
+          borderBottom: `2px solid ${color}50`
+        }}>
+          <span style={{ fontSize: '24px' }}>{icon}</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 'bold', fontSize: '15px', color: '#fff' }}>{title}</div>
+            {data.subtitle && (
+              <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>{data.subtitle}</div>
+            )}
+          </div>
+        </div>
 
-    // Detect layers
+        {/* Technologies */}
+        {data.technologies && data.technologies.length > 0 && (
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '600', color: '#fbbf24', marginBottom: '6px' }}>
+              🔧 Technologies
+            </div>
+            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+              {data.technologies.slice(0, 5).map((tech, i) => (
+                <span key={i} style={{
+                  background: 'rgba(255,255,255,0.1)',
+                  padding: '3px 8px',
+                  borderRadius: '4px',
+                  fontSize: '10px',
+                  fontWeight: '600',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  color: '#e5e7eb'
+                }}>
+                  {tech}
+                </span>
+              ))}
+              {data.technologies.length > 5 && (
+                <span style={{ padding: '3px 8px', fontSize: '10px', color: '#9ca3af' }}>
+                  +{data.technologies.length - 5} more
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Key Metrics Grid */}
+        {data.metrics && Object.keys(data.metrics).length > 0 && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+            {Object.entries(data.metrics).map(([key, value]) => (
+              <div key={key} style={{
+                background: 'rgba(0,0,0,0.3)',
+                padding: '8px',
+                borderRadius: '6px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: color }}>{value}</div>
+                <div style={{ fontSize: '9px', color: '#9ca3af', marginTop: '2px', textTransform: 'uppercase' }}>
+                  {key}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Top Items List */}
+        {data.topItems && data.topItems.length > 0 && (
+          <div style={{ marginBottom: '8px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '600', color: '#60a5fa', marginBottom: '6px' }}>
+              {data.topItemsLabel || '📋 Key Items'}
+            </div>
+            <div style={{ fontSize: '10px', lineHeight: '1.6', color: '#d1d5db' }}>
+              {data.topItems.slice(0, 4).map((item, i) => (
+                <div key={i} style={{ marginBottom: '3px', fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  • {item}
+                </div>
+              ))}
+              {data.topItems.length > 4 && (
+                <div style={{ color: '#9ca3af', fontSize: '9px', marginTop: '4px' }}>
+                  ... and {data.topItems.length - 4} more
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Additional Info */}
+        {data.additionalInfo && (
+          <div style={{
+            marginTop: '10px',
+            paddingTop: '10px',
+            borderTop: '1px solid rgba(255,255,255,0.1)',
+            fontSize: '10px',
+            color: '#9ca3af',
+            lineHeight: '1.5'
+          }}>
+            {data.additionalInfo}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Create nodes with comprehensive data
+  const createNodes = () => {
+    const nodes = [];
+    const nodeWidth = 320;
+    
+    // Get all data
+    const components = detailedArchitecture?.components || [];
+    const apiEndpoints = detailedArchitecture?.apiEndpoints || [];
+    const databaseModels = detailedArchitecture?.databaseModels || [];
+    const allFunctions = detailedArchitecture?.allFunctions || [];
+    const allClasses = detailedArchitecture?.allClasses || [];
+    const detailedFiles = detailedArchitecture?.detailedFiles || [];
+    const configuration = detailedArchitecture?.configuration || {};
+    const metrics = detailedArchitecture?.metrics || {};
+
+    // Detect what layers exist
     const hasFrontend = techStack.frontend && techStack.frontend.length > 0;
     const hasBackend = techStack.backend && techStack.backend.length > 0;
     const hasDatabase = techStack.database && techStack.database.length > 0;
     const hasCache = techStack.cache && techStack.cache.length > 0;
-    const hasMessageQueue = techStack.messageQueue && techStack.messageQueue.length > 0;
     const hasAuth = techStack.authentication && techStack.authentication.length > 0;
-    const hasOrm = techStack.orm && techStack.orm.length > 0;
 
-    // Layer 1: Client Layer (Always present)
+    let yPos = 50;
+    const xCenter = 600;
+    const yGap = 350;
+
+    // CLIENT LAYER (always show)
+    const frontendFiles = detailedFiles.filter(f => 
+      f.path.includes('component') || f.path.includes('src/') || f.path.includes('pages/')
+    );
+    const frontendFunctions = allFunctions.filter(f => 
+      f.file.includes('component') || f.file.includes('src/')
+    );
+
     nodes.push({
       id: 'client',
       type: 'input',
       data: {
         label: (
-          <div style={{ padding: '16px', textAlign: 'left' }}>
-            <div style={{ fontWeight: 'bold', fontSize: '15px', marginBottom: '10px', borderBottom: '2px solid rgba(255,255,255,0.2)', paddingBottom: '8px' }}>
-              CLIENT LAYER
-            </div>
-            <div style={{ fontSize: '12px', lineHeight: '1.8' }}>
-              <div style={{ marginBottom: '4px' }}>• Browser Application</div>
-              <div style={{ marginBottom: '4px' }}>• Mobile Application</div>
-              <div>• Desktop Client</div>
-            </div>
-          </div>
+          <CleanLayerNode
+            title="CLIENT LAYER"
+            icon="🌐"
+            color="#3b82f6"
+            data={{
+              subtitle: "User Interface & Interaction",
+              technologies: techStack.frontend || ['Browser', 'Web App'],
+              metrics: {
+                'Components': components.length || frontendFiles.length,
+                'Functions': frontendFunctions.length,
+                'Files': frontendFiles.length,
+                'LOC': frontendFiles.reduce((sum, f) => sum + (f.loc || 0), 0)
+              },
+              topItems: components.slice(0, 5).map(c => c.name) || frontendFiles.slice(0, 5).map(f => f.path.split('/').pop()),
+              topItemsLabel: '🧩 Top Components',
+              additionalInfo: `Pattern: ${detailedArchitecture?.patterns?.architecture || 'Component-Based'}`
+            }}
+          />
         )
       },
       position: { x: xCenter, y: yPos },
-      style: {
-        background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)',
-        border: '2px solid #3b82f6',
-        borderRadius: '8px',
-        width: nodeWidth,
-        color: '#fff',
-        boxShadow: '0 4px 16px rgba(59, 130, 246, 0.4)'
-      }
+      style: { background: 'transparent', border: 'none', width: nodeWidth }
     });
+
     yPos += yGap;
 
-    // Layer 2: Frontend Layer (if detected)
+    // FRONTEND LAYER
     if (hasFrontend) {
-      const frameworks = techStack.frontend.filter(t =>
-        ['React', 'Vue.js', 'Angular', 'Svelte', 'Next.js', 'Nuxt.js'].includes(t)
-      ).slice(0, 2);
-      const uiLibs = techStack.frontend.filter(t =>
-        ['Material-UI', 'Ant Design', 'Tailwind CSS', 'Bootstrap', 'Chakra UI'].includes(t)
-      ).slice(0, 2);
-      const stateManagement = techStack.frontend.filter(t =>
-        ['Redux', 'Vuex/Pinia', 'React Query'].includes(t)
-      ).slice(0, 1);
-
       nodes.push({
         id: 'frontend',
         type: 'default',
         data: {
           label: (
-            <div style={{ padding: '16px', textAlign: 'left' }}>
-              <div style={{ fontWeight: 'bold', fontSize: '15px', marginBottom: '10px', borderBottom: '2px solid rgba(255,255,255,0.2)', paddingBottom: '8px' }}>
-                FRONTEND LAYER
-              </div>
-              <div style={{ fontSize: '12px', lineHeight: '1.8' }}>
-                {frameworks.length > 0 && <div style={{ marginBottom: '4px' }}>• UI Framework: {frameworks.join(', ')}</div>}
-                {stateManagement.length > 0 && <div style={{ marginBottom: '4px' }}>• State: {stateManagement.join(', ')}</div>}
-                {uiLibs.length > 0 && <div style={{ marginBottom: '4px' }}>• Styling: {uiLibs.join(', ')}</div>}
-                <div>• Component Rendering</div>
-              </div>
-              <div style={{ marginTop: '10px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                {techStack.frontend.slice(0, 4).map((tech, i) => (
-                  <span key={i} style={{ background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '6px', fontSize: '10px', fontWeight: '600' }}>
-                    {tech}
-                  </span>
-                ))}
-              </div>
-            </div>
+            <CleanLayerNode
+              title="FRONTEND LAYER"
+              icon="🎨"
+              color="#a78bfa"
+              data={{
+                subtitle: "UI Framework & State Management",
+                technologies: techStack.frontend,
+                metrics: {
+                  'Components': components.length,
+                  'Functions': frontendFunctions.length,
+                  'Classes': allClasses.filter(c => c.file.includes('component')).length,
+                  'Total LOC': metrics.totalLOC || 0
+                },
+                topItems: [
+                  ...components.slice(0, 3).map(c => `${c.name} (${c.folder})`),
+                  ...frontendFunctions.slice(0, 2).map(f => `${f.name}()`)
+                ],
+                topItemsLabel: '📦 Key Components & Functions'
+              }}
+            />
           )
         },
         position: { x: xCenter, y: yPos },
-        style: {
-          background: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)',
-          border: '2px solid #a78bfa',
-          borderRadius: '8px',
-          width: nodeWidth,
-          color: '#fff',
-          boxShadow: '0 4px 16px rgba(167, 139, 250, 0.4)'
-        }
+        style: { background: 'transparent', border: 'none', width: nodeWidth }
       });
+
       yPos += yGap;
     }
 
-    // Layer 3: Authentication Layer (if detected)
+    // AUTHENTICATION LAYER (if exists)
     if (hasAuth) {
       nodes.push({
         id: 'auth',
         type: 'default',
         data: {
           label: (
-            <div style={{ padding: '16px', textAlign: 'left' }}>
-              <div style={{ fontWeight: 'bold', fontSize: '15px', marginBottom: '10px', borderBottom: '2px solid rgba(255,255,255,0.2)', paddingBottom: '8px' }}>
-                AUTHENTICATION LAYER
-              </div>
-              <div style={{ fontSize: '12px', lineHeight: '1.8' }}>
-                <div style={{ marginBottom: '4px' }}>• User Authentication</div>
-                <div style={{ marginBottom: '4px' }}>• Session Management</div>
-                <div>• Authorization & Access Control</div>
-              </div>
-              <div style={{ marginTop: '10px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                {techStack.authentication.slice(0, 3).map((tech, i) => (
-                  <span key={i} style={{ background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '6px', fontSize: '10px', fontWeight: '600' }}>
-                    {tech}
-                  </span>
-                ))}
-              </div>
-            </div>
+            <CleanLayerNode
+              title="AUTH LAYER"
+              icon="🔐"
+              color="#10b981"
+              data={{
+                subtitle: "Security & Access Control",
+                technologies: techStack.authentication,
+                metrics: {
+                  'Middleware': detailedArchitecture?.middleware?.length || 0,
+                  'Guards': allFunctions.filter(f => f.name.includes('auth') || f.name.includes('guard')).length
+                },
+                topItems: techStack.authentication.slice(0, 4),
+                topItemsLabel: '🛡️ Auth Technologies',
+                additionalInfo: 'Handles authentication, authorization, and session management'
+              }}
+            />
           )
         },
         position: { x: xCenter, y: yPos },
-        style: {
-          background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
-          border: '2px solid #34d399',
-          borderRadius: '8px',
-          width: nodeWidth,
-          color: '#fff',
-          boxShadow: '0 4px 16px rgba(52, 211, 153, 0.4)'
-        }
+        style: { background: 'transparent', border: 'none', width: nodeWidth }
       });
-      yPos += yGap;
     }
 
-    // Layer 4: Backend/API Layer (if detected)
+    // BACKEND / API LAYER
     if (hasBackend) {
-      const frameworks = techStack.backend.filter(t =>
-        ['Express.js', 'NestJS', 'Fastify', 'Django', 'FastAPI', 'Flask'].includes(t)
-      ).slice(0, 2);
-      const apis = techStack.backend.filter(t =>
-        ['GraphQL', 'Apollo Server', 'tRPC', 'Socket.IO'].includes(t)
-      ).slice(0, 2);
+      const backendFiles = detailedFiles.filter(f =>
+        f.path.includes('controller') || f.path.includes('route') || f.path.includes('api') || f.path.includes('service')
+      );
+      const backendFunctions = allFunctions.filter(f =>
+        f.file.includes('controller') || f.file.includes('route') || f.file.includes('api') || f.file.includes('service')
+      );
 
       nodes.push({
         id: 'backend',
         type: 'default',
         data: {
           label: (
-            <div style={{ padding: '16px', textAlign: 'left' }}>
-              <div style={{ fontWeight: 'bold', fontSize: '15px', marginBottom: '10px', borderBottom: '2px solid rgba(255,255,255,0.2)', paddingBottom: '8px' }}>
-                BACKEND / API LAYER
-              </div>
-              <div style={{ fontSize: '12px', lineHeight: '1.8' }}>
-                {frameworks.length > 0 && <div style={{ marginBottom: '4px' }}>• Framework: {frameworks.join(', ')}</div>}
-                {apis.length > 0 && <div style={{ marginBottom: '4px' }}>• API: {apis.join(', ')}</div>}
-                <div style={{ marginBottom: '4px' }}>• Business Logic</div>
-                <div>• Request Processing</div>
-              </div>
-              <div style={{ marginTop: '10px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                {techStack.backend.slice(0, 4).map((tech, i) => (
-                  <span key={i} style={{ background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '6px', fontSize: '10px', fontWeight: '600' }}>
-                    {tech}
-                  </span>
-                ))}
-              </div>
-            </div>
+            <CleanLayerNode
+              title="BACKEND / API"
+              icon="⚙️"
+              color="#22d3ee"
+              data={{
+                subtitle: "Business Logic & API Endpoints",
+                technologies: techStack.backend,
+                metrics: {
+                  'Endpoints': apiEndpoints.length,
+                  'Functions': backendFunctions.length,
+                  'Files': backendFiles.length,
+                  'LOC': backendFiles.reduce((sum, f) => sum + (f.loc || 0), 0)
+                },
+                topItems: [
+                  ...apiEndpoints.slice(0, 4).map(ep => `${ep.method} ${ep.path}`)
+                ],
+                topItemsLabel: '🛣️ API Endpoints',
+                additionalInfo: `Ports: ${configuration.ports?.map(p => p.port).join(', ') || 'N/A'}`
+              }}
+            />
           )
         },
-        position: { x: xCenter, y: yPos },
-        style: {
-          background: 'linear-gradient(135deg, #0891b2 0%, #06b6d4 100%)',
-          border: '2px solid #22d3ee',
-          borderRadius: '8px',
-          width: nodeWidth,
-          color: '#fff',
-          boxShadow: '0 4px 16px rgba(34, 211, 238, 0.4)'
-        }
+        position: { x: xCenter, y: hasAuth ? yPos + 350 : yPos },
+        style: { background: 'transparent', border: 'none', width: nodeWidth }
       });
+
       yPos += yGap;
     }
 
-    // Layer 5: Message Queue Layer (if detected)
-    if (hasMessageQueue) {
-      nodes.push({
-        id: 'queue',
-        type: 'default',
-        data: {
-          label: (
-            <div style={{ padding: '16px', textAlign: 'left' }}>
-              <div style={{ fontWeight: 'bold', fontSize: '15px', marginBottom: '10px', borderBottom: '2px solid rgba(255,255,255,0.2)', paddingBottom: '8px' }}>
-                MESSAGE QUEUE LAYER
-              </div>
-              <div style={{ fontSize: '12px', lineHeight: '1.8' }}>
-                <div style={{ marginBottom: '4px' }}>• Asynchronous Processing</div>
-                <div style={{ marginBottom: '4px' }}>• Background Jobs</div>
-                <div>• Event-Driven Architecture</div>
-              </div>
-              <div style={{ marginTop: '10px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                {techStack.messageQueue.map((tech, i) => (
-                  <span key={i} style={{ background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '6px', fontSize: '10px', fontWeight: '600' }}>
-                    {tech}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )
-        },
-        position: { x: xCenter, y: yPos },
-        style: {
-          background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
-          border: '2px solid #fb923c',
-          borderRadius: '8px',
-          width: nodeWidth,
-          color: '#fff',
-          boxShadow: '0 4px 16px rgba(251, 146, 60, 0.4)'
-        }
-      });
-      yPos += yGap;
-    }
-
-    // Layer 6: Cache Layer (if detected)
+    // CACHE LAYER (if exists)
     if (hasCache) {
       nodes.push({
         id: 'cache',
         type: 'default',
         data: {
           label: (
-            <div style={{ padding: '16px', textAlign: 'left' }}>
-              <div style={{ fontWeight: 'bold', fontSize: '15px', marginBottom: '10px', borderBottom: '2px solid rgba(255,255,255,0.2)', paddingBottom: '8px' }}>
-                CACHE LAYER
-              </div>
-              <div style={{ fontSize: '12px', lineHeight: '1.8' }}>
-                <div style={{ marginBottom: '4px' }}>• Data Caching</div>
-                <div style={{ marginBottom: '4px' }}>• Session Storage</div>
-                <div>• Performance Optimization</div>
-              </div>
-              <div style={{ marginTop: '10px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                {techStack.cache.map((tech, i) => (
-                  <span key={i} style={{ background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '6px', fontSize: '10px', fontWeight: '600' }}>
-                    {tech}
-                  </span>
-                ))}
-              </div>
-            </div>
+            <CleanLayerNode
+              title="CACHE LAYER"
+              icon="⚡"
+              color="#f59e0b"
+              data={{
+                subtitle: "Performance & Speed Optimization",
+                technologies: techStack.cache,
+                metrics: {
+                  'Systems': techStack.cache.length
+                },
+                topItems: techStack.cache,
+                topItemsLabel: '💨 Cache Systems',
+                additionalInfo: 'Reduces database load and improves response times'
+              }}
+            />
           )
         },
-        position: { x: xCenter, y: yPos },
-        style: {
-          background: 'linear-gradient(135deg, #ca8a04 0%, #eab308 100%)',
-          border: '2px solid #facc15',
-          borderRadius: '8px',
-          width: nodeWidth,
-          color: '#fff',
-          boxShadow: '0 4px 16px rgba(250, 204, 21, 0.4)'
-        }
+        position: { x: xCenter, y: yPos + 175 },
+        style: { background: 'transparent', border: 'none', width: nodeWidth }
       });
-      yPos += yGap;
     }
 
-    // Layer 7: Database Layer (if detected)
+    // DATABASE LAYER
     if (hasDatabase) {
-      const databases = techStack.database.filter(t =>
-        !['Redis'].includes(t) // Redis already shown in cache
+      const dbFiles = detailedFiles.filter(f =>
+        f.path.includes('model') || f.path.includes('schema') || f.path.includes('entity')
       );
-      
+
       nodes.push({
         id: 'database',
         type: 'output',
         data: {
           label: (
-            <div style={{ padding: '16px', textAlign: 'left' }}>
-              <div style={{ fontWeight: 'bold', fontSize: '15px', marginBottom: '10px', borderBottom: '2px solid rgba(255,255,255,0.2)', paddingBottom: '8px' }}>
-                DATABASE LAYER
-              </div>
-              <div style={{ fontSize: '12px', lineHeight: '1.8' }}>
-                {hasOrm && <div style={{ marginBottom: '4px' }}>• ORM: {techStack.orm.slice(0, 2).join(', ')}</div>}
-                <div style={{ marginBottom: '4px' }}>• Data Persistence</div>
-                <div style={{ marginBottom: '4px' }}>• Query Processing</div>
-                <div>• Transaction Management</div>
-              </div>
-              <div style={{ marginTop: '10px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                {databases.slice(0, 4).map((tech, i) => (
-                  <span key={i} style={{ background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '6px', fontSize: '10px', fontWeight: '600' }}>
-                    {tech}
-                  </span>
-                ))}
-              </div>
-            </div>
+            <CleanLayerNode
+              title="DATABASE LAYER"
+              icon="💾"
+              color="#ec4899"
+              data={{
+                subtitle: "Data Persistence & Storage",
+                technologies: [...(techStack.database || []), ...(techStack.orm || [])],
+                metrics: {
+                  'Models': databaseModels.length,
+                  'Fields': databaseModels.reduce((sum, m) => sum + (m.fields?.length || 0), 0),
+                  'Files': dbFiles.length
+                },
+                topItems: databaseModels.slice(0, 4).map(m => `${m.name} (${m.type})`),
+                topItemsLabel: '🗄️ Database Models',
+                additionalInfo: `Total Models: ${databaseModels.length} | ORM: ${techStack.orm?.join(', ') || 'None'}`
+              }}
+            />
           )
         },
         position: { x: xCenter, y: yPos },
-        style: {
-          background: 'linear-gradient(135deg, #be123c 0%, #e11d48 100%)',
-          border: '2px solid #f43f5e',
-          borderRadius: '8px',
-          width: nodeWidth,
-          color: '#fff',
-          boxShadow: '0 4px 16px rgba(244, 63, 94, 0.4)'
-        }
+        style: { background: 'transparent', border: 'none', width: nodeWidth }
       });
     }
 
     return nodes;
   };
 
-  const createDetailedDataFlowEdges = () => {
+  // Create edges (connections between nodes)
+  const createEdges = () => {
     const edges = [];
     const hasFrontend = techStack.frontend && techStack.frontend.length > 0;
     const hasBackend = techStack.backend && techStack.backend.length > 0;
     const hasDatabase = techStack.database && techStack.database.length > 0;
     const hasCache = techStack.cache && techStack.cache.length > 0;
-    const hasMessageQueue = techStack.messageQueue && techStack.messageQueue.length > 0;
     const hasAuth = techStack.authentication && techStack.authentication.length > 0;
 
-    let currentSource = 'client';
-
-    // Client to Frontend or Backend
+    // Client -> Frontend
     if (hasFrontend) {
       edges.push({
         id: 'e-client-frontend',
-        source: currentSource,
+        source: 'client',
         target: 'frontend',
+        label: 'HTTP/HTTPS',
         animated: true,
-        label: 'HTTP/HTTPS Request',
-        style: { stroke: '#3b82f6', strokeWidth: 2.5 },
-        labelStyle: { fill: '#3b82f6', fontWeight: 600, fontSize: 11 },
-        labelBgStyle: { fill: '#0f1419', fillOpacity: 0.95 }
+        style: { stroke: '#a78bfa', strokeWidth: 2 },
+        labelStyle: { fill: '#a78bfa', fontWeight: 600, fontSize: 11 }
       });
-      currentSource = 'frontend';
     }
 
-    // Frontend/Client to Auth
-    if (hasAuth) {
+    // Frontend -> Auth
+    if (hasFrontend && hasAuth) {
       edges.push({
-        id: `e-${currentSource}-auth`,
-        source: currentSource,
+        id: 'e-frontend-auth',
+        source: 'frontend',
         target: 'auth',
+        label: 'Auth Request',
         animated: true,
-        label: 'Authentication',
-        style: { stroke: '#34d399', strokeWidth: 2.5 },
-        labelStyle: { fill: '#34d399', fontWeight: 600, fontSize: 11 },
-        labelBgStyle: { fill: '#0f1419', fillOpacity: 0.95 }
+        style: { stroke: '#10b981', strokeWidth: 2 },
+        labelStyle: { fill: '#10b981', fontWeight: 600, fontSize: 11 }
       });
-      currentSource = 'auth';
     }
 
-    // Auth/Frontend to Backend
-    if (hasBackend) {
+    // Frontend -> Backend (or Auth -> Backend)
+    if (hasFrontend && hasBackend) {
       edges.push({
-        id: `e-${currentSource}-backend`,
-        source: currentSource,
+        id: hasAuth ? 'e-auth-backend' : 'e-frontend-backend',
+        source: hasAuth ? 'auth' : 'frontend',
         target: 'backend',
+        label: 'API Calls',
         animated: true,
-        label: hasFrontend ? 'REST/GraphQL API' : 'Direct API Call',
-        style: { stroke: '#22d3ee', strokeWidth: 2.5 },
-        labelStyle: { fill: '#22d3ee', fontWeight: 600, fontSize: 11 },
-        labelBgStyle: { fill: '#0f1419', fillOpacity: 0.95 }
-      });
-      currentSource = 'backend';
-    }
-
-    // Backend to Message Queue
-    if (hasMessageQueue && hasBackend) {
-      edges.push({
-        id: 'e-backend-queue',
-        source: 'backend',
-        target: 'queue',
-        animated: true,
-        label: 'Async Jobs',
-        style: { stroke: '#fb923c', strokeWidth: 2.5, strokeDasharray: '5,5' },
-        labelStyle: { fill: '#fb923c', fontWeight: 600, fontSize: 11 },
-        labelBgStyle: { fill: '#0f1419', fillOpacity: 0.95 }
+        style: { stroke: '#22d3ee', strokeWidth: 2 },
+        labelStyle: { fill: '#22d3ee', fontWeight: 600, fontSize: 11 }
       });
     }
 
-    // Backend to Cache
-    if (hasCache && hasBackend) {
+    // Backend -> Cache
+    if (hasBackend && hasCache) {
       edges.push({
         id: 'e-backend-cache',
         source: 'backend',
         target: 'cache',
+        label: 'Cache Query',
         animated: true,
-        label: 'Cache Lookup',
-        style: { stroke: '#facc15', strokeWidth: 2.5 },
-        labelStyle: { fill: '#facc15', fontWeight: 600, fontSize: 11 },
-        labelBgStyle: { fill: '#0f1419', fillOpacity: 0.95 }
+        style: { stroke: '#f59e0b', strokeWidth: 2 },
+        labelStyle: { fill: '#f59e0b', fontWeight: 600, fontSize: 11 }
       });
     }
 
-    // Cache to Database or Backend to Database
-    if (hasDatabase) {
-      if (hasCache && hasBackend) {
-        edges.push({
-          id: 'e-cache-database',
-          source: 'cache',
-          target: 'database',
-          animated: true,
-          label: 'Cache Miss → DB Query',
-          style: { stroke: '#f43f5e', strokeWidth: 2.5 },
-          labelStyle: { fill: '#f43f5e', fontWeight: 600, fontSize: 11 },
-          labelBgStyle: { fill: '#0f1419', fillOpacity: 0.95 }
-        });
-      } else if (hasBackend) {
-        edges.push({
-          id: 'e-backend-database',
-          source: 'backend',
-          target: 'database',
-          animated: true,
-          label: 'Database Query',
-          style: { stroke: '#f43f5e', strokeWidth: 2.5 },
-          labelStyle: { fill: '#f43f5e', fontWeight: 600, fontSize: 11 },
-          labelBgStyle: { fill: '#0f1419', fillOpacity: 0.95 }
-        });
-      } else if (hasFrontend) {
-        // Direct frontend to database (serverless)
-        edges.push({
-          id: 'e-frontend-database',
-          source: 'frontend',
-          target: 'database',
-          animated: true,
-          label: 'Direct DB Access',
-          style: { stroke: '#f43f5e', strokeWidth: 2.5 },
-          labelStyle: { fill: '#f43f5e', fontWeight: 600, fontSize: 11 },
-          labelBgStyle: { fill: '#0f1419', fillOpacity: 0.95 }
-        });
-      }
+    // Backend -> Database (or Cache -> Database)
+    if (hasBackend && hasDatabase) {
+      edges.push({
+        id: hasCache ? 'e-cache-database' : 'e-backend-database',
+        source: hasCache ? 'cache' : 'backend',
+        target: 'database',
+        label: 'DB Query',
+        animated: true,
+        style: { stroke: '#ec4899', strokeWidth: 2 },
+        labelStyle: { fill: '#ec4899', fontWeight: 600, fontSize: 11 }
+      });
     }
 
-    // Message Queue to Database
-    if (hasMessageQueue && hasDatabase && !hasCache) {
+    // If no backend but has database (direct connection)
+    if (!hasBackend && hasDatabase && hasFrontend) {
       edges.push({
-        id: 'e-queue-database',
-        source: 'queue',
+        id: 'e-frontend-database',
+        source: 'frontend',
         target: 'database',
+        label: 'Direct DB',
         animated: true,
-        label: 'Background Write',
-        style: { stroke: '#fb923c', strokeWidth: 2.5, strokeDasharray: '5,5' },
-        labelStyle: { fill: '#fb923c', fontWeight: 600, fontSize: 11 },
-        labelBgStyle: { fill: '#0f1419', fillOpacity: 0.95 }
+        style: { stroke: '#ec4899', strokeWidth: 2 },
+        labelStyle: { fill: '#ec4899', fontWeight: 600, fontSize: 11 }
       });
     }
 
     return edges;
   };
 
-  const [nodes, , onNodesChange] = useNodesState(createDetailedDataFlowNodes());
-  const [edges, , onEdgesChange] = useEdgesState(createDetailedDataFlowEdges());
-
-  // Calculate height dynamically
-  const layerCount = 1 +
-    (techStack.frontend?.length > 0 ? 1 : 0) +
-    (techStack.authentication?.length > 0 ? 1 : 0) +
-    (techStack.backend?.length > 0 ? 1 : 0) +
-    (techStack.messageQueue?.length > 0 ? 1 : 0) +
-    (techStack.cache?.length > 0 ? 1 : 0) +
-    (techStack.database?.length > 0 ? 1 : 0);
-  
-  const diagramHeight = Math.max(600, layerCount * 200 + 100);
+  const nodes = createNodes();
+  const edges = createEdges();
 
   return (
-    <div className="content-card">
-      <h2 className="card-title">📊 Data Flow Architecture</h2>
-      <div className="card-content">
-        <div className="reactflow-wrapper" style={{ height: `${diagramHeight}px`, background: '#0f1419', borderRadius: '8px', border: '1px solid #2d3748' }}>
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            fitView
-            attributionPosition="bottom-left"
-          >
-            <Controls />
-            <MiniMap
-              nodeColor={(node) => {
-                if (node.style?.border) {
-                  return node.style.border.split(' ')[2];
-                }
-                return '#3b82f6';
-              }}
-              maskColor="rgba(0, 0, 0, 0.7)"
-            />
-            <Background variant="dots" gap={12} size={1} color="#373e47" />
-          </ReactFlow>
-        </div>
-        <div style={{
-          marginTop: '1rem',
-          padding: '1rem',
-          background: 'rgba(59, 130, 246, 0.08)',
-          borderRadius: '8px',
-          border: '1px solid rgba(59, 130, 246, 0.2)'
+    <div style={{ marginTop: '30px' }}>
+      <h3 style={{
+        fontSize: '20px',
+        fontWeight: 'bold',
+        marginBottom: '20px',
+        color: '#fff',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px'
+      }}>
+        <span style={{ fontSize: '24px' }}>🔄</span>
+        Data Flow Architecture
+        <span style={{
+          fontSize: '12px',
+          background: 'rgba(59, 130, 246, 0.2)',
+          padding: '4px 12px',
+          borderRadius: '6px',
+          fontWeight: 'normal',
+          color: '#60a5fa'
         }}>
-          <div style={{ fontSize: '13px', lineHeight: '1.8', color: '#e2e8f0' }}>
-            <strong style={{ color: '#3b82f6' }}>📊 Architecture Layers:</strong> {layerCount} layers detected
-            <br/>
-            <strong style={{ color: '#3b82f6' }}>🔄 Data Flow:</strong> {
-              [
-                techStack.frontend?.length > 0 && 'Frontend',
-                techStack.authentication?.length > 0 && 'Auth',
-                techStack.backend?.length > 0 && 'Backend',
-                techStack.messageQueue?.length > 0 && 'Queue',
-                techStack.cache?.length > 0 && 'Cache',
-                techStack.database?.length > 0 && 'Database'
-              ].filter(Boolean).join(' → ')
-            }
-            <br/>
-            <strong style={{ color: '#3b82f6' }}>💡 Interactive:</strong> Drag nodes • Zoom with mouse wheel • Pan background • View mini-map
+          {nodes.length} Layers Detected
+        </span>
+      </h3>
+
+      <div style={{
+        height: '1400px',
+        background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+        borderRadius: '12px',
+        border: '2px solid rgba(255,255,255,0.1)',
+        overflow: 'hidden'
+      }}>
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          fitView
+          attributionPosition="bottom-left"
+        >
+          <Background color="#334155" gap={16} />
+          <Controls />
+          <MiniMap
+            nodeColor={(node) => {
+              if (node.id === 'client') return '#3b82f6';
+              if (node.id === 'frontend') return '#a78bfa';
+              if (node.id === 'auth') return '#10b981';
+              if (node.id === 'backend') return '#22d3ee';
+              if (node.id === 'cache') return '#f59e0b';
+              if (node.id === 'database') return '#ec4899';
+              return '#64748b';
+            }}
+            maskColor="rgba(0, 0, 0, 0.6)"
+          />
+        </ReactFlow>
+      </div>
+
+      {/* Legend */}
+      <div style={{
+        marginTop: '20px',
+        padding: '16px',
+        background: 'rgba(0,0,0,0.3)',
+        borderRadius: '8px',
+        border: '1px solid rgba(255,255,255,0.1)'
+      }}>
+        <div style={{ fontSize: '12px', fontWeight: '600', color: '#9ca3af', marginBottom: '10px' }}>
+          📊 LEGEND
+        </div>
+        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', fontSize: '11px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: '12px', height: '12px', background: '#3b82f6', borderRadius: '2px' }}></div>
+            <span style={{ color: '#d1d5db' }}>Client Layer</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: '12px', height: '12px', background: '#a78bfa', borderRadius: '2px' }}></div>
+            <span style={{ color: '#d1d5db' }}>Frontend</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: '12px', height: '12px', background: '#10b981', borderRadius: '2px' }}></div>
+            <span style={{ color: '#d1d5db' }}>Authentication</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: '12px', height: '12px', background: '#22d3ee', borderRadius: '2px' }}></div>
+            <span style={{ color: '#d1d5db' }}>Backend/API</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: '12px', height: '12px', background: '#f59e0b', borderRadius: '2px' }}></div>
+            <span style={{ color: '#d1d5db' }}>Cache</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: '12px', height: '12px', background: '#ec4899', borderRadius: '2px' }}></div>
+            <span style={{ color: '#d1d5db' }}>Database</span>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
 
 // Folder Structure Diagram Component
 function FolderStructureDiagram({ folders }) {
@@ -1521,9 +1557,9 @@ function FolderStructureDiagram({ folders }) {
 }
 
 
-function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, architectureError }) {
+function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, architectureError, detailedArchitecture }) {
   // Extract data with defaults (must be before any hooks or returns)
-  const techStack = repoData?.techStack || { frontend: [], backend: [], database: [], testing: [], devops: [] };
+  const techStack = repoData?.techStack || { frontend: [], backend: [], database: [], testing: [], devops: [], cache: [], messageQueue: [], authentication: [], orm: [] };
   const importantFiles = repoData?.importantFiles || [];
   const fileTree = repoData?.fileTree || [];
 
@@ -1865,7 +1901,7 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
       </div>
 
       {/* Data Flow Diagram - Shows actual data flow through detected technologies */}
-      {techStack && (Object.values(techStack).some(arr => arr.length > 0)) && <DataFlowDiagram techStack={techStack} />}
+      {techStack && (Object.values(techStack).some(arr => arr.length > 0)) && <DataFlowDiagram techStack={techStack} detailedArchitecture={detailedArchitecture} />}
 
       {/* Unified Comprehensive Technology Stack Visualization */}
       {techStack && (Object.values(techStack).some(arr => arr.length > 0)) && <UnifiedTechStackDiagram techStack={techStack} />}

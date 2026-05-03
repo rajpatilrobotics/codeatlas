@@ -1,7 +1,21 @@
 // GitHub API Service for fetching repository data
-// No authentication required for public repositories (60 requests/hour limit)
+// Uses GitHub token for authentication (5000 requests/hour with token)
 
 const GITHUB_API_BASE = 'https://api.github.com';
+const GITHUB_TOKEN = process.env.REACT_APP_GITHUB_TOKEN;
+
+// Helper function to get headers with authentication
+const getHeaders = () => {
+  const headers = {
+    'Accept': 'application/vnd.github.v3+json'
+  };
+  
+  if (GITHUB_TOKEN) {
+    headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+  }
+  
+  return headers;
+};
 
 /**
  * Parse GitHub URL to extract owner and repository name
@@ -46,9 +60,7 @@ export function parseGitHubUrl(url) {
  */
 export async function fetchRepositoryInfo(owner, repo) {
   const response = await fetch(`${GITHUB_API_BASE}/repos/${owner}/${repo}`, {
-    headers: {
-      'Accept': 'application/vnd.github.v3+json'
-    }
+    headers: getHeaders()
   });
   
   if (!response.ok) {
@@ -88,9 +100,7 @@ export async function fetchFileTree(owner, repo, branch = 'main') {
   const response = await fetch(
     `${GITHUB_API_BASE}/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`,
     {
-      headers: {
-        'Accept': 'application/vnd.github.v3+json'
-      }
+      headers: getHeaders()
     }
   );
   
@@ -123,9 +133,7 @@ export async function fetchFileContent(owner, repo, path) {
   const response = await fetch(
     `${GITHUB_API_BASE}/repos/${owner}/${repo}/contents/${path}`,
     {
-      headers: {
-        'Accept': 'application/vnd.github.v3+json'
-      }
+      headers: getHeaders()
     }
   );
   
@@ -176,7 +184,34 @@ export function identifyImportantFiles(fileTree) {
     { pattern: /^\.env\.example$/i, priority: 4 },
     { pattern: /^config\.(js|json|yaml|yml)$/i, priority: 4 },
     { pattern: /^tsconfig\.json$/i, priority: 4 },
-    { pattern: /^webpack\.config\.js$/i, priority: 4 }
+    { pattern: /^webpack\.config\.js$/i, priority: 4 },
+    
+    // Route/Controller files (priority 5)
+    { pattern: /routes?\.(js|ts|py)$/i, priority: 5 },
+    { pattern: /controller\.(js|ts|py)$/i, priority: 5 },
+    { pattern: /views\.py$/i, priority: 5 },
+    { pattern: /urls\.py$/i, priority: 5 },
+    
+    // Model/Schema files (priority 6)
+    { pattern: /models?\.(js|ts|py)$/i, priority: 6 },
+    { pattern: /schema\.(js|ts|graphql)$/i, priority: 6 },
+    { pattern: /entity\.(js|ts)$/i, priority: 6 },
+    
+    // Service files (priority 7)
+    { pattern: /service\.(js|ts|py)$/i, priority: 7 },
+    { pattern: /api\.(js|ts|py)$/i, priority: 7 },
+    
+    // Component files (priority 8)
+    { pattern: /\.(jsx|tsx|vue)$/i, priority: 8 },
+    { pattern: /component\.(js|ts)$/i, priority: 8 },
+    
+    // Middleware files (priority 9)
+    { pattern: /middleware\.(js|ts|py)$/i, priority: 9 },
+    { pattern: /auth\.(js|ts|py)$/i, priority: 9 },
+    
+    // Utility files (priority 10)
+    { pattern: /utils?\.(js|ts|py)$/i, priority: 10 },
+    { pattern: /helpers?\.(js|ts|py)$/i, priority: 10 }
   ];
   
   const matches = [];
@@ -190,9 +225,9 @@ export function identifyImportantFiles(fileTree) {
     }
   }
   
-  // Sort by priority and limit to 5 files
+  // Sort by priority and limit to 100 files for comprehensive analysis
   matches.sort((a, b) => a.priority - b.priority);
-  return matches.slice(0, 5).map(m => m.path);
+  return matches.slice(0, 100).map(m => m.path);
 }
 
 /**
@@ -420,6 +455,207 @@ export function detectTechStack(fileTree, importantFiles) {
   
   return techStack;
 }
+/**
+ * Extract functions from JavaScript/TypeScript code
+ */
+function extractFunctions(content, filePath) {
+  const functions = [];
+  
+  // Function declarations: function name() {}
+  const funcDeclRegex = /(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*\(([^)]*)\)/g;
+  let match;
+  while ((match = funcDeclRegex.exec(content)) !== null) {
+    functions.push({
+      name: match[1],
+      params: match[2].trim(),
+      type: 'function',
+      file: filePath
+    });
+  }
+  
+  // Arrow functions: const name = () => {}
+  const arrowFuncRegex = /(?:export\s+)?const\s+(\w+)\s*=\s*(?:async\s*)?\(([^)]*)\)\s*=>/g;
+  while ((match = arrowFuncRegex.exec(content)) !== null) {
+    functions.push({
+      name: match[1],
+      params: match[2].trim(),
+      type: 'arrow',
+      file: filePath
+    });
+  }
+  
+  // Class methods: methodName() {}
+  const methodRegex = /(?:async\s+)?(\w+)\s*\(([^)]*)\)\s*\{/g;
+  while ((match = methodRegex.exec(content)) !== null) {
+    if (!['if', 'for', 'while', 'switch', 'catch'].includes(match[1])) {
+      functions.push({
+        name: match[1],
+        params: match[2].trim(),
+        type: 'method',
+        file: filePath
+      });
+    }
+  }
+  
+  return functions;
+}
+
+/**
+ * Extract classes from code
+ */
+function extractClasses(content, filePath) {
+  const classes = [];
+  
+  // Class declarations
+  const classRegex = /(?:export\s+)?(?:default\s+)?class\s+(\w+)(?:\s+extends\s+(\w+))?/g;
+  let match;
+  while ((match = classRegex.exec(content)) !== null) {
+    classes.push({
+      name: match[1],
+      extends: match[2] || null,
+      file: filePath
+    });
+  }
+  
+  return classes;
+}
+
+/**
+ * Extract imports/dependencies from code
+ */
+function extractImports(content, filePath) {
+  const imports = [];
+  
+  // ES6 imports: import X from 'package'
+  const es6ImportRegex = /import\s+(?:{[^}]+}|\w+|\*\s+as\s+\w+)\s+from\s+['"]([^'"]+)['"]/g;
+  let match;
+  while ((match = es6ImportRegex.exec(content)) !== null) {
+    imports.push({
+      module: match[1],
+      type: 'es6',
+      file: filePath
+    });
+  }
+  
+  // CommonJS require: require('package')
+  const requireRegex = /require\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
+  while ((match = requireRegex.exec(content)) !== null) {
+    imports.push({
+      module: match[1],
+      type: 'commonjs',
+      file: filePath
+    });
+  }
+  
+  // Python imports
+  const pythonImportRegex = /(?:from\s+(\S+)\s+)?import\s+([^\n]+)/g;
+  while ((match = pythonImportRegex.exec(content)) !== null) {
+    imports.push({
+      module: match[1] || match[2].split(',')[0].trim(),
+      type: 'python',
+      file: filePath
+    });
+  }
+  
+  return imports;
+}
+
+/**
+ * Calculate Lines of Code (LOC) for a file
+ */
+function calculateLOC(content) {
+  if (!content) return 0;
+  
+  const lines = content.split('\n');
+  let loc = 0;
+  let inBlockComment = false;
+  
+  for (const line of lines) {
+    const trimmed = line.trim();
+    
+    // Skip empty lines
+    if (trimmed.length === 0) continue;
+    
+    // Handle block comments
+    if (trimmed.startsWith('/*')) inBlockComment = true;
+    if (inBlockComment) {
+      if (trimmed.endsWith('*/')) inBlockComment = false;
+      continue;
+    }
+    
+    // Skip single-line comments
+    if (trimmed.startsWith('//') || trimmed.startsWith('#')) continue;
+    
+    loc++;
+  }
+  
+  return loc;
+}
+
+/**
+ * Parse package.json for detailed information
+ */
+function parsePackageJson(content) {
+  try {
+    const pkg = JSON.parse(content);
+    return {
+      name: pkg.name || 'Unknown',
+      version: pkg.version || '0.0.0',
+      description: pkg.description || '',
+      scripts: Object.keys(pkg.scripts || {}),
+      dependencies: Object.keys(pkg.dependencies || {}),
+      devDependencies: Object.keys(pkg.devDependencies || {}),
+      engines: pkg.engines || {},
+      main: pkg.main || 'index.js',
+      author: pkg.author || 'Unknown'
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Extract configuration details from various config files
+ */
+function extractConfigDetails(importantFiles) {
+  const config = {
+    ports: [],
+    databases: [],
+    envVars: [],
+    apiKeys: []
+  };
+  
+  importantFiles.forEach(file => {
+    if (!file.content || file.error) return;
+    
+    // Extract port numbers
+    const portRegex = /(?:PORT|port)\s*[=:]\s*(?:process\.env\.\w+\s*\|\|\s*)?(\d+)/g;
+    let match;
+    while ((match = portRegex.exec(file.content)) !== null) {
+      config.ports.push({ port: match[1], file: file.path });
+    }
+    
+    // Extract database URLs
+    const dbRegex = /(?:mongodb|postgresql|mysql|redis):\/\/[^\s'"]+/g;
+    while ((match = dbRegex.exec(file.content)) !== null) {
+      config.databases.push({ url: match[0], file: file.path });
+    }
+    
+    // Extract environment variables from .env.example
+    if (file.path.includes('.env')) {
+      const envLines = file.content.split('\n');
+      envLines.forEach(line => {
+        const envMatch = line.match(/^([A-Z_]+)=/);
+        if (envMatch) {
+          config.envVars.push(envMatch[1]);
+        }
+      });
+    }
+  });
+  
+  return config;
+}
+
 
 /**
  * Analyze repository architecture in detail
@@ -443,9 +679,20 @@ export function analyzeArchitecture(fileTree, importantFiles) {
       componentCount: 0,
       apiEndpointCount: 0,
       modelCount: 0,
-      middlewareCount: 0
+      middlewareCount: 0,
+      totalLOC: 0,
+      avgLOCPerFile: 0,
+      functionCount: 0,
+      classCount: 0
     },
-    folderStructure: {}
+    folderStructure: {},
+    // NEW: Comprehensive data for detailed visualization
+    detailedFiles: [],
+    allFunctions: [],
+    allClasses: [],
+    allImports: [],
+    configuration: {},
+    packageInfo: null
   };
 
   // Detect API Endpoints
@@ -470,6 +717,53 @@ export function analyzeArchitecture(fileTree, importantFiles) {
   // Analyze Folder Structure
   analysis.folderStructure = analyzeFolderStructure(fileTree);
 
+  // NEW: Extract comprehensive details from all important files
+  let totalLOC = 0;
+  importantFiles.forEach(file => {
+    if (file.content && !file.error) {
+      const loc = calculateLOC(file.content);
+      totalLOC += loc;
+
+      // Extract functions
+      const functions = extractFunctions(file.content, file.path);
+      analysis.allFunctions.push(...functions);
+
+      // Extract classes
+      const classes = extractClasses(file.content, file.path);
+      analysis.allClasses.push(...classes);
+
+      // Extract imports
+      const imports = extractImports(file.content, file.path);
+      analysis.allImports.push(...imports);
+
+      // Store detailed file info
+      analysis.detailedFiles.push({
+        path: file.path,
+        loc,
+        functions: functions.length,
+        classes: classes.length,
+        imports: imports.length
+      });
+    }
+  });
+
+  // Calculate metrics
+  analysis.metrics.totalLOC = totalLOC;
+  analysis.metrics.avgLOCPerFile = importantFiles.length > 0
+    ? Math.round(totalLOC / importantFiles.length)
+    : 0;
+  analysis.metrics.functionCount = analysis.allFunctions.length;
+  analysis.metrics.classCount = analysis.allClasses.length;
+
+  // Extract configuration details
+  analysis.configuration = extractConfigDetails(importantFiles);
+
+  // Parse package.json if available
+  const packageFile = importantFiles.find(f => f.path === 'package.json');
+  if (packageFile && !packageFile.error) {
+    analysis.packageInfo = parsePackageJson(packageFile.content);
+  }
+
   return analysis;
 }
 
@@ -479,23 +773,39 @@ export function analyzeArchitecture(fileTree, importantFiles) {
 function detectAPIEndpoints(importantFiles, fileTree) {
   const endpoints = [];
   const routePatterns = [
-    // Express.js patterns
-    { regex: /(?:app|router)\.(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]/g, framework: 'Express' },
+    // Express.js patterns with handler
+    {
+      regex: /(?:app|router)\.(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]\s*,\s*(\w+)/g,
+      framework: 'Express'
+    },
     // NestJS patterns
-    { regex: /@(Get|Post|Put|Delete|Patch)\s*\(\s*['"`]([^'"`]*)['"`]\s*\)/g, framework: 'NestJS' },
+    {
+      regex: /@(Get|Post|Put|Delete|Patch)\s*\(\s*['"`]([^'"`]*)['"`]\s*\)/g,
+      framework: 'NestJS'
+    },
     // Django patterns
-    { regex: /path\s*\(\s*['"`]([^'"`]+)['"`]/g, framework: 'Django' },
+    {
+      regex: /path\s*\(\s*['"`]([^'"`]+)['"`]\s*,\s*(\w+)/g,
+      framework: 'Django'
+    },
     // FastAPI patterns
-    { regex: /@app\.(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]/g, framework: 'FastAPI' },
+    {
+      regex: /@app\.(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]\s*\)\s*(?:async\s+)?def\s+(\w+)/g,
+      framework: 'FastAPI'
+    },
     // Flask patterns
-    { regex: /@app\.route\s*\(\s*['"`]([^'"`]+)['"`].*methods\s*=\s*\[['"`]([^'"`]+)['"`]\]/g, framework: 'Flask' }
+    {
+      regex: /@app\.route\s*\(\s*['"`]([^'"`]+)['"`].*methods\s*=\s*\[['"`]([^'"`]+)['"`]\]/g,
+      framework: 'Flask'
+    }
   ];
 
-  // Check route files
+  // Check route files - increased limit to 50
   const routeFiles = fileTree.filter(f =>
     f.includes('route') || f.includes('controller') || f.includes('api') ||
-    f.includes('views.py') || f.includes('urls.py') || f.includes('main.py')
-  ).slice(0, 20); // Limit to first 20 route files
+    f.includes('views.py') || f.includes('urls.py') || f.includes('main.py') ||
+    f.includes('endpoint') || f.includes('handler')
+  ).slice(0, 50);
 
   routeFiles.forEach(filePath => {
     const file = importantFiles.find(f => f.path === filePath);
@@ -506,11 +816,15 @@ function detectAPIEndpoints(importantFiles, fileTree) {
         while ((match = regex.exec(file.content)) !== null) {
           const method = match[1] ? match[1].toUpperCase() : 'GET';
           const path = match[2] || match[1];
+          const handler = match[3] || 'handler';
+          
           if (path && path.length > 0 && path.length < 100) {
             endpoints.push({
               method,
               path: path.startsWith('/') ? path : `/${path}`,
               file: filePath.split('/').pop(),
+              fullPath: filePath,
+              handler,
               framework: pattern.framework
             });
           }
@@ -519,10 +833,10 @@ function detectAPIEndpoints(importantFiles, fileTree) {
     }
   });
 
-  // Remove duplicates and limit
+  // Remove duplicates and increase limit to 50
   const uniqueEndpoints = Array.from(new Set(endpoints.map(e => `${e.method} ${e.path}`)))
     .map(key => endpoints.find(e => `${e.method} ${e.path}` === key))
-    .slice(0, 15); // Limit to 15 endpoints
+    .slice(0, 50);
 
   return uniqueEndpoints;
 }
@@ -533,10 +847,11 @@ function detectAPIEndpoints(importantFiles, fileTree) {
 function detectDatabaseModels(importantFiles, fileTree) {
   const models = [];
   
-  // Find model files
+  // Find model files - increased limit to 30
   const modelFiles = fileTree.filter(f =>
-    f.includes('model') || f.includes('schema') || f.includes('entity')
-  ).slice(0, 15);
+    f.includes('model') || f.includes('schema') || f.includes('entity') ||
+    f.includes('table') || f.includes('database')
+  ).slice(0, 30);
 
   const modelPatterns = [
     // Mongoose
@@ -548,7 +863,9 @@ function detectDatabaseModels(importantFiles, fileTree) {
     // Django
     { regex: /class\s+(\w+)\s*\(\s*models\.Model\s*\)/g, type: 'Django' },
     // SQLAlchemy
-    { regex: /class\s+(\w+)\s*\(\s*Base\s*\)/g, type: 'SQLAlchemy' }
+    { regex: /class\s+(\w+)\s*\(\s*Base\s*\)/g, type: 'SQLAlchemy' },
+    // Sequelize
+    { regex: /(\w+)\s*=\s*sequelize\.define\s*\(\s*['"`](\w+)['"`]/g, type: 'Sequelize' }
   ];
 
   modelFiles.forEach(filePath => {
@@ -563,9 +880,11 @@ function detectDatabaseModels(importantFiles, fileTree) {
           if (modelName && modelName.length < 50) {
             models.push({
               name: modelName,
-              fields: fields.slice(0, 6), // Limit fields
+              fields: fields.slice(0, 10), // Increased field limit
               file: filePath.split('/').pop(),
-              type: pattern.type
+              fullPath: filePath,
+              type: pattern.type,
+              fieldCount: fields.length
             });
           }
         }
@@ -573,7 +892,7 @@ function detectDatabaseModels(importantFiles, fileTree) {
     }
   });
 
-  return models.slice(0, 10); // Limit to 10 models
+  return models.slice(0, 30); // Increased limit to 30 models
 }
 
 /**
@@ -609,52 +928,65 @@ function extractFields(fieldString) {
 function detectComponents(fileTree) {
   const components = [];
   
-  // React components
+  // React components - increased limit to 50
   const reactComponents = fileTree.filter(f =>
-    (f.endsWith('.jsx') || f.endsWith('.tsx')) &&
-    f.includes('component') || f.includes('src/')
-  ).slice(0, 20);
+    ((f.endsWith('.jsx') || f.endsWith('.tsx')) &&
+    (f.includes('component') || f.includes('src/'))) ||
+    (f.includes('components/') && (f.endsWith('.jsx') || f.endsWith('.tsx')))
+  ).slice(0, 50);
 
   reactComponents.forEach(path => {
     const name = path.split('/').pop().replace(/\.(jsx|tsx)$/, '');
+    const folder = path.split('/').slice(-2, -1)[0] || 'root';
     if (name && name.length < 50) {
       components.push({
         name,
         type: 'React',
-        path: path.replace(/^.*\/src\//, 'src/')
+        path: path.replace(/^.*\/src\//, 'src/'),
+        fullPath: path,
+        folder,
+        extension: path.endsWith('.tsx') ? 'tsx' : 'jsx'
       });
     }
   });
 
-  // Vue components
-  const vueComponents = fileTree.filter(f => f.endsWith('.vue')).slice(0, 20);
+  // Vue components - increased limit to 50
+  const vueComponents = fileTree.filter(f => f.endsWith('.vue')).slice(0, 50);
   vueComponents.forEach(path => {
     const name = path.split('/').pop().replace('.vue', '');
+    const folder = path.split('/').slice(-2, -1)[0] || 'root';
     if (name && name.length < 50) {
       components.push({
         name,
         type: 'Vue',
-        path: path.replace(/^.*\/src\//, 'src/')
+        path: path.replace(/^.*\/src\//, 'src/'),
+        fullPath: path,
+        folder,
+        extension: 'vue'
       });
     }
   });
 
-  // Angular components
+  // Angular components - increased limit to 50
   const angularComponents = fileTree.filter(f =>
     f.endsWith('.component.ts')
-  ).slice(0, 20);
+  ).slice(0, 50);
   angularComponents.forEach(path => {
     const name = path.split('/').pop().replace('.component.ts', '');
+    const folder = path.split('/').slice(-2, -1)[0] || 'root';
     if (name && name.length < 50) {
       components.push({
         name,
         type: 'Angular',
-        path: path.replace(/^.*\/src\//, 'src/')
+        path: path.replace(/^.*\/src\//, 'src/'),
+        fullPath: path,
+        folder,
+        extension: 'ts'
       });
     }
   });
 
-  return components.slice(0, 15); // Limit to 15 components
+  return components.slice(0, 50); // Increased limit to 50 components
 }
 
 /**
@@ -792,9 +1124,7 @@ export async function fetchContributors(owner, repo) {
     const response = await fetch(
       `${GITHUB_API_BASE}/repos/${owner}/${repo}/contributors?per_page=5`,
       {
-        headers: {
-          'Accept': 'application/vnd.github.v3+json'
-        }
+        headers: getHeaders()
       }
     );
     
@@ -823,9 +1153,7 @@ export async function fetchCommitActivity(owner, repo) {
     const response = await fetch(
       `${GITHUB_API_BASE}/repos/${owner}/${repo}/stats/participation`,
       {
-        headers: {
-          'Accept': 'application/vnd.github.v3+json'
-        }
+        headers: getHeaders()
       }
     );
     

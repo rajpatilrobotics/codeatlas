@@ -17,7 +17,7 @@ import SecurityScanner from './components/TabContent/SecurityScanner';
 import Chat from './components/TabContent/Chat';
 
 // GitHub Service
-import { analyzeRepository } from './services/githubService';
+import { analyzeRepository, analyzeArchitecture } from './services/githubService';
 
 // Watsonx.ai Service
 import { generateText } from './services/watsonxService';
@@ -44,6 +44,7 @@ function App() {
   const [architectureAnalysis, setArchitectureAnalysis] = useState(null);
   const [isArchitectureLoading, setIsArchitectureLoading] = useState(false);
   const [architectureError, setArchitectureError] = useState(null);
+  const [detailedArchitecture, setDetailedArchitecture] = useState(null);
   const resultsRef = useRef(null);
 
   const tabs = [
@@ -338,6 +339,12 @@ Keep response structured, concise, and easy to scan using bullet points.`;
         });
         
         setArchitectureAnalysis(architectureResponse);
+        
+        // Step 6b: Perform detailed architecture analysis
+        const detailedAnalysis = analyzeArchitecture(data.fileTree, data.importantFiles);
+        setDetailedArchitecture(detailedAnalysis);
+        console.log('Detailed Architecture Analysis:', detailedAnalysis);
+        
       } catch (architectureErr) {
         console.error('Architecture analysis generation failed:', architectureErr);
         setArchitectureError(architectureErr.message || 'Failed to generate architecture analysis');
@@ -416,6 +423,7 @@ Keep response structured, concise, and easy to scan using bullet points.`;
             architectureAnalysis={architectureAnalysis}
             isArchitectureLoading={isArchitectureLoading}
             architectureError={architectureError}
+            detailedArchitecture={detailedArchitecture}
           />
         );
       case 'onboarding':
