@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { generateText } from '../../services/watsonxService';
 
-function SecurityScanner({ repoData }) {
+function SecurityScanner({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
   const [securityData, setSecurityData] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState(null);
@@ -349,6 +349,136 @@ Total Files: ${fileTree?.length || 0}
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Real Code Analysis Vulnerabilities */}
+      {codeAnalysis && codeAnalysis.security && (
+        <div className="content-card code-analysis-card fade-in">
+          <h3 className="card-title">🔬 Code Analysis - Detected Vulnerabilities</h3>
+          
+          {isCodeAnalysisLoading && (
+            <div className="loading-container">
+              <div className="spinner"></div>
+              <p>Analyzing code for vulnerabilities...</p>
+            </div>
+          )}
+          
+          {!isCodeAnalysisLoading && (
+            <>
+              {/* Critical Issues */}
+              {codeAnalysis.security.critical && codeAnalysis.security.critical.length > 0 && (
+                <div className="vulnerability-section">
+                  <h4 className="vulnerability-section-title critical">
+                    🔴 Critical ({codeAnalysis.security.critical.length})
+                  </h4>
+                  {codeAnalysis.security.critical.map((vuln, index) => (
+                    <div key={`critical-${index}`} className="vulnerability-item critical">
+                      <div className="vulnerability-header">
+                        <span className="vulnerability-type">{vuln.type}</span>
+                        <span className="vulnerability-file">📄 {vuln.file}</span>
+                      </div>
+                      <p className="vulnerability-message">{vuln.message}</p>
+                      {vuln.line && (
+                        <p className="vulnerability-location">Line {vuln.line}</p>
+                      )}
+                      {vuln.code && (
+                        <pre className="vulnerability-code">
+                          <code>{vuln.code}</code>
+                        </pre>
+                      )}
+                      {vuln.suggestion && (
+                        <div className="vulnerability-fix">
+                          <strong>💡 Fix:</strong> {vuln.suggestion}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* High Issues */}
+              {codeAnalysis.security.high && codeAnalysis.security.high.length > 0 && (
+                <div className="vulnerability-section">
+                  <h4 className="vulnerability-section-title high">
+                    🟠 High ({codeAnalysis.security.high.length})
+                  </h4>
+                  {codeAnalysis.security.high.map((vuln, index) => (
+                    <div key={`high-${index}`} className="vulnerability-item high">
+                      <div className="vulnerability-header">
+                        <span className="vulnerability-type">{vuln.type}</span>
+                        <span className="vulnerability-file">📄 {vuln.file}</span>
+                      </div>
+                      <p className="vulnerability-message">{vuln.message}</p>
+                      {vuln.line && (
+                        <p className="vulnerability-location">Line {vuln.line}</p>
+                      )}
+                      {vuln.code && (
+                        <pre className="vulnerability-code">
+                          <code>{vuln.code}</code>
+                        </pre>
+                      )}
+                      {vuln.suggestion && (
+                        <div className="vulnerability-fix">
+                          <strong>💡 Fix:</strong> {vuln.suggestion}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Medium Issues */}
+              {codeAnalysis.security.medium && codeAnalysis.security.medium.length > 0 && (
+                <div className="vulnerability-section">
+                  <h4 className="vulnerability-section-title medium">
+                    🟡 Medium ({codeAnalysis.security.medium.length})
+                  </h4>
+                  {codeAnalysis.security.medium.map((vuln, index) => (
+                    <div key={`medium-${index}`} className="vulnerability-item medium">
+                      <div className="vulnerability-header">
+                        <span className="vulnerability-type">{vuln.type}</span>
+                        <span className="vulnerability-file">📄 {vuln.file}</span>
+                      </div>
+                      <p className="vulnerability-message">{vuln.message}</p>
+                      {vuln.line && (
+                        <p className="vulnerability-location">Line {vuln.line}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Low Issues */}
+              {codeAnalysis.security.low && codeAnalysis.security.low.length > 0 && (
+                <div className="vulnerability-section">
+                  <h4 className="vulnerability-section-title low">
+                    🔵 Low ({codeAnalysis.security.low.length})
+                  </h4>
+                  {codeAnalysis.security.low.map((vuln, index) => (
+                    <div key={`low-${index}`} className="vulnerability-item low">
+                      <div className="vulnerability-header">
+                        <span className="vulnerability-type">{vuln.type}</span>
+                        <span className="vulnerability-file">📄 {vuln.file}</span>
+                      </div>
+                      <p className="vulnerability-message">{vuln.message}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* No vulnerabilities found */}
+              {(!codeAnalysis.security.critical || codeAnalysis.security.critical.length === 0) &&
+               (!codeAnalysis.security.high || codeAnalysis.security.high.length === 0) &&
+               (!codeAnalysis.security.medium || codeAnalysis.security.medium.length === 0) &&
+               (!codeAnalysis.security.low || codeAnalysis.security.low.length === 0) && (
+                <div className="no-vulnerabilities">
+                  <span className="success-icon">✅</span>
+                  <p>No vulnerabilities detected in analyzed code!</p>
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 

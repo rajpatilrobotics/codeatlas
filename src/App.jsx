@@ -17,10 +17,13 @@ import SecurityScanner from './components/TabContent/SecurityScanner';
 import Chat from './components/TabContent/Chat';
 
 // GitHub Service
-import { analyzeRepository, analyzeArchitecture } from './services/githubService';
+import { analyzeRepository, analyzeArchitecture, parseGitHubUrl } from './services/githubService';
 
 // Watsonx.ai Service
 import { generateText } from './services/watsonxService';
+
+// Code Analysis Service
+import { codeAnalysisService } from './services/codeAnalysisService';
 
 function App() {
   const [repoUrl, setRepoUrl] = useState('');
@@ -45,6 +48,9 @@ function App() {
   const [isArchitectureLoading, setIsArchitectureLoading] = useState(false);
   const [architectureError, setArchitectureError] = useState(null);
   const [detailedArchitecture, setDetailedArchitecture] = useState(null);
+  const [codeAnalysis, setCodeAnalysis] = useState(null);
+  const [isCodeAnalysisLoading, setIsCodeAnalysisLoading] = useState(false);
+  const [codeAnalysisError, setCodeAnalysisError] = useState(null);
   const resultsRef = useRef(null);
 
   const tabs = [
@@ -58,19 +64,12 @@ function App() {
 
   // Helper function to prepare input for watsonx.ai
   const prepareAIInput = (repoData) => {
-    const { repoInfo, readme, fileTree } = repoData;
+    const { repoInfo, readme } = repoData;
     
-    // Truncate README to 3000 characters to avoid token limits
+    // Truncate README to 1000 characters for faster processing
     const truncatedReadme = readme && readme !== 'No README found'
-      ? readme.substring(0, 3000) + (readme.length > 3000 ? '...' : '')
+      ? readme.substring(0, 1000) + (readme.length > 1000 ? '...' : '')
       : 'No README available';
-    
-    // Format file structure (top-level files and folders only)
-    const topLevelItems = fileTree
-      .filter(path => !path.includes('/') || path.split('/').length <= 2)
-      .slice(0, 30); // Limit to 30 items
-    
-    const fileStructure = topLevelItems.join('\n');
     
     return `
 Repository: ${repoInfo.name}
@@ -80,9 +79,6 @@ Stars: ${repoInfo.stars}
 
 README Content:
 ${truncatedReadme}
-
-File Structure (top-level):
-${fileStructure}
     `.trim();
   };
 
@@ -205,7 +201,7 @@ Keep it clear, structured, and concise. Do not include unnecessary text.
 ${aiInput}`;
 
         const generatedSummary = await generateText(prompt, {
-          maxNewTokens: 500,
+          maxNewTokens: 300,
           temperature: 0.7
         });
         
@@ -350,6 +346,44 @@ Keep response structured, concise, and easy to scan using bullet points.`;
         setArchitectureError(architectureErr.message || 'Failed to generate architecture analysis');
       } finally {
         setIsArchitectureLoading(false);
+      
+      // Step 7: Perform deep code analysis
+      setIsCodeAnalysisLoading(true);
+      setCodeAnalysisError(null);
+      try {
+        console.log('🔬 Starting deep code analysis...');
+        
+        // Parse GitHub URL to get owner and repo
+        const parsed = parseGitHubUrl(repoUrl);
+        if (!parsed) {
+          throw new Error('Invalid GitHub URL');
+        }
+        
+        const { owner, repo } = parsed;
+        const token = process.env.REACT_APP_GITHUB_TOKEN;
+        
+        if (!token) {
+          console.warn('⚠️ No GitHub token found. Code analysis will be limited.');
+          setCodeAnalysisError('GitHub token not configured. Some features may be limited.');
+        }
+        
+        // Analyze repository with code analysis service
+        const analysis = await codeAnalysisService.analyzeRepository(
+          owner,
+          repo,
+          data.importantFiles,
+          token
+        );
+        
+        setCodeAnalysis(analysis);
+        console.log('✅ Code analysis complete!', analysis.summary);
+        
+      } catch (codeErr) {
+        console.error('Code analysis failed:', codeErr);
+        setCodeAnalysisError(codeErr.message || 'Failed to perform code analysis');
+      } finally {
+        setIsCodeAnalysisLoading(false);
+      }
       }
       
     } catch (err) {
@@ -414,6 +448,8 @@ Keep response structured, concise, and easy to scan using bullet points.`;
             isIssuesLoading={isIssuesLoading}
             firstContributions={firstContributions}
             isContributionsLoading={isContributionsLoading}
+            codeAnalysis={codeAnalysis}
+            isCodeAnalysisLoading={isCodeAnalysisLoading}
           />
         );
       case 'architecture':
@@ -424,18 +460,50 @@ Keep response structured, concise, and easy to scan using bullet points.`;
             isArchitectureLoading={isArchitectureLoading}
             architectureError={architectureError}
             detailedArchitecture={detailedArchitecture}
+            codeAnalysis={codeAnalysis}
+            isCodeAnalysisLoading={isCodeAnalysisLoading}
           />
         );
       case 'onboarding':
-        return <OnboardingGuide />;
+        return (
+          <OnboardingGuide
+            repoData={repoData}
+            codeAnalysis={codeAnalysis}
+            isCodeAnalysisLoading={isCodeAnalysisLoading}
+          />
+        );
       case 'documentation':
-        return <Documentation />;
+        return (
+          <Documentation
+            repoData={repoData}
+            codeAnalysis={codeAnalysis}
+          />
+        );
       case 'security':
-        return <SecurityScanner repoData={repoData} />;
+        return (
+          <SecurityScanner
+            repoData={repoData}
+            codeAnalysis={codeAnalysis}
+            isCodeAnalysisLoading={isCodeAnalysisLoading}
+          />
+        );
       case 'chat':
-        return <Chat repoData={repoData} />;
+        return (
+          <Chat
+            repoData={repoData}
+            codeAnalysis={codeAnalysis}
+            isCodeAnalysisLoading={isCodeAnalysisLoading}
+          />
+        );
       default:
-        return <Summary repoUrl={repoUrl} repoSize={repoSize} repoData={repoData} />;
+        return (
+          <Summary
+            repoUrl={repoUrl}
+            repoSize={repoSize}
+            repoData={repoData}
+            codeAnalysis={codeAnalysis}
+          />
+        );
     }
   };
 

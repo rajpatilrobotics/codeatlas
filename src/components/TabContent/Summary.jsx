@@ -1,6 +1,6 @@
 import React from 'react';
 
-function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, summaryError, quickStartGuide, isQuickStartLoading, commonIssues, isIssuesLoading, firstContributions, isContributionsLoading }) {
+function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, summaryError, quickStartGuide, isQuickStartLoading, commonIssues, isIssuesLoading, firstContributions, isContributionsLoading, codeAnalysis, isCodeAnalysisLoading }) {
   // If no repoData, show placeholder
   if (!repoData) {
     return (

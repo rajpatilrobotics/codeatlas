@@ -1,7 +1,63 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { generateText } from '../../services/watsonxService';
 
-function Chat({ repoData }) {
+// PHASE 2: Response Cache Class
+class ResponseCache {
+  constructor(maxSize = 50, ttl = 3600000) { // 1 hour TTL
+    this.cache = new Map();
+    this.maxSize = maxSize;
+    this.ttl = ttl;
+  }
+  
+  normalizeQuestion(question) {
+    return question.toLowerCase().trim().replace(/\s+/g, ' ');
+  }
+  
+  get(question) {
+    const key = this.normalizeQuestion(question);
+    const cached = this.cache.get(key);
+    
+    if (!cached) return null;
+    
+    // Check if expired
+    if (Date.now() - cached.timestamp > this.ttl) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    cached.hits++;
+    return cached.response;
+  }
+  
+  set(question, response) {
+    const key = this.normalizeQuestion(question);
+    
+    // Evict oldest if at capacity
+    if (this.cache.size >= this.maxSize) {
+      const oldestKey = this.cache.keys().next().value;
+      this.cache.delete(oldestKey);
+    }
+    
+    this.cache.set(key, {
+      response,
+      timestamp: Date.now(),
+      hits: 0
+    });
+  }
+  
+  getStats() {
+    return {
+      size: this.cache.size,
+      totalHits: Array.from(this.cache.values())
+        .reduce((sum, entry) => sum + entry.hits, 0)
+    };
+  }
+}
+
+// Create cache instance outside component
+const responseCache = new ResponseCache();
+
+function Chat({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -23,7 +79,8 @@ function Chat({ repoData }) {
         timestamp: Date.now()
       }]);
     }
-  }, [repoData, repoContext]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [repoData]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -45,7 +102,8 @@ function Chat({ repoData }) {
       .slice(0, 4)
       .map(f => ({
         name: f.path,
-        purpose: detectFilePurpose(f.path)
+        purpose: detectFilePurpose(f.path),
+        fullPath: f.path
       }));
     
     // Get short summary (first 300 chars)
@@ -58,7 +116,8 @@ function Chat({ repoData }) {
       repo_description: repoInfo.description || 'No description available',
       tech_stack: techStackStr,
       key_files: keyFiles,
-      short_summary: shortSummary
+      short_summary: shortSummary,
+      all_files: importantFiles || []
     };
   };
 
@@ -73,13 +132,16 @@ function Chat({ repoData }) {
     if (lower.includes('docker')) return 'Containerization';
     if (lower.includes('.env')) return 'Environment variables';
     if (lower.includes('server')) return 'Backend server';
+    if (lower.includes('auth')) return 'Authentication';
+    if (lower.includes('api')) return 'API endpoints';
+    if (lower.includes('component')) return 'UI component';
+    if (lower.includes('service')) return 'Service layer';
+    if (lower.includes('util') || lower.includes('helper')) return 'Utility functions';
     return 'Core component';
   };
 
   // PHASE 1: Intent Detection
   const detectIntent = (question) => {
-    const lower = question.toLowerCase();
-    
     if (/explain|what is|how does|tell me about|describe/i.test(question)) {
       return 'explain';
     }
@@ -105,72 +167,236 @@ function Chat({ repoData }) {
     return 'general';
   };
 
-  // PHASE 1: Role-Based System Prompts
-  const getRoleBasedPrompt = (intent) => {
-    const roles = {
-      explain: `You are a senior software engineer who excels at explaining complex code concepts in simple terms.`,
-      debug: `You are an expert debugger with years of experience identifying and fixing code issues.`,
-      improve: `You are a code optimization specialist focused on performance, maintainability, and best practices.`,
-      setup: `You are a DevOps engineer who provides clear, step-by-step setup and deployment instructions.`,
-      find: `You are a codebase navigator who helps developers locate specific files and functionality.`,
-      security: `You are a security specialist who identifies vulnerabilities and suggests secure coding practices.`,
-      architecture: `You are a software architect who explains system design, patterns, and code organization.`,
-      general: `You are a senior software engineer with deep expertise in ${repoContext?.tech_stack || 'software development'}.`
-    };
+  // PHASE 2: Extract Keywords from Question
+  const extractKeywords = (question) => {
+    const stopWords = ['the', 'is', 'at', 'which', 'on', 'a', 'an', 'how', 'what', 'where', 
+                       'does', 'do', 'can', 'could', 'would', 'should', 'this', 'that', 'these', 
+                       'those', 'i', 'you', 'me', 'my', 'your', 'about', 'from', 'with'];
     
-    return roles[intent] || roles.general;
+    const words = question.toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length > 2 && !stopWords.includes(w));
+    
+    return [...new Set(words)]; // Remove duplicates
   };
 
-  // PHASE 1: Enhanced System Prompt Builder
-  const buildEnhancedSystemPrompt = (userQuestion, intent, chatHistory) => {
-    if (!repoContext) return '';
+  // PHASE 2: Score File Relevance
+  const scoreFileRelevance = (file, keywords) => {
+    let score = 0;
+    const fileName = file.path.toLowerCase();
     
-    const rolePrompt = getRoleBasedPrompt(intent);
+    keywords.forEach(keyword => {
+      // Exact filename match
+      if (fileName.includes(keyword)) {
+        score += 15;
+      }
+      
+      // Directory match
+      const dirs = fileName.split('/');
+      if (dirs.some(dir => dir.includes(keyword))) {
+        score += 10;
+      }
+      
+      // Extension relevance
+      if (keyword === 'component' && /\.(jsx|tsx|vue)$/.test(fileName)) score += 5;
+      if (keyword === 'style' && /\.(css|scss|sass)$/.test(fileName)) score += 5;
+      if (keyword === 'test' && /\.(test|spec)\.(js|ts)$/.test(fileName)) score += 5;
+    });
     
-    const filesList = repoContext.key_files
-      .map(f => `- ${f.name}: ${f.purpose}`)
+    // Boost important file types
+    if (fileName.includes('auth')) score += 8;
+    if (fileName.includes('api')) score += 8;
+    if (fileName.includes('config')) score += 6;
+    if (fileName.includes('index') || fileName.includes('main')) score += 5;
+    
+    return score;
+  };
+
+  // PHASE 2: Select Relevant Files Dynamically
+  const selectRelevantFiles = (question, allFiles, maxFiles = 4) => {
+    if (!allFiles || allFiles.length === 0) return [];
+    
+    const keywords = extractKeywords(question);
+    console.log('🔍 Keywords extracted:', keywords);
+    
+    // Score all files
+    const scoredFiles = allFiles.map(file => ({
+      file,
+      score: scoreFileRelevance(file, keywords)
+    }));
+    
+    // Sort by score and take top N
+    const selected = scoredFiles
+      .sort((a, b) => b.score - a.score)
+      .slice(0, maxFiles)
+      .map(sf => sf.file);
+    
+    console.log('📁 Selected files:', selected.map(f => f.path));
+    
+    return selected;
+  };
+
+  // Helper function to extract code snippets from file content
+  const extractSnippetsFromContent = (content, keywords, contextLines = 3) => {
+    if (!content || !keywords || keywords.length === 0) return [];
+    
+    const lines = content.split('\n');
+    const snippets = [];
+    const maxSnippets = 3;
+    
+    keywords.forEach(keyword => {
+      for (let i = 0; i < lines.length && snippets.length < maxSnippets; i++) {
+        const line = lines[i];
+        if (line.toLowerCase().includes(keyword.toLowerCase())) {
+          const start = Math.max(0, i - contextLines);
+          const end = Math.min(lines.length, i + contextLines + 1);
+          const snippetLines = lines.slice(start, end);
+          
+          snippets.push({
+            lineNumber: start + 1,
+            code: snippetLines.join('\n'),
+            context: `Lines ${start + 1}-${end}`
+          });
+          
+          // Skip ahead to avoid overlapping snippets
+          i += contextLines;
+        }
+      }
+    });
+    
+    return snippets;
+  };
+
+  // PHASE 2: Build Context with Dynamic Files and Code Snippets
+  const buildDynamicContext = (question, baseContext) => {
+    const relevantFiles = selectRelevantFiles(
+      question,
+      baseContext.all_files,
+      4
+    );
+    
+    const dynamicFiles = relevantFiles.map(f => ({
+      name: f.path,
+      purpose: detectFilePurpose(f.path)
+    }));
+    
+    // Extract code snippets if codeAnalysis is available
+    const codeSnippets = [];
+    if (codeAnalysis && codeAnalysis.files && relevantFiles.length > 0) {
+      const keywords = extractKeywords(question);
+      
+      relevantFiles.forEach(relevantFile => {
+        const analysisFile = codeAnalysis.files.find(f => f.path === relevantFile.path);
+        if (analysisFile && analysisFile.content) {
+          const snippets = extractSnippetsFromContent(analysisFile.content, keywords, 3);
+          if (snippets.length > 0) {
+            codeSnippets.push({
+              file: analysisFile.path,
+              snippets: snippets
+            });
+          }
+        }
+      });
+      
+      console.log('📝 Extracted code snippets:', codeSnippets.length, 'files with snippets');
+    }
+    
+    return {
+      ...baseContext,
+      key_files: dynamicFiles.length > 0 ? dynamicFiles : baseContext.key_files,
+      code_snippets: codeSnippets
+    };
+  };
+
+  // Build System Prompt - Exact format as specified in task requirements
+  const buildStructuredPrompt = (userQuestion, intent, context, chatHistory) => {
+    // Build key files list
+    const filesList = context.key_files
+      .map((f, idx) => `{file_${idx + 1}}: ${f.purpose}`)
       .join('\n');
     
-    // Get last 3 exchanges (6 messages) for context
+    // Get last 3 messages (6 total - 3 exchanges) for chat history
     const recentHistory = chatHistory.slice(-6);
     const historyStr = recentHistory
       .map(m => `${m.sender === 'user' ? 'User' : 'Assistant'}: ${m.text}`)
       .join('\n');
     
-    return `${rolePrompt}
-
-REPOSITORY CONTEXT:
-Name: ${repoContext.repo_name}
-Description: ${repoContext.repo_description}
-Tech Stack: ${repoContext.tech_stack}
-Key Files:
-${filesList}
-Summary: ${repoContext.short_summary}
-
-CONVERSATION HISTORY (last 3 exchanges):
-${historyStr || 'No previous messages'}
+    return `You are a senior software engineer assistant who has fully analyzed a GitHub repository.
+Your job is to answer questions about this codebase accurately and helpfully.
 
 STRICT RULES:
-1. Answer ONLY based on the repository context provided above
-2. Do NOT hallucinate features, files, or functionality not mentioned
-3. If information is missing, explicitly say: "Not enough information in the repository"
-4. Keep responses concise (max 120 words)
-5. Reference specific files when possible using format: \`filename.ext\`
-6. Use bullet points for lists
-7. Include code examples only if relevant
-8. End with a helpful follow-up question
+- Answer ONLY based on the repository context provided
+- Do NOT hallucinate features, files, or logic
+- If information is missing, say: "Not enough information in the repository"
+- Keep answers concise (max 120 words)
+- Reference file names, folders, or components when possible
+- Prefer practical explanations over theory
+- Use bullet points when helpful
+- Always suggest a follow up question at the end
+- Format code snippets with proper labels
+- If asked about setup always include exact commands
 
-USER QUESTION (Intent: ${intent}):
+REPOSITORY CONTEXT:
+Name: ${context.repo_name}
+Description: ${context.repo_description}
+Tech Stack: ${context.tech_stack}
+Key Files:
+${filesList}
+Summary: ${context.short_summary}
+
+CHAT HISTORY (last 3 messages only):
+${historyStr || 'No previous messages'}
+
+USER QUESTION:
 ${userQuestion}
 
 RESPONSE FORMAT:
 - Start with direct answer
-- Support with file references if applicable
-- Provide example if helpful
-- End with: 💡 You might also want to ask: [relevant follow-up question]`;
+- Support with specific file references
+- End with: 💡 You might also want to ask: {suggested follow up question}`;
   };
 
-  // PHASE 1: Response Validation
+  // PHASE 2: Validate Structured Response
+  const validateStructuredResponse = (response, context) => {
+    const issues = [];
+    
+    // Check length
+    if (response.length > 1000) {
+      issues.push('Response too long (>1000 chars)');
+    }
+    
+    // Check for follow-up question
+    if (!response.includes('💡')) {
+      issues.push('Missing follow-up question');
+    }
+    
+    // Validate file references
+    const filePattern = /`([^`]+\.(jsx?|tsx?|py|java|go|rs|json|md|yml|yaml|xml|html|css))`/gi;
+    const matches = [...response.matchAll(filePattern)];
+    
+    if (matches.length > 0) {
+      matches.forEach(match => {
+        const filename = match[1];
+        const exists = context.all_files.some(f => 
+          f.path.includes(filename) || filename.includes(f.path.split('/').pop())
+        );
+        
+        if (!exists) {
+          console.warn(`⚠️ AI mentioned file that may not exist: ${filename}`);
+          issues.push(`Mentioned non-existent file: ${filename}`);
+        }
+      });
+    }
+    
+    return {
+      valid: issues.length === 0,
+      issues,
+      warnings: issues.length
+    };
+  };
+
+  // PHASE 1: Response Validation (Enhanced)
   const validateResponse = (response) => {
     if (!repoContext) return response;
     
@@ -182,7 +408,9 @@ RESPONSE FORMAT:
       // Validate each file reference
       matches.forEach(match => {
         const filename = match.replace(/`/g, '');
-        const exists = repoContext.key_files.some(f => f.name.includes(filename));
+        const exists = repoContext.all_files.some(f => 
+          f.path.includes(filename) || filename.includes(f.path.split('/').pop())
+        );
         
         if (!exists) {
           console.warn(`⚠️ AI mentioned file that may not exist: ${filename}`);
@@ -289,29 +517,60 @@ RESPONSE FORMAT:
     await new Promise(resolve => setTimeout(resolve, 800));
 
     try {
+      // PHASE 2: Check cache first
+      const cached = responseCache.get(currentInput);
+      if (cached) {
+        console.log('✅ Cache hit! Returning cached response');
+        const botMessage = {
+          id: Date.now() + 1,
+          text: cached,
+          sender: 'bot',
+          timestamp: Date.now(),
+          intent: detectIntent(currentInput),
+          cached: true
+        };
+        setMessages(prev => [...prev, botMessage]);
+        setIsTyping(false);
+        return;
+      }
+      
       // PHASE 1: Detect intent
       const intent = detectIntent(currentInput);
       console.log(`🎯 Detected intent: ${intent}`);
       
-      // PHASE 1: Build enhanced prompt with role-based system message
-      const prompt = buildEnhancedSystemPrompt(currentInput, intent, messages);
+      // PHASE 2: Build dynamic context with relevant files
+      const dynamicContext = buildDynamicContext(currentInput, repoContext);
+      
+      // PHASE 2: Build structured prompt
+      const prompt = buildStructuredPrompt(currentInput, intent, dynamicContext, messages);
       
       // Call watsonx.ai
       const response = await generateText(prompt, {
-        maxNewTokens: 300,
+        maxNewTokens: 350,
         temperature: 0.7,
         topP: 0.9
       });
 
+      // PHASE 2: Validate structured response
+      const validation = validateStructuredResponse(response, repoContext);
+      if (!validation.valid) {
+        console.warn('⚠️ Response validation issues:', validation.issues);
+      }
+
       // PHASE 1: Validate response
       const validatedResponse = validateResponse(response);
+
+      // PHASE 2: Cache the response
+      responseCache.set(currentInput, validatedResponse);
+      console.log('💾 Response cached. Cache stats:', responseCache.getStats());
 
       const botMessage = {
         id: Date.now() + 1,
         text: validatedResponse,
         sender: 'bot',
         timestamp: Date.now(),
-        intent: intent // Store intent for analytics
+        intent: intent,
+        cached: false
       };
       
       setMessages(prev => [...prev, botMessage]);
@@ -374,6 +633,9 @@ RESPONSE FORMAT:
                       <span className="message-sender">AI Assistant</span>
                       {message.intent && (
                         <span className="intent-badge">{message.intent}</span>
+                      )}
+                      {message.cached && (
+                        <span className="cache-badge" title="Cached response - instant reply!">⚡</span>
                       )}
                     </div>
                   )}
@@ -451,7 +713,7 @@ RESPONSE FORMAT:
         <h3 className="card-title">🎯 Quick Actions</h3>
         <div className="card-content">
           <div className="intent-presets">
-            <button
+            <button 
               className="intent-preset-chip explain"
               onClick={() => handleSuggestionClick("Explain how this project works")}
               disabled={isTyping}
@@ -459,7 +721,7 @@ RESPONSE FORMAT:
             >
               📖 Explain
             </button>
-            <button
+            <button 
               className="intent-preset-chip debug"
               onClick={() => handleSuggestionClick("Help me debug an issue")}
               disabled={isTyping}
@@ -467,7 +729,7 @@ RESPONSE FORMAT:
             >
               🐛 Debug
             </button>
-            <button
+            <button 
               className="intent-preset-chip improve"
               onClick={() => handleSuggestionClick("Suggest improvements for the code")}
               disabled={isTyping}
@@ -475,7 +737,7 @@ RESPONSE FORMAT:
             >
               ⚡ Improve
             </button>
-            <button
+            <button 
               className="intent-preset-chip setup"
               onClick={() => handleSuggestionClick("How do I set up this project?")}
               disabled={isTyping}
@@ -483,7 +745,7 @@ RESPONSE FORMAT:
             >
               🛠️ Setup
             </button>
-            <button
+            <button 
               className="intent-preset-chip find"
               onClick={() => handleSuggestionClick("Where can I find specific functionality?")}
               disabled={isTyping}
@@ -491,7 +753,7 @@ RESPONSE FORMAT:
             >
               🔍 Find
             </button>
-            <button
+            <button 
               className="intent-preset-chip security"
               onClick={() => handleSuggestionClick("Check for security issues")}
               disabled={isTyping}
@@ -499,7 +761,7 @@ RESPONSE FORMAT:
             >
               🔒 Security
             </button>
-            <button
+            <button 
               className="intent-preset-chip architecture"
               onClick={() => handleSuggestionClick("Explain the architecture")}
               disabled={isTyping}
@@ -507,7 +769,7 @@ RESPONSE FORMAT:
             >
               🏗️ Architecture
             </button>
-            <button
+            <button 
               className="intent-preset-chip general"
               onClick={() => handleSuggestionClick("Tell me about this repository")}
               disabled={isTyping}

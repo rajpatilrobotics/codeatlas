@@ -7,6 +7,7 @@ import ReactFlow, {
   useEdgesState,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import { FunctionCallFlowDiagram, FileStructureDiagram, DataFlowFromCodeDiagram } from './CodeAnalysisDiagrams';
 
 // Architecture Analysis Display Component with Enhanced Typography
 function ArchitectureAnalysisDisplay({ analysis }) {
@@ -1557,7 +1558,7 @@ function FolderStructureDiagram({ folders }) {
 }
 
 
-function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, architectureError, detailedArchitecture }) {
+function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, architectureError, detailedArchitecture, codeAnalysis, isCodeAnalysisLoading }) {
   // Extract data with defaults (must be before any hooks or returns)
   const techStack = repoData?.techStack || { frontend: [], backend: [], database: [], testing: [], devops: [], cache: [], messageQueue: [], authentication: [], orm: [] };
   const importantFiles = repoData?.importantFiles || [];
@@ -1931,6 +1932,256 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Code Analysis - Detected Patterns & Structure */}
+      {codeAnalysis && codeAnalysis.summary && (
+        <div className="content-card">
+          <h2 className="card-title">🔬 Code Analysis Insights</h2>
+          <div className="card-content">
+            {isCodeAnalysisLoading ? (
+              <div className="loading-container">
+                <div className="spinner"></div>
+                <p>Analyzing code structure...</p>
+              </div>
+            ) : (
+              <>
+                {/* Architecture Patterns */}
+                {codeAnalysis.summary.patterns && codeAnalysis.summary.patterns.length > 0 && (
+                  <div style={{ marginBottom: '25px' }}>
+                    <h3 style={{ fontSize: '16px', marginBottom: '12px', color: 'var(--text-primary)' }}>
+                      🏗️ Detected Architecture Patterns
+                    </h3>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                      {codeAnalysis.summary.patterns.map((pattern, index) => (
+                        <span
+                          key={index}
+                          style={{
+                            backgroundColor: '#e8f5e9',
+                            color: '#2e7d32',
+                            padding: '8px 16px',
+                            borderRadius: '20px',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            border: '1px solid #4caf50'
+                          }}
+                        >
+                          {pattern}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Code Structure Statistics */}
+                <div style={{ marginBottom: '25px' }}>
+                  <h3 style={{ fontSize: '16px', marginBottom: '12px', color: 'var(--text-primary)' }}>
+                    📊 Code Structure Statistics
+                  </h3>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '15px'
+                  }}>
+                    <div style={{
+                      padding: '15px',
+                      background: 'rgba(102, 126, 234, 0.08)',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(102, 126, 234, 0.2)'
+                    }}>
+                      <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#667eea' }}>
+                        {codeAnalysis.summary.totalFiles || 0}
+                      </div>
+                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                        Files Analyzed
+                      </div>
+                    </div>
+                    <div style={{
+                      padding: '15px',
+                      background: 'rgba(102, 126, 234, 0.08)',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(102, 126, 234, 0.2)'
+                    }}>
+                      <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#667eea' }}>
+                        {codeAnalysis.summary.totalLines || 0}
+                      </div>
+                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                        Lines of Code
+                      </div>
+                    </div>
+                    {codeAnalysis.definitions && codeAnalysis.definitions.functions && (
+                      <div style={{
+                        padding: '15px',
+                        background: 'rgba(102, 126, 234, 0.08)',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(102, 126, 234, 0.2)'
+                      }}>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#667eea' }}>
+                          {codeAnalysis.definitions.functions.length}
+                        </div>
+                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                          Functions Detected
+                        </div>
+                      </div>
+                    )}
+                    {codeAnalysis.definitions && codeAnalysis.definitions.classes && (
+                      <div style={{
+                        padding: '15px',
+                        background: 'rgba(102, 126, 234, 0.08)',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(102, 126, 234, 0.2)'
+                      }}>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#667eea' }}>
+                          {codeAnalysis.definitions.classes.length}
+                        </div>
+                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                          Classes Detected
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Key Functions & Classes */}
+                {codeAnalysis.definitions && (
+                  <div style={{ marginBottom: '25px' }}>
+                    <h3 style={{ fontSize: '16px', marginBottom: '12px', color: 'var(--text-primary)' }}>
+                      🔧 Key Code Definitions
+                    </h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                      {/* Functions */}
+                      {codeAnalysis.definitions.functions && codeAnalysis.definitions.functions.length > 0 && (
+                        <div>
+                          <h4 style={{ fontSize: '14px', marginBottom: '10px', color: 'var(--text-secondary)' }}>
+                            Functions ({codeAnalysis.definitions.functions.length})
+                          </h4>
+                          <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                            {codeAnalysis.definitions.functions.slice(0, 10).map((func, index) => (
+                              <div
+                                key={index}
+                                style={{
+                                  padding: '8px 12px',
+                                  marginBottom: '6px',
+                                  background: 'rgba(255, 255, 255, 0.03)',
+                                  borderRadius: '6px',
+                                  fontSize: '13px',
+                                  borderLeft: '3px solid #667eea'
+                                }}
+                              >
+                                <div style={{ fontWeight: '500', color: 'var(--text-primary)' }}>
+                                  {func.name}
+                                  {func.params && func.params.length > 0 && (
+                                    <span style={{ color: 'var(--text-secondary)', fontWeight: 'normal' }}>
+                                      ({func.params.join(', ')})
+                                    </span>
+                                  )}
+                                </div>
+                                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                                  📄 {func.file}:{func.line}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Classes */}
+                      {codeAnalysis.definitions.classes && codeAnalysis.definitions.classes.length > 0 && (
+                        <div>
+                          <h4 style={{ fontSize: '14px', marginBottom: '10px', color: 'var(--text-secondary)' }}>
+                            Classes ({codeAnalysis.definitions.classes.length})
+                          </h4>
+                          <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                            {codeAnalysis.definitions.classes.slice(0, 10).map((cls, index) => (
+                              <div
+                                key={index}
+                                style={{
+                                  padding: '8px 12px',
+                                  marginBottom: '6px',
+                                  background: 'rgba(255, 255, 255, 0.03)',
+                                  borderRadius: '6px',
+                                  fontSize: '13px',
+                                  borderLeft: '3px solid #ff6b9d'
+                                }}
+                              >
+                                <div style={{ fontWeight: '500', color: 'var(--text-primary)' }}>
+                                  {cls.name}
+                                </div>
+                                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                                  📄 {cls.file}:{cls.line}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Language Distribution */}
+                {codeAnalysis.summary.languages && Object.keys(codeAnalysis.summary.languages).length > 0 && (
+                  <div>
+                    <h3 style={{ fontSize: '16px', marginBottom: '12px', color: 'var(--text-primary)' }}>
+                      📝 Language Distribution
+                    </h3>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                      {Object.entries(codeAnalysis.summary.languages).map(([lang, percentage], index) => (
+                        <div
+                          key={index}
+                          style={{
+                            padding: '8px 16px',
+                            background: 'rgba(102, 126, 234, 0.08)',
+                            borderRadius: '8px',
+                            border: '1px solid rgba(102, 126, 234, 0.2)',
+                            fontSize: '13px'
+                          }}
+                        >
+                          <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{lang}</span>
+                          <span style={{ color: 'var(--text-secondary)', marginLeft: '8px' }}>{percentage}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* NEW: Data-Driven Diagrams from Code Analysis */}
+      {isCodeAnalysisLoading ? (
+        <div className="content-card">
+          <h2 className="card-title">🔬 Intelligent Diagrams</h2>
+          <div className="card-content">
+            <div className="loading-container">
+              <div className="spinner"></div>
+              <p>Analyzing code to generate intelligent diagrams...</p>
+            </div>
+          </div>
+        </div>
+      ) : codeAnalysis && codeAnalysis.definitions && codeAnalysis.files ? (
+        <>
+          {/* Data Flow from Real Code */}
+          <DataFlowFromCodeDiagram codeAnalysis={codeAnalysis} />
+          
+          {/* Function Call Flow */}
+          <FunctionCallFlowDiagram codeAnalysis={codeAnalysis} />
+          
+          {/* File Structure from Analysis */}
+          <FileStructureDiagram codeAnalysis={codeAnalysis} />
+        </>
+      ) : (
+        <div className="content-card">
+          <h2 className="card-title">🔬 Intelligent Diagrams</h2>
+          <div className="card-content">
+            <p className="text-secondary">
+              Intelligent diagrams will be generated from code analysis once the repository is analyzed.
+              These diagrams will show real functions, files, and data flow from your actual codebase.
+            </p>
           </div>
         </div>
       )}

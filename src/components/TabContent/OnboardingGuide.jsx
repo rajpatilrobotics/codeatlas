@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { generateText } from '../../services/watsonxService';
 
-function OnboardingGuide() {
+function OnboardingGuide({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [onboardingData, setOnboardingData] = useState(null);
   const [completedSteps, setCompletedSteps] = useState(new Set());
+
+  // Auto-generate guide when repoData is available
+  useEffect(() => {
+    if (repoData && !onboardingData && !loading) {
+      generateOnboardingGuide();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [repoData]);
 
   // Check for cached data on mount
   useEffect(() => {
@@ -317,6 +325,91 @@ Rules:
               transition: 'width 0.3s ease',
               borderRadius: '6px'
             }}></div>
+          </div>
+        </div>
+      )}
+
+      {/* Code Analysis Insights */}
+      {codeAnalysis && !isCodeAnalysisLoading && (
+        <div className="content-card">
+          <h3 className="card-title">🔬 Code Insights from Analysis</h3>
+          <div className="card-content">
+            <div className="code-insights-grid">
+              {/* Detected Frameworks */}
+              {codeAnalysis.summary && codeAnalysis.summary.frameworks && codeAnalysis.summary.frameworks.length > 0 && (
+                <div className="insight-section">
+                  <h4 className="insight-title">⚡ Frameworks & Libraries</h4>
+                  <div className="tech-badges">
+                    {codeAnalysis.summary.frameworks.map((fw, idx) => (
+                      <span key={idx} className="tech-badge">{fw}</span>
+                    ))}
+                  </div>
+                  <p className="insight-tip">
+                    💡 Familiarize yourself with these technologies before diving into the code
+                  </p>
+                </div>
+              )}
+
+              {/* Key Functions */}
+              {codeAnalysis.definitions && codeAnalysis.definitions.functions && codeAnalysis.definitions.functions.length > 0 && (
+                <div className="insight-section">
+                  <h4 className="insight-title">🔧 Key Functions to Understand</h4>
+                  <ul className="function-list">
+                    {codeAnalysis.definitions.functions.slice(0, 5).map((func, idx) => (
+                      <li key={idx} className="function-item">
+                        <code>{func.name}()</code>
+                        <span className="function-location">
+                          {func.file} : Line {func.line}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="insight-tip">
+                    💡 Start by understanding these core functions
+                  </p>
+                </div>
+              )}
+
+              {/* Architecture Patterns */}
+              {codeAnalysis.summary && codeAnalysis.summary.patterns && codeAnalysis.summary.patterns.length > 0 && (
+                <div className="insight-section">
+                  <h4 className="insight-title">🏗️ Architecture Patterns</h4>
+                  <div className="pattern-badges">
+                    {codeAnalysis.summary.patterns.map((pattern, idx) => (
+                      <span key={idx} className="pattern-badge">{pattern}</span>
+                    ))}
+                  </div>
+                  <p className="insight-tip">
+                    💡 The codebase follows these architectural patterns
+                  </p>
+                </div>
+              )}
+
+              {/* Files Analyzed */}
+              {codeAnalysis.summary && (
+                <div className="insight-section">
+                  <h4 className="insight-title">📊 Codebase Stats</h4>
+                  <div className="stats-grid">
+                    <div className="stat-item">
+                      <span className="stat-value">{codeAnalysis.summary.analyzedFiles || 0}</span>
+                      <span className="stat-label">Files Analyzed</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-value">{codeAnalysis.summary.totalLines?.toLocaleString() || 0}</span>
+                      <span className="stat-label">Lines of Code</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-value">{codeAnalysis.definitions?.functions?.length || 0}</span>
+                      <span className="stat-label">Functions</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-value">{codeAnalysis.definitions?.classes?.length || 0}</span>
+                      <span className="stat-label">Classes</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
