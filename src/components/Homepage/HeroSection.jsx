@@ -110,7 +110,7 @@ function HeroSection({ repoUrl, onUrlChange, onAnalyze, isAnalyzing }) {
 
         <div className="hero-footer-section">
           <p className="hero-powered-by">
-            Powered by IBM watsonx AI and IBM Bob
+            Powered by IBM Bob and IBM watsonx AI
           </p>
 
           <div className="hero-trust-indicators">
