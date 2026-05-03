@@ -1,79 +1,241 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { generateText } from '../../services/watsonxService';
 
-function Chat() {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      text: "Hello! I'm your DevDock AI assistant. I've analyzed your repository and I'm here to help you understand the codebase. What would you like to know?",
-      sender: 'bot',
-      timestamp: Date.now()
-    }
-  ]);
+function Chat({ repoData }) {
+  const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [repoContext, setRepoContext] = useState(null);
   const messagesEndRef = useRef(null);
+  const MAX_CHARS = 200;
+
+  // Build compressed repository context once
+  useEffect(() => {
+    if (repoData && !repoContext) {
+      const context = buildCompressedContext(repoData);
+      setRepoContext(context);
+      
+      // Add welcome message
+      setMessages([{
+        id: 1,
+        text: `Hello! I've analyzed the **${context.repo_name}** repository. I'm here to answer your questions about this codebase. What would you like to know?`,
+        sender: 'bot',
+        timestamp: Date.now()
+      }]);
+    }
+  }, [repoData, repoContext]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isTyping]);
 
-  const getBotResponse = (userMessage) => {
-    const lowerMessage = userMessage.toLowerCase();
+  // Build compressed repository context
+  const buildCompressedContext = (data) => {
+    const { repoInfo, techStack, importantFiles, aiSummary } = data;
     
-    // Context-aware responses
-    if (lowerMessage.includes('architecture') || lowerMessage.includes('structure')) {
-      return "This appears to be a React application with a component-based architecture. The main entry point is src/index.js, and the app is structured with separate components for Header, Footer, and various tab content sections. Would you like me to explain any specific part?";
-    } else if (lowerMessage.includes('setup') || lowerMessage.includes('install') || lowerMessage.includes('start')) {
-      return "To set up this project: 1) Clone the repository, 2) Run 'npm install' to install dependencies, 3) Run 'npm start' to start the development server. The app will be available at http://localhost:3000. Need help with any specific step?";
-    } else if (lowerMessage.includes('test') || lowerMessage.includes('testing')) {
-      return "The project uses Jest and React Testing Library for testing. You can run tests with 'npm test'. The test files are located alongside the components with a .test.js extension. Would you like to know more about the testing strategy?";
-    } else if (lowerMessage.includes('deploy') || lowerMessage.includes('production')) {
-      return "For production deployment, run 'npm run build' to create an optimized build. The build folder will contain static files ready to be deployed to any static hosting service like Netlify, Vercel, or AWS S3. Need deployment guidance for a specific platform?";
-    } else if (lowerMessage.includes('security') || lowerMessage.includes('vulnerability')) {
-      return "I've identified 3 vulnerabilities in the dependencies: 1 high severity (lodash), 1 medium (tough-cookie), and 1 low (request). Check the Security Scanner tab for detailed information and remediation steps. Would you like me to explain any specific vulnerability?";
-    } else if (lowerMessage.includes('component') || lowerMessage.includes('file')) {
-      return "The main components are organized in the src/components directory. Key components include Header, InputSection, TabNavigation, and various tab content components. Each component is self-contained with its own logic. Which component would you like to explore?";
-    } else if (lowerMessage.includes('help') || lowerMessage.includes('what can you')) {
-      return "I can help you with: understanding the architecture, setting up the project, explaining components, reviewing security findings, deployment guidance, testing strategies, and answering questions about the codebase. What would you like to explore?";
-    } else if (lowerMessage.includes('thank')) {
-      return "You're welcome! Feel free to ask if you have any other questions about the repository. I'm here to help! 😊";
-    } else if (lowerMessage.includes('dependencies') || lowerMessage.includes('packages')) {
-      return "This project uses React 18.2.0 as the main framework, along with react-dom and react-scripts. There are 247 total dependencies including development dependencies. Most packages are up-to-date. Would you like details about any specific dependency?";
-    } else {
-      // Generic helpful response
-      const responses = [
-        "That's a great question! Based on the repository analysis, I can provide more specific information. Could you clarify what aspect you'd like to know more about?",
-        "I understand you're asking about the codebase. The repository is well-structured with clear separation of concerns. What specific area would you like me to explain?",
-        "Interesting question! This repository follows modern React best practices. Would you like me to explain the architecture, setup process, or specific components?",
-        "I'm here to help you understand this codebase better. Could you be more specific about what you'd like to know? I can explain architecture, components, setup, or security findings."
-      ];
-      return responses[Math.floor(Math.random() * responses.length)];
-    }
+    // Detect tech stack
+    const allTech = Object.values(techStack || {}).flat();
+    const techStackStr = allTech.length > 0 
+      ? allTech.slice(0, 5).join(', ') 
+      : repoInfo.language || 'Not detected';
+    
+    // Get key files (max 4)
+    const keyFiles = (importantFiles || [])
+      .slice(0, 4)
+      .map(f => ({
+        name: f.path,
+        purpose: detectFilePurpose(f.path)
+      }));
+    
+    // Get short summary (first 300 chars)
+    const shortSummary = aiSummary 
+      ? aiSummary.substring(0, 300).trim() + (aiSummary.length > 300 ? '...' : '')
+      : 'Repository analysis in progress.';
+    
+    return {
+      repo_name: repoInfo.name,
+      repo_description: repoInfo.description || 'No description available',
+      tech_stack: techStackStr,
+      key_files: keyFiles,
+      short_summary: shortSummary
+    };
   };
 
-  const handleSendMessage = () => {
-    if (!inputValue.trim()) return;
+  // Detect file purpose based on name
+  const detectFilePurpose = (filename) => {
+    const lower = filename.toLowerCase();
+    if (lower.includes('package.json')) return 'Dependencies and scripts';
+    if (lower.includes('readme')) return 'Project documentation';
+    if (lower.includes('index') || lower.includes('main') || lower.includes('app')) return 'Main entry point';
+    if (lower.includes('config')) return 'Configuration';
+    if (lower.includes('test')) return 'Testing';
+    if (lower.includes('docker')) return 'Containerization';
+    if (lower.includes('.env')) return 'Environment variables';
+    if (lower.includes('server')) return 'Backend server';
+    return 'Core component';
+  };
 
-    // Add user message
+  // Build system prompt for watsonx
+  const buildSystemPrompt = (userQuestion, chatHistory) => {
+    if (!repoContext) return '';
+    
+    const filesList = repoContext.key_files
+      .map(f => `- ${f.name}: ${f.purpose}`)
+      .join('\n');
+    
+    const recentHistory = chatHistory.slice(-6); // Last 3 exchanges (6 messages)
+    const historyStr = recentHistory
+      .map(m => `${m.sender === 'user' ? 'User' : 'Assistant'}: ${m.text}`)
+      .join('\n');
+    
+    return `You are a senior software engineer assistant who has fully analyzed a GitHub repository.
+Your job is to answer questions about this codebase accurately and helpfully.
+
+STRICT RULES:
+- Answer ONLY based on the repository context provided
+- Do NOT hallucinate features, files, or logic
+- If information is missing, say: "Not enough information in the repository"
+- Keep answers concise (max 120 words)
+- Reference file names, folders, or components when possible
+- Prefer practical explanations over theory
+- Use bullet points when helpful
+- Always suggest a follow up question at the end
+- Format code snippets with proper labels
+- If asked about setup always include exact commands
+
+REPOSITORY CONTEXT:
+Name: ${repoContext.repo_name}
+Description: ${repoContext.repo_description}
+Tech Stack: ${repoContext.tech_stack}
+Key Files:
+${filesList}
+Summary: ${repoContext.short_summary}
+
+CHAT HISTORY (last 3 messages only):
+${historyStr || 'No previous messages'}
+
+USER QUESTION:
+${userQuestion}
+
+RESPONSE FORMAT:
+- Start with direct answer
+- Support with specific file references
+- End with: 💡 You might also want to ask: [suggested follow up question]`;
+  };
+
+  // Format AI message with better structure
+  const formatMessage = (text) => {
+    // Split into sections and format
+    const sections = text.split('\n\n');
+    
+    return sections.map((section, idx) => {
+      // Check if it's a list
+      if (section.includes('•') || section.includes('-')) {
+        const lines = section.split('\n');
+        const title = lines[0].includes('•') || lines[0].includes('-') ? null : lines.shift();
+        
+        return (
+          <div key={idx} className="message-section">
+            {title && <div className="section-title">{title}</div>}
+            <ul className="message-list">
+              {lines.map((line, i) => {
+                const cleaned = line.replace(/^[•\-]\s*/, '').trim();
+                if (!cleaned) return null;
+                return <li key={i}>{formatInlineText(cleaned)}</li>;
+              })}
+            </ul>
+          </div>
+        );
+      }
+      
+      // Check if it's a code block
+      if (section.includes('```')) {
+        const codeMatch = section.match(/```(\w+)?\n([\s\S]*?)```/);
+        if (codeMatch) {
+          return (
+            <div key={idx} className="message-section">
+              <pre className="code-block">
+                <code>{codeMatch[2].trim()}</code>
+              </pre>
+            </div>
+          );
+        }
+      }
+      
+      // Regular paragraph
+      return (
+        <div key={idx} className="message-section">
+          <p className="message-paragraph">{formatInlineText(section)}</p>
+        </div>
+      );
+    });
+  };
+
+  // Format inline text (bold file names, etc.)
+  const formatInlineText = (text) => {
+    // Bold text between **
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i} className="highlight">{part.slice(2, -2)}</strong>;
+      }
+      // Detect file names (contains . and extension)
+      if (part.match(/\b[\w-]+\.(jsx?|tsx?|json|md|css|html|py|java|go|rs)\b/i)) {
+        return <code key={i} className="inline-code">{part}</code>;
+      }
+      return part;
+    });
+  };
+
+  const handleSendMessage = async () => {
+    if (!inputValue.trim() || !repoContext) return;
+
     const userMessage = {
       id: Date.now(),
       text: inputValue,
       sender: 'user',
       timestamp: Date.now()
     };
+    
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
+    setIsTyping(true);
 
-    // Simulate bot typing and response
-    setTimeout(() => {
+    // Add realistic delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    try {
+      // Build prompt with context
+      const prompt = buildSystemPrompt(inputValue, messages);
+      
+      // Call watsonx.ai
+      const response = await generateText(prompt, {
+        maxNewTokens: 300,
+        temperature: 0.7,
+        topP: 0.9
+      });
+
       const botMessage = {
         id: Date.now() + 1,
-        text: getBotResponse(inputValue),
+        text: response,
         sender: 'bot',
         timestamp: Date.now()
       };
+      
       setMessages(prev => [...prev, botMessage]);
-    }, 1000);
+    } catch (error) {
+      console.error('Chat error:', error);
+      const errorMessage = {
+        id: Date.now() + 1,
+        text: `Sorry, I encountered an error: ${error.message}. Please try again.`,
+        sender: 'bot',
+        timestamp: Date.now()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const handleKeyPress = (e) => {
@@ -82,6 +244,26 @@ function Chat() {
       handleSendMessage();
     }
   };
+
+  const handleSuggestionClick = (question) => {
+    setInputValue(question);
+  };
+
+  const charCount = inputValue.length;
+  const isOverLimit = charCount > MAX_CHARS;
+
+  if (!repoData) {
+    return (
+      <div className="tab-content chat-tab">
+        <div className="content-card">
+          <h2 className="card-title">💬 Chat with AI Assistant</h2>
+          <div className="card-content">
+            <p className="text-secondary">Please analyze a repository first to start chatting.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="tab-content chat-tab">
@@ -92,41 +274,80 @@ function Chat() {
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`chat-message ${message.sender === 'user' ? 'user-message' : 'bot-message'}`}
+                className={`chat-message-wrapper ${message.sender === 'user' ? 'user-wrapper' : 'bot-wrapper'}`}
               >
-                <div className="message-avatar">
-                  {message.sender === 'user' ? '👤' : '🤖'}
-                </div>
-                <div className="message-content">
-                  <div className="message-text">{message.text}</div>
-                  <div className="message-time">
-                    {new Date(message.timestamp).toLocaleTimeString([], { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
+                <div className={`chat-message ${message.sender === 'user' ? 'user-message' : 'bot-message'}`}>
+                  {message.sender === 'bot' && (
+                    <div className="message-header">
+                      <span className="message-avatar-icon">🤖</span>
+                      <span className="message-sender">AI Assistant</span>
+                    </div>
+                  )}
+                  <div className="message-content">
+                    {message.sender === 'user' ? (
+                      <div className="message-text">{message.text}</div>
+                    ) : (
+                      <div className="message-text formatted">
+                        {formatMessage(message.text)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="message-footer">
+                    <span className="message-time">
+                      {new Date(message.timestamp).toLocaleTimeString([], { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}
+                    </span>
                   </div>
                 </div>
               </div>
             ))}
+            
+            {isTyping && (
+              <div className="chat-message-wrapper bot-wrapper">
+                <div className="chat-message bot-message typing-message">
+                  <div className="message-header">
+                    <span className="message-avatar-icon">🤖</span>
+                    <span className="message-sender">AI Assistant</span>
+                  </div>
+                  <div className="message-content">
+                    <div className="typing-indicator">
+                      <span className="typing-text">AI is typing</span>
+                      <span className="typing-dot"></span>
+                      <span className="typing-dot"></span>
+                      <span className="typing-dot"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div ref={messagesEndRef} />
           </div>
 
           <div className="chat-input-container">
-            <input
-              type="text"
-              className="chat-input"
-              placeholder="Ask me anything about this repository..."
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
-            />
+            <div className="chat-input-wrapper">
+              <input
+                type="text"
+                className="chat-input"
+                placeholder="Ask anything about this codebase..."
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyPress={handleKeyPress}
+                maxLength={MAX_CHARS}
+                disabled={isTyping}
+              />
+              <div className={`char-counter ${isOverLimit ? 'over-limit' : ''}`}>
+                {charCount}/{MAX_CHARS}
+              </div>
+            </div>
             <button
               className="send-button"
               onClick={handleSendMessage}
-              disabled={!inputValue.trim()}
+              disabled={!inputValue.trim() || isTyping || isOverLimit}
             >
-              <span className="send-icon">📤</span>
-              Send
+              <span className="send-icon">➤</span>
             </button>
           </div>
         </div>
@@ -138,33 +359,38 @@ function Chat() {
           <div className="suggested-questions">
             <button 
               className="suggestion-chip"
-              onClick={() => setInputValue("How do I set up this project?")}
+              onClick={() => handleSuggestionClick("What does this project do?")}
+              disabled={isTyping}
+            >
+              What does this project do?
+            </button>
+            <button 
+              className="suggestion-chip"
+              onClick={() => handleSuggestionClick("How do I set up this project?")}
+              disabled={isTyping}
             >
               How do I set up this project?
             </button>
             <button 
               className="suggestion-chip"
-              onClick={() => setInputValue("Explain the architecture")}
+              onClick={() => handleSuggestionClick("What are the main components?")}
+              disabled={isTyping}
             >
-              Explain the architecture
+              What are the main components?
             </button>
             <button 
               className="suggestion-chip"
-              onClick={() => setInputValue("What are the security issues?")}
+              onClick={() => handleSuggestionClick("Where is authentication handled?")}
+              disabled={isTyping}
             >
-              What are the security issues?
+              Where is authentication handled?
             </button>
             <button 
               className="suggestion-chip"
-              onClick={() => setInputValue("How do I run tests?")}
+              onClick={() => handleSuggestionClick("What are the key dependencies?")}
+              disabled={isTyping}
             >
-              How do I run tests?
-            </button>
-            <button 
-              className="suggestion-chip"
-              onClick={() => setInputValue("What components are available?")}
-            >
-              What components are available?
+              What are the key dependencies?
             </button>
           </div>
         </div>

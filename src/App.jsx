@@ -433,7 +433,7 @@ Keep response structured, concise, and easy to scan using bullet points.`;
       case 'security':
         return <SecurityScanner repoData={repoData} />;
       case 'chat':
-        return <Chat />;
+        return <Chat repoData={repoData} />;
       default:
         return <Summary repoUrl={repoUrl} repoSize={repoSize} repoData={repoData} />;
     }
