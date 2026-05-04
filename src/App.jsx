@@ -1134,6 +1134,12 @@ Keep response structured, concise, and easy to scan using bullet points.`;
 
           {analysisComplete && (
             <div ref={resultsRef} className="results-section">
+              <TabNavigation
+                tabs={tabs}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+              />
+
               <div className="results-header">
                 <TimeSavedBadge repoSize={repoSize} isVisible={analysisComplete} />
                 <DownloadPDFButton
@@ -1142,12 +1148,6 @@ Keep response structured, concise, and easy to scan using bullet points.`;
                   isGenerating={isGeneratingPDF}
                 />
               </div>
-
-              <TabNavigation
-                tabs={tabs}
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-              />
 
               <div className="tab-content-wrapper">
                 {renderTabContent()}

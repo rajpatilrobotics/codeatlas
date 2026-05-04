@@ -102,7 +102,7 @@
   flex: 1;
   width: 100%;
   padding: 0;
-  padding-top: 120px;
+  padding-top: 180px; /* Increased to account for fixed header (100px) + fixed tab nav (80px) */
 }
 
 /* Split-Screen Layout */
@@ -453,6 +453,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-top: var(--spacing-md);
   margin-bottom: var(--spacing-lg);
   flex-wrap: wrap;
   gap: var(--spacing-sm);
@@ -541,11 +542,13 @@
 }
 
 /* ===================================
-   Tab Navigation (Pill-Style + Fixed Sticky)
+   Tab Navigation (Pill-Style + Fixed)
    =================================== */
 .tab-navigation {
-  position: sticky;
+  position: fixed;
   top: 100px;
+  left: 0;
+  right: 0;
   z-index: 999;
   background: rgba(0, 0, 0, 0.9);
   backdrop-filter: var(--glass-blur);
