@@ -14,9 +14,7 @@ import { toPng } from 'html-to-image';
 // Homepage Components
 import HeroSection from './components/Homepage/HeroSection';
 import ImpactComparison from './components/Homepage/ImpactComparison';
-import PoweredByBob from './components/Homepage/PoweredByBob';
 import HowItWorks from './components/Homepage/HowItWorks';
-import ProductivityHighlight from './components/Homepage/ProductivityHighlight';
 import FeaturesGrid from './components/Homepage/FeaturesGrid';
 import CTASection from './components/Homepage/CTASection';
 
@@ -1276,9 +1274,7 @@ Keep response structured, concise, and easy to scan using bullet points.`;
                 isAnalyzing={isAnalyzing}
               />
               <ImpactComparison />
-              <PoweredByBob />
               <HowItWorks />
-              <ProductivityHighlight />
               <FeaturesGrid />
               <CTASection />
             </>
