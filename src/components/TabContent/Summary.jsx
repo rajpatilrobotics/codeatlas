@@ -152,7 +152,7 @@ function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, sum
       </div>
 
       {/* Tech Stack Detection */}
-      {techStack && (Object.values(techStack).some(arr => arr.length > 0)) && (
+      {techStack && Object.values(techStack).some(arr => Array.isArray(arr) && arr.length > 0) && (
         <div className="content-card">
           <h2 className="card-title">🛠️ Tech Stack Detected</h2>
           <div className="card-content">

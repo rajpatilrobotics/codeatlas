@@ -389,7 +389,7 @@ function UnifiedTechStackDiagram({ techStack }) {
   const [edges, , onEdgesChange] = useEdgesState(createUnifiedEdges());
 
   // Calculate total technologies
-  const totalTechs = Object.values(techStack).reduce((sum, arr) => sum + arr.length, 0);
+  const totalTechs = techStack ? Object.values(techStack).reduce((sum, arr) => sum + arr.length, 0) : 0;
 
   return (
     <div className="content-card">
@@ -815,7 +815,7 @@ function TechStackDiagram({ techStack }) {
   const [stackEdges, , onStackEdgesChange] = useEdgesState(createTechStackEdges());
 
   // Count total technologies
-  const totalTechs = Object.values(techStack).reduce((sum, arr) => sum + arr.length, 0);
+  const totalTechs = techStack ? Object.values(techStack).reduce((sum, arr) => sum + arr.length, 0) : 0;
 
   return (
     <div className="content-card">
@@ -832,7 +832,7 @@ function TechStackDiagram({ techStack }) {
             📊 Total Technologies Detected: <span style={{ color: '#667eea' }}>{totalTechs}</span>
           </p>
           <p style={{ margin: '10px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: '1.5' }}>
-            Organized into {Object.values(techStack).filter(arr => arr.length > 0).length} categories •
+            Organized into {techStack ? Object.values(techStack).filter(arr => arr.length > 0).length : 0} categories •
             Grid layout with 4 technologies per row •
             Interactive connections
           </p>
@@ -1912,7 +1912,7 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
       )}
 
       {/* Unified Comprehensive Technology Stack Visualization */}
-      {techStack && Object.keys(techStack).length > 0 && (Object.values(techStack).some(arr => Array.isArray(arr) && arr.length > 0)) && <UnifiedTechStackDiagram techStack={techStack} />}
+      {techStack && Object.keys(techStack).length > 0 && Object.values(techStack).some(arr => Array.isArray(arr) && arr.length > 0) && <UnifiedTechStackDiagram techStack={techStack} />}
 
       {/* Code Analysis - Detected Patterns & Structure */}
       {codeAnalysis && codeAnalysis.summary && (

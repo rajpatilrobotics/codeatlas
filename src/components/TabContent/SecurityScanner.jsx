@@ -116,8 +116,10 @@ ${repoContext}`;
     // Get key file names
     const keyFiles = importantFiles?.slice(0, 10).map(f => f.path).join(', ') || 'None';
     
-    // Get tech stack
-    const allTech = techStack ? Object.values(techStack).flat().join(', ') : 'Not detected';
+    // Get tech stack with null safety
+    const allTech = techStack && typeof techStack === 'object'
+      ? Object.values(techStack).flat().join(', ')
+      : 'Not detected';
     
     // Check for sensitive patterns in file tree
     const hasDotEnv = fileTree?.some(f => f.includes('.env')) || false;
