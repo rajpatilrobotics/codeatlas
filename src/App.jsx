@@ -5,7 +5,6 @@ import Header from './components/Header';
 import InputSection from './components/InputSection';
 import LoadingSpinner from './components/LoadingSpinner';
 import TabNavigation from './components/TabNavigation';
-import TimeSavedBadge from './components/TimeSavedBadge';
 import DownloadPDFButton from './components/DownloadPDFButton';
 import ScrollToTopButton from './components/ScrollToTopButton';
 import Footer from './components/Footer';
@@ -1319,10 +1318,6 @@ Keep response structured, concise, and easy to scan using bullet points.`;
                 pdfProgress={pdfProgress}
                 onNewAnalysis={handleNewAnalysis}
               />
-
-              <div className="results-header">
-                <TimeSavedBadge repoSize={repoSize} isVisible={analysisComplete} />
-              </div>
 
               <div className="tab-content-wrapper">
                 {renderTabContent()}
