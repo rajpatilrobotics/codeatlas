@@ -213,14 +213,39 @@
 }
 
 .header-developer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 0.75rem;
   color: var(--text-muted);
+  margin: 0;
+}
+
+.developer-text {
   margin: 0;
 }
 
 .developer-name {
   color: var(--text-primary);
   font-weight: 600;
+}
+
+.header-linkedin-link {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  transition: var(--transition-base);
+  text-decoration: none;
+}
+
+.header-linkedin-link:hover {
+  color: var(--accent-primary);
+  transform: translateY(-1px);
+}
+
+.header-linkedin-icon {
+  width: 16px;
+  height: 16px;
 }
 
 /* Responsive Header */
