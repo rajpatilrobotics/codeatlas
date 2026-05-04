@@ -678,14 +678,15 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: 2rem; /* Increased gap for better spacing */
 }
 
 .tab-list {
   display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  flex: 1;
+  gap: 1.5rem; /* Increased gap between tabs for full-width spread */
+  flex-wrap: nowrap; /* Prevent wrapping for cleaner look */
+  flex: 1; /* Take available space */
+  justify-content: center; /* Center the tabs in the middle */
 }
 
 .tab-button {
