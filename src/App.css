@@ -418,6 +418,13 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.btn-primary:disabled {
+  opacity: 0.6;
+  background: var(--gradient-primary);
+  box-shadow: var(--glow-primary);
+  cursor: not-allowed;
+}
+
 .btn-primary::before {
   content: '';
   position: absolute;
