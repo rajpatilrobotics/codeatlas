@@ -55,7 +55,6 @@ function HeroSection({ repoUrl, onUrlChange, onAnalyze, isAnalyzing }) {
         </p>
 
         <div className="hero-chips-section">
-          <p className="chips-label">Everything you need to understand a codebase</p>
           <div className="hero-feature-chips">
             <span className="feature-chip">Instant Code Summary</span>
             <span className="feature-chip">Visual Architecture</span>
