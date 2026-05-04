@@ -104,8 +104,10 @@ ${truncatedReadme}
     // Get only file names, not content
     const keyFileNames = importantFiles.map(f => f.path).join(', ');
     
-    // Get tech stack as comma-separated list
-    const allTech = Object.values(techStack).flat().join(', ');
+    // Get tech stack as comma-separated list with null safety
+    const allTech = techStack && typeof techStack === 'object'
+      ? Object.values(techStack).flat().join(', ')
+      : 'Not detected';
     
     // Short README snippet (first 500 chars)
     const readmeSnippet = readme && readme !== 'No README found'

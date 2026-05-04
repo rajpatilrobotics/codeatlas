@@ -72,6 +72,76 @@ function identifyImportantFiles(fileTree) {
     .map(item => item.path);
 }
 
+// Detect tech stack from file tree and contents
+function detectTechStack(fileTree, fileContents) {
+  const techStack = {
+    frontend: [],
+    backend: [],
+    database: [],
+    testing: [],
+    devops: [],
+    cache: [],
+    messageQueue: [],
+    authentication: [],
+    orm: []
+  };
+
+  const allContent = Object.values(fileContents).join('\n').toLowerCase();
+  const fileTreeStr = fileTree.join('\n').toLowerCase();
+
+  // Frontend detection
+  if (fileTreeStr.includes('package.json') && allContent.includes('react')) techStack.frontend.push('React');
+  if (allContent.includes('vue')) techStack.frontend.push('Vue.js');
+  if (allContent.includes('angular')) techStack.frontend.push('Angular');
+  if (allContent.includes('svelte')) techStack.frontend.push('Svelte');
+  if (allContent.includes('next')) techStack.frontend.push('Next.js');
+
+  // Backend detection
+  if (allContent.includes('express')) techStack.backend.push('Express.js');
+  if (allContent.includes('fastify')) techStack.backend.push('Fastify');
+  if (allContent.includes('django')) techStack.backend.push('Django');
+  if (allContent.includes('flask')) techStack.backend.push('Flask');
+  if (allContent.includes('spring')) techStack.backend.push('Spring Boot');
+  if (fileTreeStr.includes('go.mod')) techStack.backend.push('Go');
+
+  // Database detection
+  if (allContent.includes('mongodb') || allContent.includes('mongoose')) techStack.database.push('MongoDB');
+  if (allContent.includes('postgresql') || allContent.includes('pg')) techStack.database.push('PostgreSQL');
+  if (allContent.includes('mysql')) techStack.database.push('MySQL');
+  if (allContent.includes('redis')) techStack.database.push('Redis');
+  if (allContent.includes('sqlite')) techStack.database.push('SQLite');
+
+  // ORM detection
+  if (allContent.includes('prisma')) techStack.orm.push('Prisma');
+  if (allContent.includes('sequelize')) techStack.orm.push('Sequelize');
+  if (allContent.includes('typeorm')) techStack.orm.push('TypeORM');
+  if (allContent.includes('mongoose')) techStack.orm.push('Mongoose');
+
+  // Testing detection
+  if (allContent.includes('jest')) techStack.testing.push('Jest');
+  if (allContent.includes('mocha')) techStack.testing.push('Mocha');
+  if (allContent.includes('pytest')) techStack.testing.push('Pytest');
+  if (allContent.includes('cypress')) techStack.testing.push('Cypress');
+
+  // DevOps detection
+  if (fileTreeStr.includes('dockerfile')) techStack.devops.push('Docker');
+  if (fileTreeStr.includes('.github/workflows')) techStack.devops.push('GitHub Actions');
+  if (fileTreeStr.includes('vercel.json')) techStack.devops.push('Vercel');
+  if (allContent.includes('kubernetes')) techStack.devops.push('Kubernetes');
+
+  // Cache detection
+  if (allContent.includes('redis')) techStack.cache.push('Redis');
+  if (allContent.includes('memcached')) techStack.cache.push('Memcached');
+
+  // Authentication detection
+  if (allContent.includes('passport')) techStack.authentication.push('Passport.js');
+  if (allContent.includes('jwt') || allContent.includes('jsonwebtoken')) techStack.authentication.push('JWT');
+  if (allContent.includes('oauth')) techStack.authentication.push('OAuth');
+  if (allContent.includes('auth0')) techStack.authentication.push('Auth0');
+
+  return techStack;
+}
+
 module.exports = async (req, res) => {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -205,6 +275,10 @@ module.exports = async (req, res) => {
 
     console.log(`✓ Successfully analyzed ${owner}/${repo}`);
 
+    // Detect tech stack
+    const techStack = detectTechStack(fileTree, fileContents);
+    console.log('✓ Tech stack detected:', Object.entries(techStack).filter(([k, v]) => v.length > 0).map(([k, v]) => `${k}: ${v.length}`).join(', '));
+
     // Return comprehensive analysis
     return res.status(200).json({
       success: true,
@@ -228,6 +302,7 @@ module.exports = async (req, res) => {
       fileCount: fileTree.length,
       importantFiles: importantFilesWithContent, // Now includes content
       fileContents, // Keep for backward compatibility
+      techStack, // Add tech stack detection
     });
 
   } catch (error) {
