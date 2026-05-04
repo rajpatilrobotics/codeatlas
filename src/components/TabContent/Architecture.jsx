@@ -1613,6 +1613,41 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
       ));
     };
 
+    // Dynamic positioning algorithm
+    const calculateDynamicPositions = (nodesInTier, tierY) => {
+      const NODE_WIDTH = 220; // Reduced from 260px
+      const MIN_GAP = 60; // Minimum gap between nodes
+      const MIN_SPACING = NODE_WIDTH + MIN_GAP; // 280px total spacing
+      const CENTER_X = 400; // Center of the canvas
+      
+      const count = nodesInTier.length;
+      const positions = [];
+      
+      if (count === 1) {
+        // Single node: centered
+        positions.push({ x: CENTER_X, y: tierY });
+      } else if (count === 2) {
+        // Two nodes: spread 400px apart (200px from center each)
+        positions.push({ x: CENTER_X - 200, y: tierY });
+        positions.push({ x: CENTER_X + 200, y: tierY });
+      } else if (count === 3) {
+        // Three nodes: spread 300px apart
+        positions.push({ x: CENTER_X - 300, y: tierY });
+        positions.push({ x: CENTER_X, y: tierY });
+        positions.push({ x: CENTER_X + 300, y: tierY });
+      } else {
+        // Four or more nodes: calculate even spacing
+        const totalWidth = (count - 1) * MIN_SPACING;
+        const startX = CENTER_X - (totalWidth / 2);
+        
+        for (let i = 0; i < count; i++) {
+          positions.push({ x: startX + (i * MIN_SPACING), y: tierY });
+        }
+      }
+      
+      return positions;
+    };
+
     // Define ALL layer configurations with tier groupings
     const layerConfigs = [
       // PRESENTATION TIER
@@ -1622,9 +1657,9 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
         title: 'Frontend Layer',
         tier: 'presentation',
         tierLabel: '🎨 Presentation Tier',
+        tierY: 50,
         technologies: techStack.frontend,
-        color: { gradient: 'rgba(97, 218, 251, 0.15)', border: '#61dafb' },
-        position: { x: 400, y: 50 }
+        color: { gradient: 'rgba(97, 218, 251, 0.15)', border: '#61dafb' }
       },
       
       // APPLICATION TIER (Hub - Backend is central)
@@ -1634,9 +1669,9 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
         title: 'Backend Layer',
         tier: 'application',
         tierLabel: '⚙️ Application Tier',
+        tierY: 250,
         technologies: techStack.backend,
         color: { gradient: 'rgba(104, 160, 99, 0.15)', border: '#68a063' },
-        position: { x: 400, y: 250 },
         isHub: true // Backend is the central hub
       },
       {
@@ -1645,9 +1680,9 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
         title: 'Authentication Layer',
         tier: 'application',
         tierLabel: '⚙️ Application Tier',
+        tierY: 250,
         technologies: techStack.authentication,
-        color: { gradient: 'rgba(255, 107, 107, 0.15)', border: '#ff6b6b' },
-        position: { x: 150, y: 250 }
+        color: { gradient: 'rgba(255, 107, 107, 0.15)', border: '#ff6b6b' }
       },
       
       // DATA ACCESS TIER
@@ -1657,9 +1692,9 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
         title: 'ORM Layer',
         tier: 'dataAccess',
         tierLabel: '🔗 Data Access Tier',
+        tierY: 450,
         technologies: techStack.orm,
-        color: { gradient: 'rgba(78, 205, 196, 0.15)', border: '#4ecdc4' },
-        position: { x: 400, y: 450 }
+        color: { gradient: 'rgba(78, 205, 196, 0.15)', border: '#4ecdc4' }
       },
       
       // PERSISTENCE TIER
@@ -1669,9 +1704,9 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
         title: 'Database Layer',
         tier: 'persistence',
         tierLabel: '💾 Persistence Tier',
+        tierY: 650,
         technologies: techStack.database,
-        color: { gradient: 'rgba(242, 145, 17, 0.15)', border: '#f29111' },
-        position: { x: 400, y: 650 }
+        color: { gradient: 'rgba(242, 145, 17, 0.15)', border: '#f29111' }
       },
       {
         id: 'cache',
@@ -1679,9 +1714,9 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
         title: 'Cache Layer',
         tier: 'persistence',
         tierLabel: '💾 Persistence Tier',
+        tierY: 650,
         technologies: techStack.cache,
-        color: { gradient: 'rgba(255, 133, 27, 0.15)', border: '#ff851b' },
-        position: { x: 200, y: 650 }
+        color: { gradient: 'rgba(255, 133, 27, 0.15)', border: '#ff851b' }
       },
       {
         id: 'messageQueue',
@@ -1689,9 +1724,9 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
         title: 'Message Queue Layer',
         tier: 'persistence',
         tierLabel: '💾 Persistence Tier',
+        tierY: 650,
         technologies: techStack.messageQueue,
-        color: { gradient: 'rgba(177, 13, 201, 0.15)', border: '#b10dc9' },
-        position: { x: 600, y: 650 }
+        color: { gradient: 'rgba(177, 13, 201, 0.15)', border: '#b10dc9' }
       },
       
       // INFRASTRUCTURE TIER
@@ -1701,9 +1736,9 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
         title: 'Testing Layer',
         tier: 'infrastructure',
         tierLabel: '🚀 Infrastructure Tier',
+        tierY: 850,
         technologies: techStack.testing,
-        color: { gradient: 'rgba(153, 102, 255, 0.15)', border: '#9966ff' },
-        position: { x: 250, y: 850 }
+        color: { gradient: 'rgba(153, 102, 255, 0.15)', border: '#9966ff' }
       },
       {
         id: 'devops',
@@ -1711,9 +1746,9 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
         title: 'DevOps Layer',
         tier: 'infrastructure',
         tierLabel: '🚀 Infrastructure Tier',
+        tierY: 850,
         technologies: techStack.devops,
-        color: { gradient: 'rgba(0, 212, 255, 0.15)', border: '#00d4ff' },
-        position: { x: 550, y: 850 }
+        color: { gradient: 'rgba(0, 212, 255, 0.15)', border: '#00d4ff' }
       }
     ];
 
@@ -1721,35 +1756,9 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
     const addedLayers = [];
     const tierGroups = {};
 
-    // Only add layers that have detected technologies
+    // First pass: collect layers with technologies and group by tier
     layerConfigs.forEach((layer) => {
       if (layer.technologies && layer.technologies.length > 0) {
-        nodes.push({
-          id: layer.id,
-          type: 'default',
-          data: {
-            label: (
-              <div style={{ textAlign: 'center', padding: '12px' }}>
-                <div style={{ fontSize: '28px', marginBottom: '8px' }}>{layer.icon}</div>
-                <div style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '14px' }}>{layer.title}</div>
-                <div style={{ fontSize: '11px', display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '240px' }}>
-                  {createTechBadges(layer.technologies)}
-                </div>
-              </div>
-            )
-          },
-          position: layer.position,
-          style: {
-            background: `linear-gradient(135deg, ${layer.color.gradient} 0%, #1e2530 100%)`,
-            border: `2px solid ${layer.color.border}`,
-            borderRadius: '12px',
-            width: 260,
-            color: '#fff',
-            fontSize: '13px',
-            boxShadow: layer.isHub ? '0 0 20px rgba(104, 160, 99, 0.4)' : '0 4px 6px rgba(0,0,0,0.3)'
-          }
-        });
-
         addedLayers.push(layer);
         
         // Group by tier
@@ -1758,6 +1767,40 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
         }
         tierGroups[layer.tier].push(layer);
       }
+    });
+
+    // Second pass: calculate dynamic positions and create nodes
+    addedLayers.forEach((layer) => {
+      const nodesInTier = tierGroups[layer.tier];
+      const tierIndex = nodesInTier.findIndex(n => n.id === layer.id);
+      const positions = calculateDynamicPositions(nodesInTier, layer.tierY);
+      const position = positions[tierIndex];
+
+      nodes.push({
+        id: layer.id,
+        type: 'default',
+        data: {
+          label: (
+            <div style={{ textAlign: 'center', padding: '8px' }}>
+              <div style={{ fontSize: '28px', marginBottom: '6px' }}>{layer.icon}</div>
+              <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '14px' }}>{layer.title}</div>
+              <div style={{ fontSize: '11px', display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '200px' }}>
+                {createTechBadges(layer.technologies)}
+              </div>
+            </div>
+          )
+        },
+        position: position,
+        style: {
+          background: `linear-gradient(135deg, ${layer.color.gradient} 0%, #1e2530 100%)`,
+          border: `2px solid ${layer.color.border}`,
+          borderRadius: '12px',
+          width: 220,
+          color: '#fff',
+          fontSize: '13px',
+          boxShadow: layer.isHub ? '0 0 20px rgba(104, 160, 99, 0.4)' : '0 4px 6px rgba(0,0,0,0.3)'
+        }
+      });
     });
 
     // Create intelligent connections based on architecture patterns
