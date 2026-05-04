@@ -1912,7 +1912,7 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
       )}
 
       {/* Unified Comprehensive Technology Stack Visualization */}
-      {techStack && (Object.values(techStack).some(arr => arr.length > 0)) && <UnifiedTechStackDiagram techStack={techStack} />}
+      {techStack && (Object.values(techStack || {}).some(arr => Array.isArray(arr) && arr.length > 0)) && <UnifiedTechStackDiagram techStack={techStack} />}
 
       {/* Code Analysis - Detected Patterns & Structure */}
       {codeAnalysis && codeAnalysis.summary && (
@@ -1927,13 +1927,13 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
             ) : (
               <>
                 {/* Architecture Patterns */}
-                {codeAnalysis.summary.patterns && codeAnalysis.summary.patterns.length > 0 && (
+                {codeAnalysis?.summary?.patterns && Array.isArray(codeAnalysis.summary.patterns) && codeAnalysis.summary.patterns.length > 0 && (
                   <div style={{ marginBottom: '25px' }}>
                     <h3 style={{ fontSize: '16px', marginBottom: '12px', color: 'var(--text-primary)' }}>
                       🏗️ Detected Architecture Patterns
                     </h3>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                      {codeAnalysis.summary.patterns.map((pattern, index) => (
+                      {(codeAnalysis.summary.patterns || []).map((pattern, index) => (
                         <span
                           key={index}
                           style={{
@@ -2030,13 +2030,13 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
                     </h3>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                       {/* Functions */}
-                      {codeAnalysis.definitions.functions && codeAnalysis.definitions.functions.length > 0 && (
+                      {codeAnalysis?.definitions?.functions && Array.isArray(codeAnalysis.definitions.functions) && codeAnalysis.definitions.functions.length > 0 && (
                         <div>
                           <h4 style={{ fontSize: '14px', marginBottom: '10px', color: 'var(--text-secondary)' }}>
                             Functions ({codeAnalysis.definitions.functions.length})
                           </h4>
                           <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                            {codeAnalysis.definitions.functions.slice(0, 10).map((func, index) => (
+                            {(codeAnalysis.definitions.functions || []).slice(0, 10).map((func, index) => (
                               <div
                                 key={index}
                                 style={{
@@ -2049,15 +2049,15 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
                                 }}
                               >
                                 <div style={{ fontWeight: '500', color: 'var(--text-primary)' }}>
-                                  {func.name}
-                                  {func.params && func.params.length > 0 && (
+                                  {func?.name || 'Unknown'}
+                                  {func?.params && Array.isArray(func.params) && func.params.length > 0 && (
                                     <span style={{ color: 'var(--text-secondary)', fontWeight: 'normal' }}>
                                       ({func.params.join(', ')})
                                     </span>
                                   )}
                                 </div>
                                 <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                                  📄 {func.file}:{func.line}
+                                  📄 {func?.file || 'unknown'}:{func?.line || 0}
                                 </div>
                               </div>
                             ))}
@@ -2066,13 +2066,13 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
                       )}
 
                       {/* Classes */}
-                      {codeAnalysis.definitions.classes && codeAnalysis.definitions.classes.length > 0 && (
+                      {codeAnalysis?.definitions?.classes && Array.isArray(codeAnalysis.definitions.classes) && codeAnalysis.definitions.classes.length > 0 && (
                         <div>
                           <h4 style={{ fontSize: '14px', marginBottom: '10px', color: 'var(--text-secondary)' }}>
                             Classes ({codeAnalysis.definitions.classes.length})
                           </h4>
                           <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                            {codeAnalysis.definitions.classes.slice(0, 10).map((cls, index) => (
+                            {(codeAnalysis.definitions.classes || []).slice(0, 10).map((cls, index) => (
                               <div
                                 key={index}
                                 style={{
@@ -2085,10 +2085,10 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
                                 }}
                               >
                                 <div style={{ fontWeight: '500', color: 'var(--text-primary)' }}>
-                                  {cls.name}
+                                  {cls?.name || 'Unknown'}
                                 </div>
                                 <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                                  📄 {cls.file}:{cls.line}
+                                  📄 {cls?.file || 'unknown'}:{cls?.line || 0}
                                 </div>
                               </div>
                             ))}
@@ -2100,13 +2100,13 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
                 )}
 
                 {/* Language Distribution */}
-                {codeAnalysis.summary.languages && Object.keys(codeAnalysis.summary.languages).length > 0 && (
+                {codeAnalysis?.summary?.languages && Object.keys(codeAnalysis.summary.languages || {}).length > 0 && (
                   <div>
                     <h3 style={{ fontSize: '16px', marginBottom: '12px', color: 'var(--text-primary)' }}>
                       📝 Language Distribution
                     </h3>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                      {Object.entries(codeAnalysis.summary.languages).map(([lang, percentage], index) => (
+                      {Object.entries(codeAnalysis.summary.languages || {}).map(([lang, percentage], index) => (
                         <div
                           key={index}
                           style={{
@@ -2165,26 +2165,26 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
       {topLevelFolders.length > 0 && <FolderStructureDiagram folders={topLevelFolders} />}
 
       {/* Key Files & Components - Moved to bottom after all diagrams */}
-      {importantFiles && importantFiles.length > 0 && (
+      {importantFiles && Array.isArray(importantFiles) && importantFiles.length > 0 && (
         <div className="content-card">
           <h2 className="card-title">📦 Key Components</h2>
           <div className="card-content">
             <div className="key-files-list">
-              {importantFiles.map((file, index) => (
+              {(importantFiles || []).map((file, index) => (
                 <div key={index} className="key-file-item">
                   <span className="file-icon">📄</span>
-                  <span className="file-name">{file.path}</span>
+                  <span className="file-name">{file?.path || 'Unknown file'}</span>
                   <span className="file-badge">
-                    {file.path.includes('package.json') && 'Dependencies'}
-                    {file.path.includes('README') && 'Documentation'}
-                    {file.path.includes('index') && 'Entry Point'}
-                    {file.path.includes('App') && 'Main Component'}
-                    {file.path.includes('.env') && 'Configuration'}
-                    {!file.path.includes('package.json') &&
-                     !file.path.includes('README') &&
-                     !file.path.includes('index') &&
-                     !file.path.includes('App') &&
-                     !file.path.includes('.env') && 'Core File'}
+                    {file?.path?.includes('package.json') && 'Dependencies'}
+                    {file?.path?.includes('README') && 'Documentation'}
+                    {file?.path?.includes('index') && 'Entry Point'}
+                    {file?.path?.includes('App') && 'Main Component'}
+                    {file?.path?.includes('.env') && 'Configuration'}
+                    {!file?.path?.includes('package.json') &&
+                     !file?.path?.includes('README') &&
+                     !file?.path?.includes('index') &&
+                     !file?.path?.includes('App') &&
+                     !file?.path?.includes('.env') && 'Core File'}
                   </span>
                 </div>
               ))}

@@ -69,16 +69,26 @@ function Chat({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
   // Build compressed repository context once
   useEffect(() => {
     if (repoData && !repoContext) {
-      const context = buildCompressedContext(repoData);
-      setRepoContext(context);
-      
-      // Add welcome message
-      setMessages([{
-        id: 1,
-        text: `Hello! I've analyzed the **${context.repo_name}** repository. I'm here to answer your questions about this codebase. What would you like to know?`,
-        sender: 'bot',
-        timestamp: Date.now()
-      }]);
+      try {
+        const context = buildCompressedContext(repoData);
+        setRepoContext(context);
+        
+        // Add welcome message
+        setMessages([{
+          id: 1,
+          text: `Hello! I've analyzed the **${context?.repo_name || 'repository'}**. I'm here to answer your questions about this codebase. What would you like to know?`,
+          sender: 'bot',
+          timestamp: Date.now()
+        }]);
+      } catch (error) {
+        console.error('Error building context:', error);
+        setMessages([{
+          id: 1,
+          text: 'Hello! I\'m ready to help you understand this codebase. What would you like to know?',
+          sender: 'bot',
+          timestamp: Date.now()
+        }]);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [repoData]);
@@ -90,35 +100,37 @@ function Chat({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
 
   // Build compressed repository context
   const buildCompressedContext = (data) => {
+    if (!data) return null;
+    
     const { repoInfo, techStack, importantFiles, aiSummary } = data;
     
-    // Detect tech stack
-    const allTech = Object.values(techStack || {}).flat();
-    const techStackStr = allTech.length > 0 
-      ? allTech.slice(0, 5).join(', ') 
-      : repoInfo.language || 'Not detected';
+    // Detect tech stack with null safety
+    const allTech = Object.values(techStack || {}).flat().filter(Boolean);
+    const techStackStr = allTech.length > 0
+      ? allTech.slice(0, 5).join(', ')
+      : repoInfo?.language || 'Not detected';
     
-    // Get key files (max 4)
-    const keyFiles = (importantFiles || [])
+    // Get key files (max 4) with null safety
+    const keyFiles = (Array.isArray(importantFiles) ? importantFiles : [])
       .slice(0, 4)
       .map(f => ({
-        name: f.path,
-        purpose: detectFilePurpose(f.path),
-        fullPath: f.path
+        name: f?.path || 'unknown',
+        purpose: detectFilePurpose(f?.path || ''),
+        fullPath: f?.path || ''
       }));
     
     // Get short summary (first 300 chars)
-    const shortSummary = aiSummary 
+    const shortSummary = aiSummary
       ? aiSummary.substring(0, 300).trim() + (aiSummary.length > 300 ? '...' : '')
       : 'Repository analysis in progress.';
     
     return {
-      repo_name: repoInfo.name,
-      repo_description: repoInfo.description || 'No description available',
+      repo_name: repoInfo?.name || 'Unknown Repository',
+      repo_description: repoInfo?.description || 'No description available',
       tech_stack: techStackStr,
       key_files: keyFiles,
       short_summary: shortSummary,
-      all_files: importantFiles || []
+      all_files: Array.isArray(importantFiles) ? importantFiles : []
     };
   };
 
@@ -184,10 +196,12 @@ function Chat({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
 
   // PHASE 2: Score File Relevance
   const scoreFileRelevance = (file, keywords) => {
+    if (!file || !file.path) return 0;
+    
     let score = 0;
     const fileName = file.path.toLowerCase();
     
-    keywords.forEach(keyword => {
+    (keywords || []).forEach(keyword => {
       // Exact filename match
       if (fileName.includes(keyword)) {
         score += 15;
@@ -216,16 +230,18 @@ function Chat({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
 
   // PHASE 2: Select Relevant Files Dynamically
   const selectRelevantFiles = (question, allFiles, maxFiles = 4) => {
-    if (!allFiles || allFiles.length === 0) return [];
+    if (!allFiles || !Array.isArray(allFiles) || allFiles.length === 0) return [];
     
     const keywords = extractKeywords(question);
     console.log('🔍 Keywords extracted:', keywords);
     
-    // Score all files
-    const scoredFiles = allFiles.map(file => ({
-      file,
-      score: scoreFileRelevance(file, keywords)
-    }));
+    // Score all files with null safety
+    const scoredFiles = (allFiles || [])
+      .filter(file => file && file.path)
+      .map(file => ({
+        file,
+        score: scoreFileRelevance(file, keywords)
+      }));
     
     // Sort by score and take top N
     const selected = scoredFiles
@@ -233,7 +249,7 @@ function Chat({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
       .slice(0, maxFiles)
       .map(sf => sf.file);
     
-    console.log('📁 Selected files:', selected.map(f => f.path));
+    console.log('📁 Selected files:', selected.map(f => f?.path || 'unknown'));
     
     return selected;
   };
@@ -271,24 +287,26 @@ function Chat({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
 
   // PHASE 2: Build Context with Dynamic Files and Code Snippets
   const buildDynamicContext = (question, baseContext) => {
+    if (!baseContext) return null;
+    
     const relevantFiles = selectRelevantFiles(
       question,
       baseContext.all_files,
       4
     );
     
-    const dynamicFiles = relevantFiles.map(f => ({
-      name: f.path,
-      purpose: detectFilePurpose(f.path)
+    const dynamicFiles = (relevantFiles || []).map(f => ({
+      name: f?.path || 'unknown',
+      purpose: detectFilePurpose(f?.path || '')
     }));
     
     // Extract code snippets if codeAnalysis is available
     const codeSnippets = [];
-    if (codeAnalysis && codeAnalysis.files && relevantFiles.length > 0) {
+    if (codeAnalysis && codeAnalysis.files && Array.isArray(codeAnalysis.files) && relevantFiles.length > 0) {
       const keywords = extractKeywords(question);
       
-      relevantFiles.forEach(relevantFile => {
-        const analysisFile = codeAnalysis.files.find(f => f.path === relevantFile.path);
+      (relevantFiles || []).forEach(relevantFile => {
+        const analysisFile = (codeAnalysis.files || []).find(f => f?.path === relevantFile?.path);
         if (analysisFile && analysisFile.content) {
           const snippets = extractSnippetsFromContent(analysisFile.content, keywords, 3);
           if (snippets.length > 0) {
@@ -305,22 +323,24 @@ function Chat({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
     
     return {
       ...baseContext,
-      key_files: dynamicFiles.length > 0 ? dynamicFiles : baseContext.key_files,
+      key_files: dynamicFiles.length > 0 ? dynamicFiles : (baseContext.key_files || []),
       code_snippets: codeSnippets
     };
   };
 
   // Build System Prompt - Exact format as specified in task requirements
   const buildStructuredPrompt = (userQuestion, intent, context, chatHistory) => {
+    if (!context) return '';
+    
     // Build key files list with actual file names
-    const filesList = context.key_files
-      .map((f) => `${f.name}: ${f.purpose}`)
+    const filesList = (context.key_files || [])
+      .map((f) => `${f?.name || 'unknown'}: ${f?.purpose || 'unknown'}`)
       .join('\n');
     
     // Get last 3 messages (6 total - 3 exchanges) for chat history
-    const recentHistory = chatHistory.slice(-6);
+    const recentHistory = (Array.isArray(chatHistory) ? chatHistory : []).slice(-6);
     const historyStr = recentHistory
-      .map(m => `${m.sender === 'user' ? 'User' : 'Assistant'}: ${m.text}`)
+      .map(m => `${m?.sender === 'user' ? 'User' : 'Assistant'}: ${m?.text || ''}`)
       .join('\n');
     
     return `You are a senior software engineer assistant who has fully analyzed a GitHub repository.
@@ -361,6 +381,8 @@ RESPONSE FORMAT:
 
   // PHASE 2: Validate Structured Response
   const validateStructuredResponse = (response, context) => {
+    if (!response || !context) return { valid: true, issues: [], warnings: 0 };
+    
     const issues = [];
     
     // Check length
@@ -377,11 +399,11 @@ RESPONSE FORMAT:
     const filePattern = /`([^`]+\.(jsx?|tsx?|py|java|go|rs|json|md|yml|yaml|xml|html|css))`/gi;
     const matches = [...response.matchAll(filePattern)];
     
-    if (matches.length > 0) {
+    if (matches.length > 0 && context.all_files && Array.isArray(context.all_files)) {
       matches.forEach(match => {
         const filename = match[1];
-        const exists = context.all_files.some(f => 
-          f.path.includes(filename) || filename.includes(f.path.split('/').pop())
+        const exists = context.all_files.some(f =>
+          f?.path?.includes(filename) || filename.includes(f?.path?.split('/').pop())
         );
         
         if (!exists) {
@@ -400,18 +422,18 @@ RESPONSE FORMAT:
 
   // PHASE 1: Response Validation (Enhanced)
   const validateResponse = (response) => {
-    if (!repoContext) return response;
+    if (!repoContext || !response) return response;
     
     // Check for file references in backticks
     const filePattern = /`([^`]+\.(js|jsx|ts|tsx|py|java|go|rs|json|md|yml|yaml|xml|html|css))`/gi;
     const matches = response.match(filePattern);
     
-    if (matches) {
+    if (matches && repoContext.all_files && Array.isArray(repoContext.all_files)) {
       // Validate each file reference
       matches.forEach(match => {
         const filename = match.replace(/`/g, '');
-        const exists = repoContext.all_files.some(f => 
-          f.path.includes(filename) || filename.includes(f.path.split('/').pop())
+        const exists = repoContext.all_files.some(f =>
+          f?.path?.includes(filename) || filename.includes(f?.path?.split('/').pop())
         );
         
         if (!exists) {
