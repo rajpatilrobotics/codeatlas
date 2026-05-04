@@ -405,11 +405,7 @@
   overflow: hidden;
 }
 
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none !important;
-}
+/* Removed .btn:disabled rule - button should always be fully visible and interactive */
 
 .btn-primary {
   background: linear-gradient(135deg, #4F8CFF 0%, #7A5CFF 100%);
