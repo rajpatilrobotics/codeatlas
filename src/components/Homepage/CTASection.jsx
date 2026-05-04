@@ -20,23 +20,6 @@ function CTASection() {
             <span className="cta-button-icon">🚀</span>
             Analyze Repository
           </button>
-
-          <div className="cta-stats">
-            <div className="stat-item">
-              <div className="stat-number">10x</div>
-              <div className="stat-label">Faster Development</div>
-            </div>
-            <div className="stat-divider"></div>
-            <div className="stat-item">
-              <div className="stat-number">2-3min</div>
-              <div className="stat-label">To Full Insights</div>
-            </div>
-            <div className="stat-divider"></div>
-            <div className="stat-item">
-              <div className="stat-number">90%</div>
-              <div className="stat-label">Time Saved</div>
-            </div>
-          </div>
         </div>
 
         <div className="cta-background">
