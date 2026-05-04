@@ -131,9 +131,9 @@
 
 /* Single Column Layout (when no split needed) */
 .single-column {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: var(--spacing-lg);
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 /* ===================================
