@@ -204,14 +204,14 @@ const generateEdges = (nodes, codeAnalysis) => {
             animated: true,
             style: {
               stroke: '#64748b',
-              strokeWidth: 3,
+              strokeWidth: 4,
               strokeDasharray: '5,5'
             },
             markerEnd: {
               type: 'arrowclosed',
               color: '#64748b',
-              width: 25,
-              height: 25
+              width: 30,
+              height: 30
             }
           });
           edgeSet.add(edgeId);
@@ -232,14 +232,14 @@ const generateEdges = (nodes, codeAnalysis) => {
             type: 'smoothstep',
             animated: true,
             label: 'HTTP',
-            labelStyle: { fill: '#3b82f6', fontWeight: 600, fontSize: 12 },
-            labelBgStyle: { fill: '#1a1a2e', fillOpacity: 0.8 },
-            style: { stroke: '#3b82f6', strokeWidth: 3 },
+            labelStyle: { fill: '#3b82f6', fontWeight: 700, fontSize: 13 },
+            labelBgStyle: { fill: '#ffffff', fillOpacity: 0.95 },
+            style: { stroke: '#3b82f6', strokeWidth: 4 },
             markerEnd: {
               type: 'arrowclosed',
               color: '#3b82f6',
-              width: 25,
-              height: 25
+              width: 30,
+              height: 30
             }
           });
           edgeSet.add(edgeId);
@@ -260,14 +260,14 @@ const generateEdges = (nodes, codeAnalysis) => {
             type: 'smoothstep',
             animated: true,
             label: 'Process',
-            labelStyle: { fill: '#8b5cf6', fontWeight: 600, fontSize: 12 },
-            labelBgStyle: { fill: '#1a1a2e', fillOpacity: 0.8 },
-            style: { stroke: '#8b5cf6', strokeWidth: 3 },
+            labelStyle: { fill: '#8b5cf6', fontWeight: 700, fontSize: 13 },
+            labelBgStyle: { fill: '#ffffff', fillOpacity: 0.95 },
+            style: { stroke: '#8b5cf6', strokeWidth: 4 },
             markerEnd: {
               type: 'arrowclosed',
               color: '#8b5cf6',
-              width: 25,
-              height: 25
+              width: 30,
+              height: 30
             }
           });
           edgeSet.add(edgeId);
@@ -288,14 +288,14 @@ const generateEdges = (nodes, codeAnalysis) => {
             type: 'smoothstep',
             animated: true,
             label: 'Store',
-            labelStyle: { fill: '#10b981', fontWeight: 600, fontSize: 12 },
-            labelBgStyle: { fill: '#1a1a2e', fillOpacity: 0.8 },
-            style: { stroke: '#10b981', strokeWidth: 3 },
+            labelStyle: { fill: '#10b981', fontWeight: 700, fontSize: 13 },
+            labelBgStyle: { fill: '#ffffff', fillOpacity: 0.95 },
+            style: { stroke: '#10b981', strokeWidth: 4 },
             markerEnd: {
               type: 'arrowclosed',
               color: '#10b981',
-              width: 25,
-              height: 25
+              width: 30,
+              height: 30
             }
           });
           edgeSet.add(edgeId);
@@ -398,7 +398,7 @@ const getLayoutedElements = (nodes, edges) => {
   // Layout configuration
   const layoutedNodes = [];
   let currentY = 80;
-  const layerSpacing = 220; // Vertical space between layers
+  const layerSpacing = 180; // Vertical space between layers (reduced for better connection)
   const nodeWidth = 280;
   const nodeHeight = 140;
   const horizontalGap = 50; // Gap between nodes horizontally
@@ -473,72 +473,73 @@ const FlowNode = ({ node }) => {
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '8px',
-        marginBottom: '12px',
-        paddingBottom: '8px',
+        gap: '10px',
+        marginBottom: '14px',
+        paddingBottom: '10px',
         borderBottom: `2px solid ${color}50`
       }}>
-        <span style={{ fontSize: '20px' }}>{icon}</span>
+        <span style={{ fontSize: '28px' }}>{icon}</span>
         <div style={{ flex: 1 }}>
-          <div style={{ 
-            fontWeight: 'bold', 
-            fontSize: '13px', 
+          <div style={{
+            fontWeight: 'bold',
+            fontSize: '16px',
             color: '#fff',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
-            textOverflow: 'ellipsis'
+            textOverflow: 'ellipsis',
+            lineHeight: '1.4'
           }}>
             {node.fileName}
           </div>
-          <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px', textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px', textTransform: 'uppercase', fontWeight: '600' }}>
             {node.layer} layer
           </div>
         </div>
       </div>
       
       {/* Metrics */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
         {node.functions > 0 && (
           <div style={{
             background: 'rgba(0,0,0,0.3)',
-            padding: '6px',
-            borderRadius: '6px',
+            padding: '8px',
+            borderRadius: '8px',
             textAlign: 'center'
           }}>
-            <div style={{ fontSize: '16px', fontWeight: 'bold', color: color }}>{node.functions}</div>
-            <div style={{ fontSize: '9px', color: '#9ca3af', textTransform: 'uppercase' }}>Functions</div>
+            <div style={{ fontSize: '20px', fontWeight: 'bold', color: color }}>{node.functions}</div>
+            <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', fontWeight: '600' }}>Functions</div>
           </div>
         )}
         {node.classes > 0 && (
           <div style={{
             background: 'rgba(0,0,0,0.3)',
-            padding: '6px',
-            borderRadius: '6px',
+            padding: '8px',
+            borderRadius: '8px',
             textAlign: 'center'
           }}>
-            <div style={{ fontSize: '16px', fontWeight: 'bold', color: color }}>{node.classes}</div>
-            <div style={{ fontSize: '9px', color: '#9ca3af', textTransform: 'uppercase' }}>Classes</div>
+            <div style={{ fontSize: '20px', fontWeight: 'bold', color: color }}>{node.classes}</div>
+            <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', fontWeight: '600' }}>Classes</div>
           </div>
         )}
         {node.endpoints > 0 && (
           <div style={{
             background: 'rgba(0,0,0,0.3)',
-            padding: '6px',
-            borderRadius: '6px',
+            padding: '8px',
+            borderRadius: '8px',
             textAlign: 'center'
           }}>
-            <div style={{ fontSize: '16px', fontWeight: 'bold', color: color }}>{node.endpoints}</div>
-            <div style={{ fontSize: '9px', color: '#9ca3af', textTransform: 'uppercase' }}>Endpoints</div>
+            <div style={{ fontSize: '20px', fontWeight: 'bold', color: color }}>{node.endpoints}</div>
+            <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', fontWeight: '600' }}>Endpoints</div>
           </div>
         )}
       </div>
       
       {/* File path */}
       <div style={{
-        marginTop: '10px',
-        paddingTop: '8px',
+        marginTop: '12px',
+        paddingTop: '10px',
         borderTop: '1px solid rgba(255,255,255,0.1)',
-        fontSize: '9px',
+        fontSize: '10px',
         color: '#9ca3af',
         fontFamily: 'monospace',
         whiteSpace: 'nowrap',
