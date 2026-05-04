@@ -144,23 +144,25 @@
   top: 0;
   left: 0;
   right: 0;
-  z-index: 1000;
+  z-index: 1001; /* Higher than navbar to prevent overlap */
   background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 1.5rem 2rem;
+  padding: 1.25rem 2rem;
   box-shadow: var(--shadow-sm);
   transition: all 0.25s ease;
+  min-height: 90px; /* Ensure consistent height */
 }
 
 /* Scrolled state with enhanced background and shadow */
 .header.header-scrolled {
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.95);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   padding: 1rem 2rem;
+  min-height: 80px; /* Slightly smaller when scrolled */
 }
 
 
@@ -555,15 +557,16 @@
    =================================== */
 .tab-navigation {
   position: fixed;
-  top: 100px;
+  top: 90px; /* Match header min-height */
   left: 0;
   right: 0;
-  z-index: 999;
+  z-index: 999; /* Below header (1001) */
   background: rgba(0, 0, 0, 0.95);
   backdrop-filter: var(--glass-blur);
   border-bottom: 1px solid var(--glass-border);
   padding: 1rem 2rem;
   box-shadow: var(--shadow-md);
+  min-height: 70px; /* Consistent navbar height */
 }
 
 .tab-nav-container {
