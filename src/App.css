@@ -414,8 +414,9 @@
 .btn-primary {
   background: var(--gradient-primary);
   color: white;
-  box-shadow: var(--glow-primary);
+  box-shadow: none;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
 }
 
 .btn-primary::before {
@@ -433,9 +434,10 @@
   left: 100%;
 }
 
-.btn-primary:hover:not(:disabled) {
+.btn-primary:hover:not(:disabled),
+.btn-primary:focus:not(:disabled) {
   transform: scale(1.03);
-  box-shadow: 0 0 30px rgba(79, 140, 255, 0.4);
+  box-shadow: var(--glow-primary);
 }
 
 .btn-primary:active:not(:disabled) {
