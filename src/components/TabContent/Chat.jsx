@@ -645,7 +645,12 @@ RESPONSE FORMAT:
   return (
     <div className="tab-content chat-tab">
       <div className="content-card chat-card">
-        <h2 className="card-title">💬 Chat with AI Assistant</h2>
+        <div className="chat-header-section">
+          <h2 className="card-title">💬 Chat with AI Assistant</h2>
+          <p className="chat-powered-by">
+            Powered by <span className="watsonx-highlight">watsonx AI</span>
+          </p>
+        </div>
         <div className="chat-container">
           <div className="chat-messages">
             {messages.map((message) => (

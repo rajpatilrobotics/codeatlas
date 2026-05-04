@@ -1764,12 +1764,30 @@
   box-shadow: var(--shadow-sm);
 }
 
-.chat-card .card-title {
+.chat-header-section {
   padding: 20px 24px;
-  margin-bottom: 0;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
+}
+
+.chat-card .card-title {
+  margin-bottom: 0.5rem;
   font-size: 1rem;
+}
+
+.chat-powered-by {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.watsonx-highlight {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 600;
 }
 
 .chat-container {
