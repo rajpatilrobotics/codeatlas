@@ -381,12 +381,19 @@ class CodeAnalysisService {
 
   /**
    * Analyze a single file comprehensively
+   * Now works with pre-fetched content from backend
    */
   async analyzeFile(owner, repo, file, token) {
     try {
-      const content = await this.readFileFromGitHub(owner, repo, file.path, token);
+      // Use pre-fetched content if available, otherwise fetch from GitHub
+      let content = file.content;
+      
+      if (!content && token) {
+        content = await this.readFileFromGitHub(owner, repo, file.path, token);
+      }
       
       if (!content) {
+        console.warn(`No content available for ${file.path}`);
         return null;
       }
 
@@ -409,8 +416,9 @@ class CodeAnalysisService {
 
   /**
    * Analyze entire repository
+   * Now works with pre-fetched file contents from backend
    */
-  async analyzeRepository(owner, repo, files, token, maxFiles = 15) {
+  async analyzeRepository(owner, repo, files, token = null, maxFiles = 15) {
     console.log(`🔍 Starting repository analysis for ${owner}/${repo}`);
     console.log(`📁 Analyzing ${Math.min(files.length, maxFiles)} files...`);
 
@@ -441,9 +449,14 @@ class CodeAnalysisService {
       }
     };
 
+    // Filter files that have content (skip errors)
+    const validFiles = files.filter(f => f.content && !f.error);
+    const filesToAnalyze = validFiles.slice(0, maxFiles);
+    
+    console.log(`📝 ${validFiles.length} files with content available`);
+
     // Analyze files in parallel (batches of 5)
     const batchSize = 5;
-    const filesToAnalyze = files.slice(0, maxFiles);
     
     for (let i = 0; i < filesToAnalyze.length; i += batchSize) {
       const batch = filesToAnalyze.slice(i, i + batchSize);

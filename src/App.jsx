@@ -377,7 +377,7 @@ Keep response structured, concise, and easy to scan using bullet points.`;
       } finally {
         setIsArchitectureLoading(false);
       
-      // Step 7: Perform deep code analysis
+      // Step 7: Perform deep code analysis using pre-fetched file contents
       setIsCodeAnalysisLoading(true);
       setCodeAnalysisError(null);
       try {
@@ -390,23 +390,24 @@ Keep response structured, concise, and easy to scan using bullet points.`;
         }
         
         const { owner, repo } = parsed;
-        const token = process.env.REACT_APP_GITHUB_TOKEN;
         
-        if (!token) {
-          console.warn('⚠️ No GitHub token found. Code analysis will be limited.');
-          setCodeAnalysisError('GitHub token not configured. Some features may be limited.');
+        // Use pre-fetched file contents from backend (no token needed on client)
+        // The backend already fetched file contents securely
+        if (!data.importantFiles || data.importantFiles.length === 0) {
+          console.warn('⚠️ No files available for analysis');
+          setCodeAnalysisError('No files available for analysis');
+        } else {
+          // Analyze repository with code analysis service using pre-fetched content
+          const analysis = await codeAnalysisService.analyzeRepository(
+            owner,
+            repo,
+            data.importantFiles,
+            null // No token needed - using pre-fetched content
+          );
+          
+          setCodeAnalysis(analysis);
+          console.log('✅ Code analysis complete!', analysis.summary);
         }
-        
-        // Analyze repository with code analysis service
-        const analysis = await codeAnalysisService.analyzeRepository(
-          owner,
-          repo,
-          data.importantFiles,
-          token
-        );
-        
-        setCodeAnalysis(analysis);
-        console.log('✅ Code analysis complete!', analysis.summary);
         
       } catch (codeErr) {
         console.error('Code analysis failed:', codeErr);

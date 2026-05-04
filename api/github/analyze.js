@@ -169,8 +169,10 @@ module.exports = async (req, res) => {
       importantFiles = identifyImportantFiles(fileTree);
     }
 
-    // Fetch contents of important files
+    // Fetch contents of important files with structured format
     const fileContents = {};
+    const importantFilesWithContent = [];
+    
     for (const filePath of importantFiles) {
       try {
         const fileResponse = await fetch(
@@ -180,11 +182,24 @@ module.exports = async (req, res) => {
         if (fileResponse.ok) {
           const fileData = await fileResponse.json();
           if (fileData.content) {
-            fileContents[filePath] = Buffer.from(fileData.content, 'base64').toString('utf-8');
+            const content = Buffer.from(fileData.content, 'base64').toString('utf-8');
+            fileContents[filePath] = content;
+            
+            // Add structured file data for analysis
+            importantFilesWithContent.push({
+              path: filePath,
+              content: content,
+              size: fileData.size,
+              sha: fileData.sha
+            });
           }
         }
       } catch (e) {
         console.log(`Could not fetch ${filePath}`);
+        importantFilesWithContent.push({
+          path: filePath,
+          error: 'Could not fetch file content'
+        });
       }
     }
 
@@ -211,8 +226,8 @@ module.exports = async (req, res) => {
       readme,
       fileTree,
       fileCount: fileTree.length,
-      importantFiles,
-      fileContents,
+      importantFiles: importantFilesWithContent, // Now includes content
+      fileContents, // Keep for backward compatibility
     });
 
   } catch (error) {
