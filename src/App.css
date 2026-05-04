@@ -760,17 +760,18 @@
   border-radius: var(--radius-md);
   color: white;
   cursor: pointer;
-  transition: var(--transition-base);
+  transition: all 0.3s ease;
   font-weight: 600;
   font-size: 0.95rem;
   font-family: inherit;
   white-space: nowrap;
-  box-shadow: var(--glow-primary);
+  box-shadow: none;
 }
 
-.new-analysis-btn:hover {
+.new-analysis-btn:hover,
+.new-analysis-btn:focus {
   transform: translateY(-2px) scale(1.02);
-  box-shadow: var(--glow-accent);
+  box-shadow: var(--glow-primary);
 }
 
 /* Download PDF Button in Navbar */
