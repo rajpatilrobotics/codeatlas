@@ -640,6 +640,50 @@
 .card-content {
   color: var(--text-secondary);
   line-height: 1.6;
+
+/* Summary Tab Content Sizing */
+.ai-summary-content pre,
+.quick-start-content pre,
+.issues-content pre,
+.readme-preview {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.repo-stats-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.9rem;
+}
+
+.stat-row:last-child {
+  border-bottom: none;
+}
+
+.stat-label {
+  color: var(--text-secondary);
+  font-weight: 500;
+  min-width: 150px;
+}
+
+.stat-value {
+  color: var(--text-primary);
+  text-align: right;
+  word-break: break-word;
+  font-size: 0.9rem;
+}
 }
 
 /* ===================================
