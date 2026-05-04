@@ -1,6 +1,6 @@
 import React from 'react';
 
-function TabNavigation({ tabs, activeTab, onTabChange, onDownloadPDF, isGeneratingPDF, onNewAnalysis }) {
+function TabNavigation({ tabs, activeTab, onTabChange, onDownloadPDF, isGeneratingPDF, pdfProgress, onNewAnalysis }) {
   return (
     <nav className="tab-navigation">
       <div className="tab-nav-container">
@@ -31,9 +31,13 @@ function TabNavigation({ tabs, activeTab, onTabChange, onDownloadPDF, isGenerati
             className="download-pdf-btn-nav"
             onClick={onDownloadPDF}
             disabled={isGeneratingPDF}
+            style={{
+              opacity: isGeneratingPDF ? 0.7 : 1,
+              cursor: isGeneratingPDF ? 'not-allowed' : 'pointer'
+            }}
           >
-            <span className="download-icon">📄</span>
-            {isGeneratingPDF ? 'Generating...' : 'Download PDF'}
+            <span className="download-icon">{isGeneratingPDF ? '⏳' : '📄'}</span>
+            {isGeneratingPDF ? (pdfProgress || 'Generating...') : 'Download PDF'}
           </button>
         )}
       </div>

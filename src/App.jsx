@@ -10,6 +10,7 @@ import DownloadPDFButton from './components/DownloadPDFButton';
 import ScrollToTopButton from './components/ScrollToTopButton';
 import Footer from './components/Footer';
 import { jsPDF } from 'jspdf';
+import { toPng } from 'html-to-image';
 
 // Homepage Components
 import HeroSection from './components/Homepage/HeroSection';
@@ -67,6 +68,7 @@ function App() {
   const [isCodeAnalysisLoading, setIsCodeAnalysisLoading] = useState(false);
   const [codeAnalysisError, setCodeAnalysisError] = useState(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState('');
   const resultsRef = useRef(null);
 
   const tabs = [
@@ -461,7 +463,92 @@ Keep response structured, concise, and easy to scan using bullet points.`;
     }, 2500);
   };
 
-  const handleDownloadPDF = () => {
+  // ========== DIAGRAM CAPTURE FUNCTIONS ==========
+  
+  /**
+   * Captures a single diagram as a high-quality PNG image
+   * @param {string} diagramId - The DOM element ID of the diagram
+   * @returns {Promise<string|null>} Base64 encoded image data URL or null if not found
+   */
+  const captureDiagramAsImage = async (diagramId) => {
+    try {
+      const element = document.getElementById(diagramId);
+      if (!element) {
+        console.warn(`Diagram element not found: ${diagramId}`);
+        return null;
+      }
+      
+      // Hide controls temporarily for clean export
+      const controls = element.querySelectorAll(
+        '.react-flow__controls, .react-flow__minimap, .react-flow__attribution'
+      );
+      controls.forEach(control => {
+        control.style.display = 'none';
+      });
+      
+      // Capture with high quality settings
+      const dataUrl = await toPng(element, {
+        quality: 0.95,
+        pixelRatio: 2,
+        backgroundColor: '#1a1a2e',
+        cacheBust: true
+      });
+      
+      // Restore controls
+      controls.forEach(control => {
+        control.style.display = '';
+      });
+      
+      return dataUrl;
+    } catch (error) {
+      console.error(`Failed to capture diagram ${diagramId}:`, error);
+      return null;
+    }
+  };
+
+  /**
+   * Captures all available architecture diagrams
+   * @returns {Promise<Array>} Array of captured diagram objects with title and image data
+   */
+  const captureAllDiagrams = async () => {
+    const diagrams = [
+      { id: 'system-architecture-diagram', title: '🏗️ Interactive System Architecture' },
+      { id: 'dynamic-dataflow-diagram', title: '📊 Dynamic Data Flow Diagram' },
+      { id: 'tech-stack-diagram', title: '🏗️ Comprehensive Technology Stack' },
+      { id: 'function-call-flow-diagram', title: '🔄 Function Call Flow (From Code Analysis)' },
+      { id: 'file-structure-diagram', title: '📁 Analyzed File Structure' },
+      { id: 'folder-structure-diagram', title: '📁 Interactive Folder Structure' }
+    ];
+    
+    const captured = [];
+    
+    for (let i = 0; i < diagrams.length; i++) {
+      const diagram = diagrams[i];
+      setPdfProgress(`Capturing diagrams... (${i + 1}/${diagrams.length})`);
+      
+      // Small delay to allow UI update
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const imageData = await captureDiagramAsImage(diagram.id);
+      
+      if (imageData) {
+        captured.push({
+          id: diagram.id,
+          title: diagram.title,
+          image: imageData
+        });
+        console.log(`✅ Captured: ${diagram.title}`);
+      } else {
+        console.log(`⏭️ Skipped: ${diagram.title} (not found or empty)`);
+      }
+    }
+    
+    return captured;
+  };
+
+  // ========== PDF GENERATION FUNCTION ==========
+  
+  const handleDownloadPDF = async () => {
     // ========== DATA VALIDATION ==========
     if (!repoData) {
       alert('No repository data available to export');
@@ -482,8 +569,16 @@ Keep response structured, concise, and easy to scan using bullet points.`;
     console.log('detailedArchitecture:', detailedArchitecture);
 
     setIsGeneratingPDF(true);
+    setPdfProgress('Preparing PDF generation...');
 
     try {
+      // ========== CAPTURE ARCHITECTURE DIAGRAMS ==========
+      console.log('📸 Starting diagram capture...');
+      const capturedDiagrams = await captureAllDiagrams();
+      console.log(`✅ Captured ${capturedDiagrams.length} diagrams`);
+      
+      setPdfProgress('Generating PDF document...');
+      
       const pdf = new jsPDF('p', 'mm', 'a4');
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
@@ -721,6 +816,56 @@ Keep response structured, concise, and easy to scan using bullet points.`;
         addText(`Utilities: ${codeAnalysis.structure.utilities}`);
       }
       addSpace(5);
+    }
+
+    // ========== ARCHITECTURE DIAGRAMS SECTION ==========
+    if (capturedDiagrams.length > 0) {
+      console.log(`📊 Adding ${capturedDiagrams.length} diagrams to PDF...`);
+      
+      capturedDiagrams.forEach((diagram, index) => {
+        // Start new page for each diagram
+        if (index === 0) {
+          startNewSection('Architecture Diagrams');
+          addSectionTitle('ARCHITECTURE DIAGRAMS');
+          addSpace(5);
+        } else {
+          pdf.addPage();
+          y = margin;
+          addPageHeader('Architecture Diagrams');
+          addSpace(10);
+        }
+        
+        // Add diagram title
+        addSubtitle(diagram.title);
+        addSpace(5);
+        
+        // Calculate image dimensions to fit on page
+        // Leave space for title and margins
+        const availableHeight = pageHeight - y - margin - 10;
+        const availableWidth = maxWidth;
+        
+        // Add image to PDF
+        try {
+          pdf.addImage(
+            diagram.image,
+            'PNG',
+            margin,
+            y,
+            availableWidth,
+            availableHeight,
+            undefined,
+            'FAST'
+          );
+          console.log(`✅ Added diagram to PDF: ${diagram.title}`);
+        } catch (imgError) {
+          console.error(`Failed to add diagram ${diagram.title}:`, imgError);
+          addText(`[Diagram could not be rendered]`);
+        }
+      });
+      
+      console.log('✅ All diagrams added to PDF');
+    } else {
+      console.log('⚠️ No diagrams captured for PDF');
     }
 
     // ========== ONBOARDING GUIDE SECTION ==========
@@ -1000,13 +1145,18 @@ Keep response structured, concise, and easy to scan using bullet points.`;
     }
 
     // Save the PDF
+    setPdfProgress('Saving PDF...');
     pdf.save('DevDock_Report.pdf');
+    
+    console.log('✅ PDF generated successfully!');
     setIsGeneratingPDF(false);
+    setPdfProgress('');
     
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Failed to generate PDF. Please try again.');
       setIsGeneratingPDF(false);
+      setPdfProgress('');
     }
   };
 
@@ -1161,6 +1311,7 @@ Keep response structured, concise, and easy to scan using bullet points.`;
                 onTabChange={setActiveTab}
                 onDownloadPDF={handleDownloadPDF}
                 isGeneratingPDF={isGeneratingPDF}
+                pdfProgress={pdfProgress}
                 onNewAnalysis={handleNewAnalysis}
               />
 
