@@ -412,17 +412,13 @@
 }
 
 .btn-primary {
-  background: var(--gradient-primary);
+  background: linear-gradient(135deg, #4F8CFF 0%, #7A5CFF 100%);
   color: white;
-  box-shadow: var(--glow-primary);
+  box-shadow: 0 0 20px rgba(79, 140, 255, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.btn-primary:disabled {
-  opacity: 1 !important;
-  background: var(--gradient-primary) !important;
-  box-shadow: var(--glow-primary) !important;
-  cursor: not-allowed;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .btn-primary::before {
@@ -441,12 +437,12 @@
 }
 
 .btn-primary:hover {
-  transform: scale(1.03) !important;
-  box-shadow: 0 0 30px rgba(79, 140, 255, 0.4) !important;
+  transform: scale(1.03);
+  box-shadow: 0 0 30px rgba(79, 140, 255, 0.4);
 }
 
 .btn-primary:active {
-  transform: scale(0.98) !important;
+  transform: scale(0.98);
 }
 
 .btn-secondary {
