@@ -47,7 +47,7 @@ function HeroSection({ repoUrl, onUrlChange, onAnalyze, isAnalyzing }) {
         </h1>
         
         <p className="hero-subheading">
-          Whether you're a new developer joining a team or exploring a new repository, DevDock turns confusion into clarity in minutes using IBM watsonx AI and Bob.
+          Whether you're a new developer joining a team or exploring a new repository, DevDock turns confusion into clarity in minutes using IBM Bob and watsonx AI.
         </p>
 
         <p className="hero-support-line">
