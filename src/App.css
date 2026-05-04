@@ -641,31 +641,20 @@
   color: var(--text-secondary);
   line-height: 1.6;
 
-/* Summary Tab Content Sizing */
-.ai-summary-content pre,
-.quick-start-content pre,
-.issues-content pre,
-.readme-preview {
-  font-size: 0.9rem;
-  line-height: 1.6;
-  color: var(--text-secondary);
-  max-width: 100%;
-  overflow-x: auto;
-}
-
+/* Summary Tab Content Sizing - Repository Overview Only */
 .repo-stats-grid {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .stat-row {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 0.5rem 0;
+  padding: 0.4rem 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .stat-row:last-child {
@@ -675,14 +664,32 @@
 .stat-label {
   color: var(--text-secondary);
   font-weight: 500;
-  min-width: 150px;
+  min-width: 140px;
+  font-size: 0.85rem;
 }
 
 .stat-value {
   color: var(--text-primary);
   text-align: right;
   word-break: break-word;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+}
+
+/* Keep other sections at normal readable size */
+.ai-summary-content pre,
+.quick-start-content pre,
+.issues-content pre {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.readme-preview {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
 }
 }
 
