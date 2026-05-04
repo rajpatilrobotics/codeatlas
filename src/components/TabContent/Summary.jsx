@@ -159,53 +159,53 @@ function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, sum
         <div className="content-card">
           <h2 className="card-title">🛠️ Tech Stack Detected</h2>
           <div className="card-content">
-            <div className="tech-stack-grid">
+            <div className="tech-stack-inline">
               {techStack.frontend.length > 0 && (
-                <div className="tech-category">
-                  <h3 className="tech-category-title">Frontend</h3>
-                  <div className="tech-badges">
+                <div className="tech-category-row">
+                  <span className="tech-category-label">FRONTEND:</span>
+                  <div className="tech-badges-inline">
                     {techStack.frontend.map((tech, idx) => (
-                      <span key={idx} className="tech-badge frontend">{tech}</span>
+                      <span key={idx} className="tech-badge">{tech}</span>
                     ))}
                   </div>
                 </div>
               )}
               {techStack.backend.length > 0 && (
-                <div className="tech-category">
-                  <h3 className="tech-category-title">Backend</h3>
-                  <div className="tech-badges">
+                <div className="tech-category-row">
+                  <span className="tech-category-label">BACKEND:</span>
+                  <div className="tech-badges-inline">
                     {techStack.backend.map((tech, idx) => (
-                      <span key={idx} className="tech-badge backend">{tech}</span>
+                      <span key={idx} className="tech-badge">{tech}</span>
                     ))}
                   </div>
                 </div>
               )}
               {techStack.database.length > 0 && (
-                <div className="tech-category">
-                  <h3 className="tech-category-title">Database</h3>
-                  <div className="tech-badges">
+                <div className="tech-category-row">
+                  <span className="tech-category-label">DATABASE:</span>
+                  <div className="tech-badges-inline">
                     {techStack.database.map((tech, idx) => (
-                      <span key={idx} className="tech-badge database">{tech}</span>
+                      <span key={idx} className="tech-badge">{tech}</span>
                     ))}
                   </div>
                 </div>
               )}
               {techStack.testing.length > 0 && (
-                <div className="tech-category">
-                  <h3 className="tech-category-title">Testing</h3>
-                  <div className="tech-badges">
+                <div className="tech-category-row">
+                  <span className="tech-category-label">TESTING:</span>
+                  <div className="tech-badges-inline">
                     {techStack.testing.map((tech, idx) => (
-                      <span key={idx} className="tech-badge testing">{tech}</span>
+                      <span key={idx} className="tech-badge">{tech}</span>
                     ))}
                   </div>
                 </div>
               )}
               {techStack.devops.length > 0 && (
-                <div className="tech-category">
-                  <h3 className="tech-category-title">DevOps</h3>
-                  <div className="tech-badges">
+                <div className="tech-category-row">
+                  <span className="tech-category-label">DEVOPS:</span>
+                  <div className="tech-badges-inline">
                     {techStack.devops.map((tech, idx) => (
-                      <span key={idx} className="tech-badge devops">{tech}</span>
+                      <span key={idx} className="tech-badge">{tech}</span>
                     ))}
                   </div>
                 </div>
