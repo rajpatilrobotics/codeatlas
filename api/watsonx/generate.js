@@ -84,7 +84,7 @@ module.exports = async (req, res) => {
     const WATSONX_API_KEY = process.env.WATSONX_API_KEY;
     const WATSONX_PROJECT_ID = process.env.WATSONX_PROJECT_ID;
     const WATSONX_REGION_URL = process.env.WATSONX_REGION_URL || 'https://us-south.ml.cloud.ibm.com';
-    const WATSONX_MODEL_ID = process.env.WATSONX_MODEL_ID || 'ibm/granite-13b-chat-v2';
+    const WATSONX_MODEL_ID = process.env.WATSONX_MODEL_ID || 'ibm/granite-3-8b-instruct';
 
     if (!WATSONX_API_KEY || !WATSONX_PROJECT_ID) {
       console.error('Watsonx credentials not configured');
