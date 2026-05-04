@@ -2085,13 +2085,14 @@
 
 .intent-preset-chip {
   padding: 10px 18px;
-  border: none;
+  background: var(--bg-tertiary);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  color: white;
+  color: var(--text-secondary);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   display: flex;
   align-items: center;
@@ -2099,8 +2100,11 @@
 }
 
 .intent-preset-chip:hover:not(:disabled) {
+  background: var(--accent-primary);
+  color: white;
+  border-color: var(--accent-primary);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 12px rgba(79, 140, 255, 0.3);
 }
 
 .intent-preset-chip:active:not(:disabled) {
@@ -2112,37 +2116,16 @@
   cursor: not-allowed;
 }
 
-/* Intent-specific colors - Matching App Theme (Blue-Purple Palette) */
-.intent-preset-chip.explain {
-  background: linear-gradient(135deg, #4F8CFF 0%, #7A5CFF 100%);
-}
-
-.intent-preset-chip.debug {
-  background: linear-gradient(135deg, #FF6B9D 0%, #C44569 100%);
-}
-
-.intent-preset-chip.improve {
-  background: linear-gradient(135deg, #5F72FF 0%, #9B59B6 100%);
-}
-
-.intent-preset-chip.setup {
-  background: linear-gradient(135deg, #3EADCF 0%, #5F8CFF 100%);
-}
-
-.intent-preset-chip.find {
-  background: linear-gradient(135deg, #FFA07A 0%, #FF8C69 100%);
-}
-
-.intent-preset-chip.security {
-  background: linear-gradient(135deg, #f85149 0%, #d73a49 100%);
-}
-
-.intent-preset-chip.architecture {
-  background: linear-gradient(135deg, #6B8CFF 0%, #8B7FFF 100%);
-}
-
+/* Remove individual color classes - all buttons now use same style */
+.intent-preset-chip.explain,
+.intent-preset-chip.debug,
+.intent-preset-chip.improve,
+.intent-preset-chip.setup,
+.intent-preset-chip.find,
+.intent-preset-chip.security,
+.intent-preset-chip.architecture,
 .intent-preset-chip.general {
-  background: linear-gradient(135deg, #8E7CFF 0%, #A78BFA 100%);
+  /* All inherit base styles - no individual colors */
 }
 
 .user-message .message-time {
