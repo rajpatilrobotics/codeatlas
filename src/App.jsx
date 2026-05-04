@@ -7,6 +7,7 @@ import LoadingSpinner from './components/LoadingSpinner';
 import TabNavigation from './components/TabNavigation';
 import TimeSavedBadge from './components/TimeSavedBadge';
 import DownloadPDFButton from './components/DownloadPDFButton';
+import ScrollToTopButton from './components/ScrollToTopButton';
 import Footer from './components/Footer';
 import { jsPDF } from 'jspdf';
 
@@ -1157,6 +1158,7 @@ Keep response structured, concise, and easy to scan using bullet points.`;
       </main>
 
       <Footer />
+      <ScrollToTopButton />
     </div>
   );
 }
