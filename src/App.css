@@ -144,7 +144,7 @@
   top: 0;
   left: 0;
   right: 0;
-  z-index: 1001; /* Higher than navbar to prevent overlap */
+  z-index: 998; /* BELOW navbar so navbar stays visible */
   background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
