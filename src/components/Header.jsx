@@ -23,19 +23,33 @@ function Header({ onLogoClick }) {
   return (
     <header className={`header ${isScrolled ? 'header-scrolled' : ''}`}>
       <div className="header-content">
-        <div
-          className="logo clickable-logo"
-          onClick={onLogoClick}
-          title="Return to home"
-        >
-          <img
-            src="/devdock-logo-horizontal.svg"
-            alt="DevDock"
-            className="logo-image"
-            style={{ height: isScrolled ? '40px' : '50px', width: 'auto' }}
-          />
+        <div className="header-left">
+          <div
+            className="logo clickable-logo"
+            onClick={onLogoClick}
+            title="Return to home"
+          >
+            <img
+              src="/devdock-logo-horizontal.svg"
+              alt="DevDock"
+              className="logo-image"
+              style={{ height: isScrolled ? '40px' : '50px', width: 'auto' }}
+            />
+          </div>
+          <p className="tagline">AI-Powered Code Analysis & Onboarding Platform</p>
         </div>
-        <p className="tagline">AI-Powered Code Analysis & Onboarding Platform</p>
+        
+        <div className="header-right">
+          <p className="header-attribution">
+            Built using <span className="attribution-highlight">IBM Bob</span> and <span className="attribution-highlight">IBM watsonx AI</span>
+          </p>
+          <p className="header-subtext">
+            Intelligent code analysis powered by enterprise AI
+          </p>
+          <p className="header-developer">
+            Built by <span className="developer-name">Raj Patil</span>
+          </p>
+        </div>
       </div>
     </header>
   );
