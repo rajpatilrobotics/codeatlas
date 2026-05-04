@@ -436,17 +436,17 @@
   transition: left 0.5s;
 }
 
-.btn-primary:hover:not(:disabled)::before {
+.btn-primary:hover::before {
   left: 100%;
 }
 
-.btn-primary:hover:not(:disabled) {
-  transform: scale(1.03);
-  box-shadow: 0 0 30px rgba(79, 140, 255, 0.4);
+.btn-primary:hover {
+  transform: scale(1.03) !important;
+  box-shadow: 0 0 30px rgba(79, 140, 255, 0.4) !important;
 }
 
-.btn-primary:active:not(:disabled) {
-  transform: scale(0.98);
+.btn-primary:active {
+  transform: scale(0.98) !important;
 }
 
 .btn-secondary {
