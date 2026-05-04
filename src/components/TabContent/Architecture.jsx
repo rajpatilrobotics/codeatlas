@@ -437,6 +437,7 @@ function UnifiedTechStackDiagram({ techStack }) {
 
         {/* Interactive Diagram */}
         <div className="reactflow-wrapper" style={{
+          position: 'relative',
           height: '1000px',
           background: '#0f1419',
           borderRadius: '16px',
@@ -444,7 +445,12 @@ function UnifiedTechStackDiagram({ techStack }) {
           overflow: 'hidden',
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
         }}>
-          <ReactFlow
+          <DownloadDiagramButton
+            containerId="tech-stack-diagram"
+            fileName="technology-stack"
+          />
+          <div id="tech-stack-diagram" style={{ width: '100%', height: '100%' }}>
+            <ReactFlow
             nodes={nodes}
             edges={edges}
             onNodesChange={onNodesChange}
@@ -461,6 +467,7 @@ function UnifiedTechStackDiagram({ techStack }) {
             />
             <Background variant="dots" gap={20} size={1.5} color="#373e47" />
           </ReactFlow>
+          </div>
         </div>
 
         {/* Enhanced Info Box */}
@@ -1521,13 +1528,19 @@ function FolderStructureDiagram({ folders }) {
       <h2 className="card-title">📁 Interactive Folder Structure</h2>
       <div className="card-content">
         <div className="reactflow-wrapper" style={{
+          position: 'relative',
           height: '500px',
           background: '#0f1419',
           borderRadius: '12px',
           border: '1px solid rgba(102, 126, 234, 0.2)',
           overflow: 'hidden'
         }}>
-          <ReactFlow
+          <DownloadDiagramButton
+            containerId="folder-structure-diagram"
+            fileName="folder-structure"
+          />
+          <div id="folder-structure-diagram" style={{ width: '100%', height: '100%' }}>
+            <ReactFlow
             nodes={folderNodes}
             edges={folderEdges}
             onNodesChange={onFolderNodesChange}
@@ -1544,6 +1557,7 @@ function FolderStructureDiagram({ folders }) {
             />
             <Background variant="dots" gap={16} size={1} color="#373e47" />
           </ReactFlow>
+          </div>
         </div>
         <div style={{
           marginTop: '1rem',
