@@ -401,9 +401,6 @@ function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, sum
                       <span className="detail-text">{contribution.impact}</span>
                     </div>
                   </div>
-                  <button className="start-task-btn">
-                    Start This Task →
-                  </button>
                 </div>
               ))}
             </div>
