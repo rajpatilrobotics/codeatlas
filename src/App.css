@@ -763,13 +763,13 @@
   font-size: 0.95rem;
   font-family: inherit;
   white-space: nowrap;
-  box-shadow: none;
+  box-shadow: none !important;
 }
 
 .new-analysis-btn:hover,
 .new-analysis-btn:focus {
   transform: translateY(-2px) scale(1.02);
-  box-shadow: var(--glow-primary);
+  box-shadow: var(--glow-primary) !important;
 }
 
 /* Download PDF Button in Navbar */
