@@ -461,28 +461,29 @@ Keep response structured, concise, and easy to scan using bullet points.`;
   };
 
   const handleDownloadPDF = () => {
+    // ========== DATA VALIDATION ==========
     if (!repoData) {
       alert('No repository data available to export');
       return;
     }
 
-    console.log('=== PDF GENERATION DEBUG ===');
-    console.log('codeAnalysis:', codeAnalysis);
-    console.log('codeAnalysis.security:', codeAnalysis?.security);
-    
-    // Check sessionStorage
-    const cachedSecurity = sessionStorage.getItem('securityScanCache');
-    console.log('sessionStorage securityScanCache:', cachedSecurity);
-    if (cachedSecurity) {
-      try {
-        const parsed = JSON.parse(cachedSecurity);
-        console.log('Parsed security data:', parsed);
-      } catch (e) {
-        console.error('Failed to parse cached security:', e);
-      }
+    // Validate that analysis is complete
+    if (!analysisComplete) {
+      alert('Analysis is still in progress. Please wait for it to complete before generating the PDF.');
+      return;
     }
 
-    const pdf = new jsPDF('p', 'mm', 'a4');
+    console.log('=== PDF GENERATION DEBUG ===');
+    console.log('repoData:', repoData);
+    console.log('aiSummary:', aiSummary);
+    console.log('codeAnalysis:', codeAnalysis);
+    console.log('architectureAnalysis:', architectureAnalysis);
+    console.log('detailedArchitecture:', detailedArchitecture);
+
+    setIsGeneratingPDF(true);
+
+    try {
+      const pdf = new jsPDF('p', 'mm', 'a4');
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     const margin = 20;
@@ -776,34 +777,55 @@ Keep response structured, concise, and easy to scan using bullet points.`;
     }
 
     // ========== SECURITY SCANNER SECTION ==========
-    // Try to get security data from sessionStorage if not in codeAnalysis
-    let securityData = codeAnalysis?.security;
-    console.log('Security data from codeAnalysis:', securityData);
+    // PRIORITY FIX: Check sessionStorage FIRST (SecurityScanner data source)
+    let securityData = null;
     
-    if (!securityData) {
-      try {
-        const cached = sessionStorage.getItem('securityScanCache');
-        console.log('Attempting to retrieve from sessionStorage:', cached);
-        if (cached) {
-          securityData = JSON.parse(cached);
-          console.log('Successfully parsed security data from cache:', securityData);
-        }
-      } catch (err) {
-        console.error('Failed to parse security cache:', err);
+    // Try sessionStorage first (this is what the UI uses)
+    try {
+      const cached = sessionStorage.getItem('securityScanCache');
+      console.log('Checking sessionStorage for security data:', cached ? 'Found' : 'Not found');
+      if (cached) {
+        securityData = JSON.parse(cached);
+        console.log('✅ Using security data from sessionStorage (SecurityScanner):', securityData);
       }
+    } catch (err) {
+      console.error('Failed to parse security cache from sessionStorage:', err);
+    }
+    
+    // Fallback to codeAnalysis.security if sessionStorage is empty
+    if (!securityData && codeAnalysis?.security) {
+      console.log('⚠️ Falling back to codeAnalysis.security');
+      securityData = codeAnalysis.security;
     }
 
     console.log('Final security data for PDF:', securityData);
 
-    // ALWAYS add security section, even if no data
+    // ALWAYS add security section
     startNewSection('Security Scanner');
     addSectionTitle('SECURITY SCANNER');
     addSpace(5);
 
-    if (securityData) {
+    // Check if we have valid security data with the correct structure
+    const hasValidSecurityData = securityData && (
+      securityData.overall_score !== undefined ||
+      securityData.score !== undefined ||
+      securityData.issues !== undefined
+    );
+
+    if (hasValidSecurityData) {
+      // Security Overview
       addSubtitle('Security Overview');
-      addText(`Overall Security Score: ${securityData.score || securityData.overall_score || 'N/A'}/100`);
-      addText(`Risk Level: ${securityData.riskLevel || securityData.risk_level || 'N/A'}`);
+      const score = securityData.overall_score || securityData.score;
+      const riskLevel = securityData.risk_level || securityData.riskLevel;
+      
+      if (score !== undefined && score !== null) {
+        addText(`Overall Security Score: ${score}/100`);
+      }
+      
+      if (riskLevel) {
+        addText(`Risk Level: ${riskLevel}`);
+      }
+      
       addSpace(8);
 
       // Passed Security Checks
@@ -820,27 +842,29 @@ Keep response structured, concise, and easy to scan using bullet points.`;
         addSpace(8);
       }
 
-      // Security Issues
-      if (securityData.issues && securityData.issues.length > 0) {
-        addSubtitle(`Security Issues Found (${securityData.issues.length})`);
+      // Security Issues - DYNAMIC RENDERING
+      const issues = securityData.issues || [];
+      
+      if (issues.length > 0) {
+        addSubtitle(`Security Issues Found (${issues.length})`);
         addSpace(3);
         
-        securityData.issues.forEach((issue, index) => {
+        issues.forEach((issue, index) => {
           checkPageBreak(35);
           
           // Issue number and title
           pdf.setFont('helvetica', 'bold');
           pdf.setFontSize(12);
-          pdf.text(`${index + 1}. ${issue.title}`, margin, y);
+          pdf.text(`${index + 1}. ${issue.title || 'Security Issue'}`, margin, y);
           y += 6;
           
-          // Severity badge
+          // Severity badge with color coding
           pdf.setFontSize(10);
-          const severityLower = (issue.severity || '').toLowerCase();
+          const severityLower = (issue.severity || 'medium').toLowerCase();
           const severityColor = severityLower === 'high' ? [220, 53, 69] :
                                severityLower === 'medium' ? [255, 193, 7] : [40, 167, 69];
           pdf.setTextColor(...severityColor);
-          pdf.text(`[${(issue.severity || 'UNKNOWN').toUpperCase()}]`, margin, y);
+          pdf.text(`[${(issue.severity || 'MEDIUM').toUpperCase()}]`, margin, y);
           pdf.setTextColor(0, 0, 0);
           y += 7;
           
@@ -855,7 +879,7 @@ Keep response structured, concise, and easy to scan using bullet points.`;
           }
           
           // File location
-          if (issue.file) {
+          if (issue.file && issue.file !== 'Unknown') {
             pdf.setFont('helvetica', 'bold');
             addText('File:', 5);
             pdf.setFont('helvetica', 'normal');
@@ -874,7 +898,8 @@ Keep response structured, concise, and easy to scan using bullet points.`;
           addDivider();
         });
       } else {
-        addText('No security issues detected.');
+        // Only show "No issues" if issues array is explicitly empty
+        addText('✅ No security issues detected. Great job!');
         addSpace(8);
       }
 
@@ -890,28 +915,98 @@ Keep response structured, concise, and easy to scan using bullet points.`;
           addText(rec, 8);
           addSpace(3);
         });
+        addSpace(5);
       }
 
-      // Additional Security Metrics
-      if (securityData.metrics) {
-        addSpace(8);
-        addSubtitle('Security Metrics');
-        Object.entries(securityData.metrics).forEach(([key, value]) => {
-          addText(`${key}: ${value}`);
-        });
+      // Code Analysis Vulnerabilities (if available)
+      if (codeAnalysis?.security) {
+        const codeSecVulns = codeAnalysis.security;
+        const totalVulns = (codeSecVulns.critical?.length || 0) +
+                          (codeSecVulns.high?.length || 0) +
+                          (codeSecVulns.medium?.length || 0) +
+                          (codeSecVulns.low?.length || 0);
+        
+        if (totalVulns > 0) {
+          addSpace(8);
+          addSubtitle('Code Analysis - Detected Vulnerabilities');
+          addText(`Total vulnerabilities found: ${totalVulns}`);
+          addSpace(3);
+          
+          // Critical
+          if (codeSecVulns.critical && codeSecVulns.critical.length > 0) {
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(220, 53, 69);
+            addText(`🔴 Critical (${codeSecVulns.critical.length})`);
+            pdf.setTextColor(0, 0, 0);
+            pdf.setFont('helvetica', 'normal');
+            codeSecVulns.critical.slice(0, 3).forEach(vuln => {
+              addBullet(`${vuln.type}: ${vuln.message} (${vuln.file})`);
+            });
+            addSpace(3);
+          }
+          
+          // High
+          if (codeSecVulns.high && codeSecVulns.high.length > 0) {
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(255, 193, 7);
+            addText(`🟠 High (${codeSecVulns.high.length})`);
+            pdf.setTextColor(0, 0, 0);
+            pdf.setFont('helvetica', 'normal');
+            codeSecVulns.high.slice(0, 3).forEach(vuln => {
+              addBullet(`${vuln.type}: ${vuln.message} (${vuln.file})`);
+            });
+            addSpace(3);
+          }
+          
+          // Medium
+          if (codeSecVulns.medium && codeSecVulns.medium.length > 0) {
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(255, 193, 7);
+            addText(`🟡 Medium (${codeSecVulns.medium.length})`);
+            pdf.setTextColor(0, 0, 0);
+            pdf.setFont('helvetica', 'normal');
+            codeSecVulns.medium.slice(0, 3).forEach(vuln => {
+              addBullet(`${vuln.type}: ${vuln.message} (${vuln.file})`);
+            });
+            addSpace(3);
+          }
+          
+          // Low
+          if (codeSecVulns.low && codeSecVulns.low.length > 0) {
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(40, 167, 69);
+            addText(`🔵 Low (${codeSecVulns.low.length})`);
+            pdf.setTextColor(0, 0, 0);
+            pdf.setFont('helvetica', 'normal');
+            codeSecVulns.low.slice(0, 3).forEach(vuln => {
+              addBullet(`${vuln.type}: ${vuln.message} (${vuln.file})`);
+            });
+          }
+        }
       }
     } else {
-      // If no security data at all, add a note
-      addText('No security scan data available. Please visit the Security Scanner tab to run a scan.');
+      // No security data available
+      addText('⚠️ Security scan not yet performed.');
       addSpace(5);
       pdf.setTextColor(100, 100, 100);
       pdf.setFontSize(10);
-      addText('Tip: The security scan analyzes your repository for vulnerabilities and security best practices.');
+      addText('To include security analysis in this report:');
+      addText('1. Navigate to the Security Scanner tab in the app', 5);
+      addText('2. Wait for the security scan to complete', 5);
+      addText('3. Generate the PDF report again', 5);
       pdf.setTextColor(0, 0, 0);
       pdf.setFontSize(11);
     }
 
+    // Save the PDF
     pdf.save('DevDock_Report.pdf');
+    setIsGeneratingPDF(false);
+    
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+      setIsGeneratingPDF(false);
+    }
   };
 
   const renderTabContent = () => {
