@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-function Header() {
+function Header({ onLogoClick }) {
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -23,7 +23,11 @@ function Header() {
   return (
     <header className={`header ${isScrolled ? 'header-scrolled' : ''}`}>
       <div className="header-content">
-        <div className="logo">
+        <div
+          className="logo clickable-logo"
+          onClick={onLogoClick}
+          title="Return to home"
+        >
           <img
             src="/devdock-logo-horizontal.svg"
             alt="DevDock"

@@ -1,9 +1,20 @@
 import React from 'react';
 
-function TabNavigation({ tabs, activeTab, onTabChange, onDownloadPDF, isGeneratingPDF }) {
+function TabNavigation({ tabs, activeTab, onTabChange, onDownloadPDF, isGeneratingPDF, onNewAnalysis }) {
   return (
     <nav className="tab-navigation">
       <div className="tab-nav-container">
+        {onNewAnalysis && (
+          <button
+            className="new-analysis-btn"
+            onClick={onNewAnalysis}
+            title="Analyze a new repository"
+          >
+            <span className="new-analysis-icon">🔄</span>
+            New Analysis
+          </button>
+        )}
+        
         <div className="tab-list">
           {tabs.map((tab) => (
             <button

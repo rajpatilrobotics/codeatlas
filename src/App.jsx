@@ -1086,9 +1086,30 @@ Keep response structured, concise, and easy to scan using bullet points.`;
     }
   };
 
+  // Reset function to start a new analysis
+  const handleNewAnalysis = () => {
+    // Reset all state
+    setAnalysisComplete(false);
+    setRepoData(null);
+    setRepoSize(null);
+    setAiSummary('');
+    setQuickStartGuide('');
+    setCommonIssues([]);
+    setFirstContributions([]);
+    setArchitectureAnalysis('');
+    setDetailedArchitecture(null);
+    setCodeAnalysis(null);
+    setError(null);
+    setSuccessMessage('');
+    setActiveTab('summary');
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="app">
-      <Header />
+      <Header onLogoClick={handleNewAnalysis} />
       
       <main className="main-content">
         <div className="single-column">
@@ -1140,6 +1161,7 @@ Keep response structured, concise, and easy to scan using bullet points.`;
                 onTabChange={setActiveTab}
                 onDownloadPDF={handleDownloadPDF}
                 isGeneratingPDF={isGeneratingPDF}
+                onNewAnalysis={handleNewAnalysis}
               />
 
               <div className="results-header">
