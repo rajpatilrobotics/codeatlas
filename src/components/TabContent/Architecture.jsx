@@ -115,8 +115,8 @@ function ArchitectureAnalysisDisplay({ analysis }) {
             marginBottom: '10px',
             paddingLeft: '8px'
           }}>
-            <span style={{ color: '#667eea', fontSize: '18px', lineHeight: '1.6' }}>•</span>
-            <span style={{ flex: 1, lineHeight: '1.6' }}>{text}</span>
+            <span style={{ color: '#667eea', fontSize: '14px', lineHeight: '1.6' }}>•</span>
+            <span style={{ flex: 1, lineHeight: '1.6', fontSize: '1rem' }}>{text}</span>
           </div>
         );
       }
@@ -143,6 +143,7 @@ function ArchitectureAnalysisDisplay({ analysis }) {
           <p key={idx} style={{
             marginBottom: '12px',
             lineHeight: '1.7',
+            fontSize: '1rem',
             color: 'var(--text-secondary)'
           }}>
             {trimmed}
@@ -189,7 +190,7 @@ function ArchitectureAnalysisDisplay({ analysis }) {
             borderBottom: '2px solid rgba(102, 126, 234, 0.15)'
           }}>
             <span style={{
-              fontSize: '32px',
+              fontSize: '24px',
               lineHeight: 1,
               filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
             }}>
@@ -197,7 +198,7 @@ function ArchitectureAnalysisDisplay({ analysis }) {
             </span>
             <h3 style={{
               margin: 0,
-              fontSize: '1.4rem',
+              fontSize: '1.1rem',
               fontWeight: '700',
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               WebkitBackgroundClip: 'text',
