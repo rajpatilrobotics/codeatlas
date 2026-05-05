@@ -99,7 +99,6 @@ function HeroSection({ repoUrl, onUrlChange, onAnalyze, isAnalyzing }) {
               </>
             ) : (
               <>
-                <span className="button-icon">🚀</span>
                 Analyze Repository
               </>
             )}

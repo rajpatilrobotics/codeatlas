@@ -17,7 +17,6 @@ function CTASection() {
           </p>
           
           <button onClick={scrollToTop} className="cta-button">
-            <span className="cta-button-icon">🚀</span>
             Analyze Repository
           </button>
         </div>
