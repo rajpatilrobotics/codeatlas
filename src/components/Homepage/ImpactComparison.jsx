@@ -145,29 +145,6 @@ function ImpactComparison() {
             </div>
           </div>
         </div>
-
-        <div className="impact-stats">
-          <div className="impact-stat">
-            <div className="stat-value">10x</div>
-            <div className="stat-label">Faster</div>
-            <div className="stat-sublabel">Code Analysis</div>
-          </div>
-          <div className="impact-stat">
-            <div className="stat-value">90%</div>
-            <div className="stat-label">Time Saved</div>
-            <div className="stat-sublabel">On Documentation</div>
-          </div>
-          <div className="impact-stat">
-            <div className="stat-value">95%</div>
-            <div className="stat-label">Faster</div>
-            <div className="stat-sublabel">Security Scans</div>
-          </div>
-          <div className="impact-stat">
-            <div className="stat-value">80%</div>
-            <div className="stat-label">Less</div>
-            <div className="stat-sublabel">Onboarding Time</div>
-          </div>
-        </div>
       </div>
     </section>
   );
