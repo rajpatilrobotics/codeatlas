@@ -111,24 +111,32 @@ function HeroSection({ repoUrl, onUrlChange, onAnalyze, isAnalyzing }) {
         </form>
 
         <div className="hero-footer-section">
+          <div className="hero-trust-indicators">
+            <div className="trust-item">
+              <div className="trust-value">10x</div>
+              <div className="trust-label">Faster</div>
+              <div className="trust-sublabel">Code Analysis</div>
+            </div>
+            <div className="trust-item">
+              <div className="trust-value">90%</div>
+              <div className="trust-label">Time Saved</div>
+              <div className="trust-sublabel">On Documentation</div>
+            </div>
+            <div className="trust-item">
+              <div className="trust-value">95%</div>
+              <div className="trust-label">Faster</div>
+              <div className="trust-sublabel">Security Scans</div>
+            </div>
+            <div className="trust-item">
+              <div className="trust-value">80%</div>
+              <div className="trust-label">Less</div>
+              <div className="trust-sublabel">Onboarding Time</div>
+            </div>
+          </div>
+
           <p className="hero-powered-by">
             Powered by IBM Bob and IBM watsonx AI
           </p>
-
-          <div className="hero-trust-indicators">
-            <div className="trust-item">
-              <span className="trust-icon">⚡</span>
-              <span className="trust-text">2-3 min</span>
-            </div>
-            <div className="trust-item">
-              <span className="trust-icon">🚀</span>
-              <span className="trust-text">10x faster</span>
-            </div>
-            <div className="trust-item">
-              <span className="trust-icon">🔒</span>
-              <span className="trust-text">Secure</span>
-            </div>
-          </div>
 
           <div className="hero-developer-credit">
             <span className="developer-credit-text">Built by Raj Patil</span>
