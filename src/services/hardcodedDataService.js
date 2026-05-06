@@ -271,10 +271,150 @@ export const getHardcodedArchitectureAnalysis = async () => {
   return HARDCODED_ARCHITECTURE_ANALYSIS;
 };
 
+export const HARDCODED_ONBOARDING_GUIDE = {
+  steps: [
+    {
+      title: "Project Overview & Goals",
+      description: "Understand the project's purpose, architecture, and core features. This repository is a React-based application with a modern tech stack designed for scalability and maintainability.",
+      actions: [
+        "Review the README.md file to understand project goals and features",
+        "Explore the main package.json to identify key dependencies",
+        "Check the project structure in the src/ directory",
+        "Understand the component-based architecture",
+        "Review any CONTRIBUTING.md or CODE_OF_CONDUCT.md files"
+      ],
+      icon: "🎯",
+      duration: "20 minutes",
+      difficulty: "Beginner"
+    },
+    {
+      title: "Environment Setup",
+      description: "Set up your local development environment with all necessary tools and dependencies. Ensure you have Node.js 14+ and npm installed before proceeding.",
+      actions: [
+        "Install Node.js (v14 or higher) and npm from nodejs.org",
+        "Clone the repository: git clone <repo-url>",
+        "Navigate to project directory: cd <project-name>",
+        "Install dependencies: npm install",
+        "Copy .env.example to .env and configure environment variables",
+        "Run the development server: npm start",
+        "Verify the app runs on http://localhost:3000"
+      ],
+      icon: "⚙️",
+      duration: "30 minutes",
+      difficulty: "Beginner"
+    },
+    {
+      title: "Codebase Orientation",
+      description: "Navigate through the codebase structure and understand how different components interact. Learn about the service layer, state management, and routing patterns.",
+      actions: [
+        "Explore src/components/ directory for React components",
+        "Review src/services/ for API and business logic",
+        "Understand src/utils/ for helper functions",
+        "Check src/App.jsx for main application structure",
+        "Review routing configuration if using React Router",
+        "Examine state management patterns (Context API, Redux, etc.)",
+        "Understand the build configuration in package.json"
+      ],
+      icon: "🗺️",
+      duration: "45 minutes",
+      difficulty: "Intermediate"
+    },
+    {
+      title: "Development Workflow",
+      description: "Learn the team's development practices, including branching strategy, commit conventions, and testing requirements.",
+      actions: [
+        "Create a new feature branch: git checkout -b feature/your-feature-name",
+        "Follow the commit message convention (e.g., Conventional Commits)",
+        "Run tests before committing: npm test",
+        "Run linter to check code quality: npm run lint",
+        "Build the project to ensure no errors: npm run build",
+        "Push your branch and create a pull request",
+        "Request code review from maintainers"
+      ],
+      icon: "🔄",
+      duration: "25 minutes",
+      difficulty: "Intermediate"
+    },
+    {
+      title: "First Contribution",
+      description: "Make your first meaningful contribution to the project. Start with a good first issue or documentation improvement to get familiar with the workflow.",
+      actions: [
+        "Browse issues labeled 'good first issue' or 'help wanted'",
+        "Pick a task that matches your skill level",
+        "Comment on the issue to claim it and avoid duplicate work",
+        "Implement the fix or feature following project guidelines",
+        "Write or update tests for your changes",
+        "Update documentation if needed",
+        "Submit a pull request with a clear description",
+        "Respond to code review feedback promptly"
+      ],
+      icon: "🚀",
+      duration: "1-2 hours",
+      difficulty: "Beginner"
+    },
+    {
+      title: "Testing & Quality Assurance",
+      description: "Understand the testing strategy and quality standards. Learn how to write and run tests to ensure code reliability.",
+      actions: [
+        "Review existing test files in __tests__/ or *.test.js files",
+        "Understand the testing framework (Jest, React Testing Library, etc.)",
+        "Write unit tests for new functions and components",
+        "Run tests locally: npm test",
+        "Check test coverage: npm run test:coverage",
+        "Ensure all tests pass before submitting PR",
+        "Add integration tests for complex features"
+      ],
+      icon: "🧪",
+      duration: "40 minutes",
+      difficulty: "Intermediate"
+    },
+    {
+      title: "Best Practices & Code Style",
+      description: "Follow the project's coding standards and best practices to maintain code quality and consistency across the codebase.",
+      actions: [
+        "Review the code style guide or ESLint configuration",
+        "Use consistent naming conventions for variables and functions",
+        "Write clear, self-documenting code with meaningful names",
+        "Add comments for complex logic or business rules",
+        "Keep functions small and focused (Single Responsibility Principle)",
+        "Avoid code duplication - extract reusable utilities",
+        "Use TypeScript types if the project uses TypeScript",
+        "Follow React best practices (hooks, component composition, etc.)"
+      ],
+      icon: "✨",
+      duration: "30 minutes",
+      difficulty: "Intermediate"
+    },
+    {
+      title: "Resources & Documentation",
+      description: "Familiarize yourself with important documentation, community channels, and learning resources to accelerate your contribution journey.",
+      actions: [
+        "Bookmark the project's documentation site or wiki",
+        "Join the team's communication channels (Slack, Discord, etc.)",
+        "Follow the project on GitHub for updates",
+        "Review API documentation if working with backend services",
+        "Check out related projects or dependencies documentation",
+        "Save links to useful tutorials or guides",
+        "Connect with other contributors and ask questions",
+        "Subscribe to release notes and changelogs"
+      ],
+      icon: "📚",
+      duration: "20 minutes",
+      difficulty: "Beginner"
+    }
+  ]
+};
+
 // Function to get security data with simulated loading
 export const getHardcodedSecurityData = async () => {
   await simulateLoading(2500);
   return HARDCODED_SECURITY_DATA;
+};
+
+// Function to get onboarding guide with simulated loading
+export const getHardcodedOnboardingGuide = async () => {
+  await simulateLoading(2500);
+  return HARDCODED_ONBOARDING_GUIDE;
 };
 
 // Made with Bob

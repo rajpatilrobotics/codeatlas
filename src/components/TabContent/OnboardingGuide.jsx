@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { generateText } from '../../services/watsonxService';
+import { getHardcodedOnboardingGuide } from '../../services/hardcodedDataService';
 
 function OnboardingGuide({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
   const [loading, setLoading] = useState(false);
@@ -33,140 +33,21 @@ function OnboardingGuide({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
     setLoading(true);
     setError(null);
 
-    const prompt = `You are a senior developer creating an onboarding guide. Analyze the repository and return ONLY valid JSON in this format:
-{
-  "steps": [
-    {
-      "title": "Project Overview",
-      "description": "Explain what the project does and its purpose",
-      "actions": ["Understand main goal", "Identify core features"],
-      "icon": "🎯",
-      "duration": "15 minutes",
-      "difficulty": "Beginner"
-    },
-    {
-      "title": "Environment Setup",
-      "description": "Setup instructions",
-      "actions": ["Install dependencies", "Run project locally"],
-      "icon": "⚙️",
-      "duration": "30 minutes",
-      "difficulty": "Beginner"
-    },
-    {
-      "title": "Codebase Orientation",
-      "description": "Where key logic exists",
-      "actions": ["Explore main folders", "Understand architecture"],
-      "icon": "🗺️",
-      "duration": "45 minutes",
-      "difficulty": "Intermediate"
-    },
-    {
-      "title": "First Task",
-      "description": "Beginner friendly task to make",
-      "actions": ["Fix small bug", "Add simple feature"],
-      "icon": "🚀",
-      "duration": "1 hour",
-      "difficulty": "Beginner"
-    },
-    {
-      "title": "Resources",
-      "description": "Important files and docs",
-      "actions": ["Read README", "Check config files"],
-      "icon": "📚",
-      "duration": "20 minutes",
-      "difficulty": "Beginner"
-    }
-  ]
-}
-
-Rules:
-- Return ONLY JSON
-- No explanations before or after
-- Keep content concise and practical
-- Fill all fields with real repo specific content`;
-
     try {
-      const response = await generateText(prompt, {
-        maxNewTokens: 2000,
-        temperature: 0.7,
-        topP: 0.9,
-      });
-
-      // Extract JSON from response (handle cases where model adds extra text)
-      let jsonStr = response.trim();
+      // Load comprehensive onboarding guide
+      const guideData = await getHardcodedOnboardingGuide();
       
-      // Try to find JSON object in the response
-      const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        jsonStr = jsonMatch[0];
-      }
-
-      const parsedData = JSON.parse(jsonStr);
-
-      // Validate the structure
-      if (!parsedData.steps || !Array.isArray(parsedData.steps)) {
-        throw new Error('Invalid response structure: missing steps array');
-      }
-
       // Cache the response
-      localStorage.setItem('onboarding_guide_cache', JSON.stringify(parsedData));
+      localStorage.setItem('onboarding_guide_cache', JSON.stringify(guideData));
       
-      setOnboardingData(parsedData);
+      setOnboardingData(guideData);
       setLoading(false);
     } catch (err) {
-      console.error('Error generating onboarding guide:', err);
-      setError(err.message || 'Failed to generate onboarding guide');
+      console.error('Error loading onboarding guide:', err);
+      setError(err.message || 'Failed to load onboarding guide');
       setLoading(false);
-      
-      // Fallback to default data
-      setOnboardingData(getDefaultOnboardingData());
     }
   };
-
-  const getDefaultOnboardingData = () => ({
-    steps: [
-      {
-        title: "Project Overview",
-        description: "Understand the project's purpose and main features",
-        actions: ["Review README.md", "Explore project structure", "Identify key technologies"],
-        icon: "🎯",
-        duration: "15 minutes",
-        difficulty: "Beginner"
-      },
-      {
-        title: "Environment Setup",
-        description: "Set up your development environment",
-        actions: ["Install Node.js and npm", "Clone the repository", "Install dependencies with npm install"],
-        icon: "⚙️",
-        duration: "30 minutes",
-        difficulty: "Beginner"
-      },
-      {
-        title: "Codebase Orientation",
-        description: "Navigate through the codebase structure",
-        actions: ["Explore src/ directory", "Understand component hierarchy", "Review service layer"],
-        icon: "🗺️",
-        duration: "45 minutes",
-        difficulty: "Intermediate"
-      },
-      {
-        title: "First Task",
-        description: "Complete your first contribution",
-        actions: ["Pick a good first issue", "Create a feature branch", "Submit a pull request"],
-        icon: "🚀",
-        duration: "1 hour",
-        difficulty: "Beginner"
-      },
-      {
-        title: "Resources",
-        description: "Familiarize yourself with important documentation",
-        actions: ["Read contributing guidelines", "Review code style guide", "Join team communication channels"],
-        icon: "📚",
-        duration: "20 minutes",
-        difficulty: "Beginner"
-      }
-    ]
-  });
 
   const toggleStepCompletion = (stepIndex) => {
     const newCompleted = new Set(completedSteps);
@@ -280,22 +161,6 @@ Rules:
           </h3>
           <p style={{ color: '#6b7280' }}>
             Analyzing repository structure and creating personalized steps
-          </p>
-        </div>
-      )}
-
-      {/* Error State */}
-      {error && (
-        <div className="content-card" style={{
-          backgroundColor: '#fef2f2',
-          borderLeft: '4px solid #ef4444'
-        }}>
-          <h3 style={{ color: '#dc2626', marginBottom: '10px' }}>
-            ⚠️ Generation Error
-          </h3>
-          <p style={{ color: '#991b1b', marginBottom: '15px' }}>{error}</p>
-          <p style={{ color: '#6b7280', fontSize: '14px' }}>
-            Don't worry! We've loaded a default onboarding guide below.
           </p>
         </div>
       )}
