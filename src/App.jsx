@@ -161,21 +161,6 @@ ${readmeSnippet}
     }
   }, [analysisComplete]);
 
-  // Test watsonx.ai integration on component mount
-  useEffect(() => {
-    const testWatsonxIntegration = async () => {
-      try {
-        console.log('🧪 Testing watsonx.ai integration...');
-        const response = await generateText('Say hello in one sentence');
-        console.log('✅ Watsonx.ai Response:', response);
-      } catch (error) {
-        console.error('❌ Watsonx.ai Test Failed:', error.message);
-      }
-    };
-    
-    testWatsonxIntegration();
-  }, []); // Run once on mount
-
   const handleAnalyze = async () => {
     if (!repoUrl.trim()) return;
     
