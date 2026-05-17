@@ -1,0 +1,301 @@
+// ============================================
+// CODEATLAS - Prisma Schema
+// ============================================
+// Database: PostgreSQL (Neon)
+// ORM: Prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// REPOSITORY MODEL
+// ============================================
+model Repository {
+  id          String   @id @default(uuid())
+  githubUrl   String   @unique
+  name        String
+  owner       String
+  description String?  @db.Text
+  language    String?
+  stars       Int?     @default(0)
+  forks       Int?     @default(0)
+  size        Int?     @default(0)
+  
+  // Analysis Status
+  status      AnalysisStatus @default(PENDING)
+  progress    Int            @default(0)
+  errorMessage String?       @db.Text
+  
+  // Metadata
+  clonePath   String?
+  branch      String?        @default("main")
+  lastCommit  String?
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  analyzedAt  DateTime?
+  
+  // Relations
+  files         File[]
+  entities      Entity[]
+  relationships Relationship[]
+  chatSessions  ChatSession[]
+  metrics       RepositoryMetrics?
+  
+  @@index([status])
+  @@index([createdAt])
+  @@map("repositories")
+}
+
+// ============================================
+// FILE MODEL
+// ============================================
+model File {
+  id           String   @id @default(uuid())
+  repositoryId String
+  
+  // File Info
+  path         String
+  relativePath String
+  content      String   @db.Text
+  language     String
+  extension    String
+  
+  // Metrics
+  size         Int
+  linesOfCode  Int
+  complexity   Int?     @default(0)
+  
+  // Timestamps
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  entities     Entity[]
+  
+  @@unique([repositoryId, relativePath])
+  @@index([repositoryId])
+  @@index([language])
+  @@map("files")
+}
+
+// ============================================
+// ENTITY MODEL (Functions, Classes, Components)
+// ============================================
+model Entity {
+  id           String     @id @default(uuid())
+  repositoryId String
+  fileId       String
+  
+  // Entity Info
+  type         EntityType
+  name         String
+  signature    String?    @db.Text
+  description  String?    @db.Text
+  
+  // Location
+  startLine    Int
+  endLine      Int
+  startColumn  Int?
+  endColumn    Int?
+  
+  // Metrics
+  complexity   Int?       @default(0)
+  linesOfCode  Int?       @default(0)
+  
+  // Metadata
+  isExported   Boolean    @default(false)
+  isAsync      Boolean    @default(false)
+  parameters   Json?
+  returnType   String?
+  
+  // Timestamps
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  
+  // Relations
+  repository      Repository     @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  file            File           @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  outgoing        Relationship[] @relation("EntityFrom")
+  incoming        Relationship[] @relation("EntityTo")
+  embeddings      Embedding[]
+  
+  @@index([repositoryId])
+  @@index([fileId])
+  @@index([type])
+  @@index([name])
+  @@map("entities")
+}
+
+// ============================================
+// RELATIONSHIP MODEL (Dependencies)
+// ============================================
+model Relationship {
+  id           String           @id @default(uuid())
+  repositoryId String
+  fromId       String
+  toId         String
+  
+  // Relationship Info
+  type         RelationshipType
+  weight       Int              @default(1)
+  metadata     Json?
+  
+  // Timestamps
+  createdAt    DateTime         @default(now())
+  
+  // Relations
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  from         Entity     @relation("EntityFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to           Entity     @relation("EntityTo", fields: [toId], references: [id], onDelete: Cascade)
+  
+  @@unique([fromId, toId, type])
+  @@index([repositoryId])
+  @@index([type])
+  @@map("relationships")
+}
+
+// ============================================
+// EMBEDDING MODEL (Vector Embeddings)
+// ============================================
+model Embedding {
+  id           String   @id @default(uuid())
+  entityId     String
+  
+  // Qdrant Info
+  qdrantId     String   @unique
+  collectionName String
+  
+  // Embedding Metadata
+  model        String   @default("gte-Qwen2-7B-instruct")
+  dimension    Int      @default(768)
+  chunkText    String   @db.Text
+  
+  // Timestamps
+  createdAt    DateTime @default(now())
+  
+  // Relations
+  entity       Entity   @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  
+  @@index([entityId])
+  @@index([qdrantId])
+  @@map("embeddings")
+}
+
+// ============================================
+// CHAT SESSION MODEL
+// ============================================
+model ChatSession {
+  id           String   @id @default(uuid())
+  repositoryId String
+  
+  // Session Info
+  title        String?
+  messages     Json     @default("[]")
+  
+  // Metadata
+  messageCount Int      @default(0)
+  model        String   @default("deepseek-chat")
+  
+  // Timestamps
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  lastMessageAt DateTime?
+  
+  // Relations
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  
+  @@index([repositoryId])
+  @@index([createdAt])
+  @@map("chat_sessions")
+}
+
+// ============================================
+// REPOSITORY METRICS MODEL
+// ============================================
+model RepositoryMetrics {
+  id           String   @id @default(uuid())
+  repositoryId String   @unique
+  
+  // Code Metrics
+  totalFiles   Int      @default(0)
+  totalLines   Int      @default(0)
+  totalFunctions Int    @default(0)
+  totalClasses Int      @default(0)
+  totalComponents Int   @default(0)
+  
+  // Complexity Metrics
+  avgComplexity Float   @default(0)
+  maxComplexity Int     @default(0)
+  
+  // Dependency Metrics
+  totalDependencies Int @default(0)
+  externalDependencies Int @default(0)
+  internalDependencies Int @default(0)
+  
+  // Graph Metrics
+  graphNodes   Int      @default(0)
+  graphEdges   Int      @default(0)
+  graphDensity Float    @default(0)
+  
+  // Security Metrics
+  securityScore Int?    @default(0)
+  vulnerabilities Int   @default(0)
+  
+  // Timestamps
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  
+  @@map("repository_metrics")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum AnalysisStatus {
+  PENDING
+  CLONING
+  PARSING
+  EXTRACTING
+  GENERATING_GRAPH
+  EMBEDDING
+  SUMMARIZING
+  COMPLETED
+  FAILED
+}
+
+enum EntityType {
+  FUNCTION
+  CLASS
+  COMPONENT
+  SERVICE
+  API_ROUTE
+  DB_MODEL
+  INTERFACE
+  TYPE
+  CONSTANT
+  VARIABLE
+}
+
+enum RelationshipType {
+  IMPORTS
+  CALLS
+  DEPENDS_ON
+  CONNECTS_TO
+  EXPOSES
+  EXTENDS
+  IMPLEMENTS
+  USES
+}
