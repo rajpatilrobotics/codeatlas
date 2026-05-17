@@ -1,0 +1,289 @@
+.architecture-content {
+  padding: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* Header */
+.arch-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.arch-header-left {
+  flex: 1;
+}
+
+.arch-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 8px 0;
+}
+
+.arch-subtitle {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.arch-header-right {
+  display: flex;
+  gap: 12px;
+}
+
+/* Stats Bar */
+.arch-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--color-bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.stat-info {
+  flex: 1;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* View Selector */
+.view-selector {
+  padding: 16px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.view-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.view-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Main Content */
+.arch-main {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.arch-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Component Details Panel */
+.component-details-card {
+  padding: 20px;
+}
+
+.component-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.component-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.component-header-left svg {
+  color: var(--color-primary);
+}
+
+.component-details-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: var(--color-text-tertiary);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+.component-details-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-code {
+  font-size: 13px;
+  color: var(--color-text-primary);
+  font-family: 'Monaco', 'Courier New', monospace;
+  background: var(--color-bg-secondary);
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+}
+
+.detail-text {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Legend */
+.arch-legend {
+  padding: 20px;
+}
+
+.legend-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 16px 0;
+}
+
+.legend-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.legend-icon {
+  flex-shrink: 0;
+}
+
+.legend-item span {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .arch-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .view-selector {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .view-buttons {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .architecture-content {
+    padding: 16px;
+  }
+  
+  .arch-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .arch-header-right {
+    width: 100%;
+  }
+  
+  .arch-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .legend-items {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .arch-title {
+    font-size: 24px;
+  }
+  
+  .stat-value {
+    font-size: 20px;
+  }
+  
+  .legend-items {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Made with Bob */

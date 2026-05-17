@@ -1,9 +1,9 @@
 'use client'
 
-import Architecture from '@/src/pages/Architecture'
+import ArchitectureContent from './ArchitectureContent'
 
 export default function ArchitecturePage() {
-  return <Architecture />
+  return <ArchitectureContent />
 }
 
 // Made with Bob
