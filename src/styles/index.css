@@ -1,23 +1,9 @@
-/**
- * CodeAtlas Design System - Main Entry Point
- * Import order matters!
- */
+/* CodeAtlas V2 - Main Styles Entry Point */
 
-/* 1. Theme Variables (must be first) */
+/* Import design system in order */
 @import './theme.css';
-
-/* 2. Global Reset & Base Styles */
-@import './global.css';
-
-/* 3. Typography */
 @import './typography.css';
-
-/* 4. Animations */
 @import './animations.css';
-
-/**
- * Component-specific styles will be imported
- * via CSS Modules in their respective components
- */
+@import './global.css';
 
 /* Made with Bob */
