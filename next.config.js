@@ -17,16 +17,30 @@ const nextConfig = {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
   },
   
-  // Image optimization
+  // Image optimization - using remotePatterns instead of deprecated domains
   images: {
-    domains: ['localhost', 'github.com'],
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+      },
+      {
+        protocol: 'https',
+        hostname: 'github.com',
+      },
+    ],
     unoptimized: true, // For development
   },
   
   // Disable x-powered-by header
   poweredByHeader: false,
   
-  // Webpack configuration
+  // Turbopack configuration (Next.js 16+)
+  turbopack: {
+    // Empty config to acknowledge Turbopack usage
+  },
+  
+  // Webpack configuration (fallback for when using --webpack flag)
   webpack: (config) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
@@ -37,9 +51,9 @@ const nextConfig = {
     return config;
   },
   
-  // Experimental features
+  // Experimental features - serverActions is now stable, no longer needed
   experimental: {
-    serverActions: true,
+    // Remove deprecated serverActions boolean
   },
 };
 
