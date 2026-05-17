@@ -1,0 +1,11 @@
+api/
+repos/
+server/
+.env
+.env.local
+*.log
+node_modules/
+.next/
+out/
+dist/
+.git/
