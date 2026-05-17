@@ -1,3 +1,4 @@
+'use client';
 /**
  * MainWorkspace Component
  * Central content area with optional right panel

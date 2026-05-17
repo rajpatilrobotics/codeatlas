@@ -1,10 +1,11 @@
+'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import './Chat.css';
-import Button from '../components/Button';
-import Card from '../components/Card';
-import Badge from '../components/Badge';
-import Dropdown from '../components/Dropdown';
-import EmptyState from '../components/EmptyState';
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
+import Badge from '../components/ui/Badge';
+import { Select } from '../components/ui/Dropdown';
+import EmptyState from '../components/ui/EmptyState';
 
 // Response Cache for instant replies
 class ResponseCache {

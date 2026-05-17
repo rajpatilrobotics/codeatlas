@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * Topbar Component
  * Global header with search, actions, and user menu

@@ -1,3 +1,4 @@
+'use client';
 /**
  * Security Scanner Page
  * Automated vulnerability detection and security analysis

@@ -1,3 +1,4 @@
+'use client';
 /**
  * LoadingState Component
  * Skeleton screens for content loading states

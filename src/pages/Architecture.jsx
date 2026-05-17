@@ -1,3 +1,4 @@
+'use client';
 /**
  * Architecture Page
  * Visualize codebase architecture with AI-powered diagrams

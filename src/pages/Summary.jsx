@@ -1,3 +1,4 @@
+'use client';
 /**
  * Summary Page
  * Repository overview with AI insights

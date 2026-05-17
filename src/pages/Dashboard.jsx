@@ -1,3 +1,4 @@
+'use client';
 /**
  * Dashboard Page
  * Mission control - overview, stats, recent activity

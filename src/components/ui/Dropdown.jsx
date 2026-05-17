@@ -1,3 +1,4 @@
+'use client';
 /**
  * Dropdown Component
  * Minimal dropdown menu for actions and selections

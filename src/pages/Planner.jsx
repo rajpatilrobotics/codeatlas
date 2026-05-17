@@ -1,11 +1,12 @@
+'use client';
 import React, { useState } from 'react';
 import './Planner.css';
-import Card from '../components/Card';
-import Badge from '../components/Badge';
-import Button from '../components/Button';
-import Input from '../components/Input';
-import EmptyState from '../components/EmptyState';
-import Separator from '../components/Separator';
+import Card from '../components/ui/Card';
+import Badge from '../components/ui/Badge';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import EmptyState from '../components/ui/EmptyState';
+import Separator from '../components/ui/Separator';
 
 // Mock tasks data
 const MOCK_TASKS = [

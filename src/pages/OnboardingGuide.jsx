@@ -1,9 +1,10 @@
+'use client';
 import React, { useState } from 'react';
 import './OnboardingGuide.css';
-import Card from '../components/Card';
-import Badge from '../components/Badge';
-import Button from '../components/Button';
-import Separator from '../components/Separator';
+import Card from '../components/ui/Card';
+import Badge from '../components/ui/Badge';
+import Button from '../components/ui/Button';
+import Separator from '../components/ui/Separator';
 
 // Mock onboarding steps (will be replaced with AI-generated content)
 const MOCK_STEPS = [

@@ -1,3 +1,4 @@
+'use client';
 /**
  * Layout Component
  * Main application layout wrapper

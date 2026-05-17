@@ -1,10 +1,11 @@
+'use client';
 import React, { useState } from 'react';
 import './Documentation.css';
-import Card from '../components/Card';
-import Badge from '../components/Badge';
-import Button from '../components/Button';
-import EmptyState from '../components/EmptyState';
-import Separator from '../components/Separator';
+import Card from '../components/ui/Card';
+import Badge from '../components/ui/Badge';
+import Button from '../components/ui/Button';
+import EmptyState from '../components/ui/EmptyState';
+import Separator from '../components/ui/Separator';
 
 // Mock data (will be replaced with real data)
 const MOCK_API_ROUTES = [

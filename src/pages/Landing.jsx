@@ -1,3 +1,4 @@
+'use client';
 /**
  * Landing Page
  * First impression - hero, features, CTA

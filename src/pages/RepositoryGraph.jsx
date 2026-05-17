@@ -1,10 +1,11 @@
+'use client';
 import React, { useState } from 'react';
 import './RepositoryGraph.css';
-import Card from '../components/Card';
-import Badge from '../components/Badge';
-import Button from '../components/Button';
-import Dropdown from '../components/Dropdown';
-import EmptyState from '../components/EmptyState';
+import Card from '../components/ui/Card';
+import Badge from '../components/ui/Badge';
+import Button from '../components/ui/Button';
+import Dropdown from '../components/ui/Dropdown';
+import EmptyState from '../components/ui/EmptyState';
 
 // Mock graph data (will be replaced with real data)
 const MOCK_NODES = [

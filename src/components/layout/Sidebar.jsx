@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * Sidebar Component
  * Main navigation for CodeAtlas
@@ -5,11 +7,12 @@
  */
 
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import './Sidebar.css';
 
 const Sidebar = () => {
-  const location = useLocation();
+  const pathname = usePathname();
   const [expandedSections, setExpandedSections] = useState(['overview', 'intelligence']);
 
   const toggleSection = (sectionId) => {
@@ -20,7 +23,7 @@ const Sidebar = () => {
     );
   };
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => pathname === path;
   const isExpanded = (sectionId) => expandedSections.includes(sectionId);
 
   // Navigation structure
