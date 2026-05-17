@@ -1,9 +1,9 @@
 'use client'
 
-import RepositoryGraph from '@/src/pages/RepositoryGraph'
+import RepositoryGraphContent from './RepositoryGraphContent'
 
 export default function RepositoryGraphPage() {
-  return <RepositoryGraph />
+  return <RepositoryGraphContent />
 }
 
 // Made with Bob

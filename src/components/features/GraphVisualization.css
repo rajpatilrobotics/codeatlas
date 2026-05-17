@@ -1,0 +1,221 @@
+.graph-visualization {
+  width: 100%;
+  background: var(--color-bg-secondary);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+/* React Flow custom styling */
+.react-flow {
+  background: var(--color-bg-secondary);
+}
+
+.react-flow__node {
+  background: var(--color-bg-primary);
+  border: 2px solid var(--color-border);
+  border-radius: 6px;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.react-flow__node:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  transform: translateY(-2px);
+}
+
+.react-flow__node.selected {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+/* Node type specific styling */
+.react-flow__node[data-type="file"] {
+  border-color: #3b82f6;
+}
+
+.react-flow__node[data-type="function"] {
+  border-color: #10b981;
+}
+
+.react-flow__node[data-type="class"] {
+  border-color: #8b5cf6;
+}
+
+.react-flow__node[data-type="api"] {
+  border-color: #f59e0b;
+}
+
+.react-flow__node[data-type="component"] {
+  border-color: #ec4899;
+}
+
+.react-flow__node[data-type="service"] {
+  border-color: #06b6d4;
+}
+
+/* Risk level styling for blast radius */
+.react-flow__node[data-risk="critical"] {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.react-flow__node[data-risk="high"] {
+  border-color: #f97316;
+  background: rgba(249, 115, 22, 0.1);
+}
+
+.react-flow__node[data-risk="medium"] {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.react-flow__node[data-risk="low"] {
+  border-color: #84cc16;
+  background: rgba(132, 204, 22, 0.1);
+}
+
+/* Edge styling */
+.react-flow__edge-path {
+  stroke-width: 2;
+  transition: stroke-width 0.2s ease;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke-width: 3;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke-width: 3;
+}
+
+/* Controls styling */
+.react-flow__controls {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.react-flow__controls-button {
+  background: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  transition: all 0.2s ease;
+}
+
+.react-flow__controls-button:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-primary);
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: none;
+}
+
+/* MiniMap styling */
+.react-flow__minimap {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.react-flow__minimap-mask {
+  fill: rgba(59, 130, 246, 0.1);
+  stroke: var(--color-primary);
+  stroke-width: 2;
+}
+
+/* Background pattern */
+.react-flow__background {
+  background-color: var(--color-bg-secondary);
+}
+
+.react-flow__background-pattern {
+  fill: var(--color-border);
+  opacity: 0.3;
+}
+
+/* Attribution */
+.react-flow__attribution {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+}
+
+/* Graph type specific styling */
+.graph-dependency .react-flow__node {
+  border-color: #3b82f6;
+}
+
+.graph-architecture .react-flow__node {
+  border-color: #8b5cf6;
+}
+
+.graph-blast-radius .react-flow__edge-path {
+  stroke: #f59e0b;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.graph-heatmap .react-flow__node {
+  border-width: 3px;
+}
+
+/* Node labels */
+.react-flow__node-default .react-flow__handle {
+  background: var(--color-primary);
+  border: 2px solid var(--color-bg-primary);
+  width: 8px;
+  height: 8px;
+}
+
+.react-flow__node-default .react-flow__handle:hover {
+  background: var(--color-primary-hover);
+  transform: scale(1.2);
+}
+
+/* Selection box */
+.react-flow__selection {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid var(--color-primary);
+}
+
+/* Zoom pane */
+.react-flow__pane {
+  cursor: grab;
+}
+
+.react-flow__pane:active {
+  cursor: grabbing;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .react-flow__node {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+  
+  .react-flow__node:hover {
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+  }
+}
+
+/* Made with Bob */
