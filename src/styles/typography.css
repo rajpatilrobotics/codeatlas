@@ -1,0 +1,313 @@
+/**
+ * CodeAtlas Design System - Typography
+ * Consistent typography hierarchy across all screens
+ */
+
+/* ============================================
+   FONT FAMILY
+   ============================================ */
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 
+               'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 
+               'Fira Sans', 'Droid Sans', 'Helvetica Neue', 
+               sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Monospace for code */
+code, pre, .code {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code',
+               'Fira Mono', 'Roboto Mono', 'Courier New', monospace;
+}
+
+/* ============================================
+   HEADING HIERARCHY
+   ============================================ */
+
+.heading-1,
+h1 {
+  font-size: var(--font-2xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.heading-2,
+h2 {
+  font-size: var(--font-xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.heading-3,
+h3 {
+  font-size: var(--font-lg);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--letter-spacing-normal);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.heading-4,
+h4 {
+  font-size: var(--font-base);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--letter-spacing-normal);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* ============================================
+   BODY TEXT
+   ============================================ */
+
+.text-base,
+p {
+  font-size: var(--font-base);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--letter-spacing-normal);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.text-lg {
+  font-size: var(--font-lg);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--letter-spacing-normal);
+  color: var(--text-primary);
+}
+
+.text-sm {
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--letter-spacing-normal);
+  color: var(--text-primary);
+}
+
+.text-xs {
+  font-size: var(--font-xs);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--text-primary);
+  text-transform: uppercase;
+}
+
+/* ============================================
+   TEXT COLORS
+   ============================================ */
+
+.text-primary {
+  color: var(--text-primary);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.text-disabled {
+  color: var(--text-disabled);
+}
+
+.text-accent {
+  color: var(--accent-cyan);
+}
+
+.text-success {
+  color: var(--success);
+}
+
+.text-error {
+  color: var(--error);
+}
+
+.text-warning {
+  color: var(--warning);
+}
+
+/* ============================================
+   FONT WEIGHTS
+   ============================================ */
+
+.font-normal {
+  font-weight: var(--font-weight-normal);
+}
+
+.font-medium {
+  font-weight: var(--font-weight-medium);
+}
+
+.font-semibold {
+  font-weight: var(--font-weight-semibold);
+}
+
+.font-bold {
+  font-weight: var(--font-weight-bold);
+}
+
+/* ============================================
+   TEXT UTILITIES
+   ============================================ */
+
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-uppercase {
+  text-transform: uppercase;
+}
+
+.text-lowercase {
+  text-transform: lowercase;
+}
+
+.text-capitalize {
+  text-transform: capitalize;
+}
+
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-wrap {
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+.text-nowrap {
+  white-space: nowrap;
+}
+
+/* ============================================
+   LINKS
+   ============================================ */
+
+a {
+  color: var(--accent-cyan);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--accent-cyan-hover);
+}
+
+a:active {
+  opacity: var(--opacity-active);
+}
+
+/* ============================================
+   CODE BLOCKS
+   ============================================ */
+
+code {
+  font-size: 0.9em;
+  padding: 2px 6px;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--accent-cyan);
+}
+
+pre {
+  font-size: var(--font-sm);
+  padding: var(--space-md);
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  line-height: var(--line-height-relaxed);
+}
+
+pre code {
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+}
+
+/* ============================================
+   LISTS
+   ============================================ */
+
+ul, ol {
+  margin: 0;
+  padding-left: var(--space-lg);
+  color: var(--text-primary);
+}
+
+li {
+  margin-bottom: var(--space-sm);
+  line-height: var(--line-height-normal);
+}
+
+/* ============================================
+   BLOCKQUOTES
+   ============================================ */
+
+blockquote {
+  margin: 0;
+  padding-left: var(--space-md);
+  border-left: 2px solid var(--border-medium);
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* ============================================
+   SELECTION
+   ============================================ */
+
+::selection {
+  background: var(--accent-cyan-subtle);
+  color: var(--text-primary);
+}
+
+::-moz-selection {
+  background: var(--accent-cyan-subtle);
+  color: var(--text-primary);
+}
+
+/* ============================================
+   PLACEHOLDER TEXT
+   ============================================ */
+
+::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+:-ms-input-placeholder {
+  color: var(--text-muted);
+}
+
+::-ms-input-placeholder {
+  color: var(--text-muted);
+}
+
+/* Made with Bob */

@@ -1,0 +1,89 @@
+/**
+ * MainWorkspace Component Styles
+ * Central content area with optional right panel
+ */
+
+.main-workspace {
+  display: flex;
+  gap: var(--space-lg);
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Content Area */
+.main-workspace-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-xl);
+  min-width: 0; /* Prevent flex item from overflowing */
+}
+
+/* Custom scrollbar */
+.main-workspace-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.main-workspace-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.main-workspace-content::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: var(--radius-full);
+}
+
+.main-workspace-content::-webkit-scrollbar-thumb:hover {
+  background: var(--border-default);
+}
+
+/* Right Panel */
+.main-workspace-panel {
+  width: 320px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  padding: var(--space-xl) var(--space-lg) var(--space-xl) 0;
+  border-left: 1px solid var(--border-subtle);
+}
+
+.main-workspace-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.main-workspace-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.main-workspace-panel::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: var(--radius-full);
+}
+
+.main-workspace-panel::-webkit-scrollbar-thumb:hover {
+  background: var(--border-default);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .main-workspace-panel {
+    width: 280px;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-workspace {
+    flex-direction: column;
+  }
+
+  .main-workspace-content {
+    padding: var(--space-lg);
+  }
+
+  .main-workspace-panel {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--border-subtle);
+    padding: var(--space-lg);
+  }
+}
+
+/* Made with Bob */

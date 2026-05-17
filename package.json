@@ -1,0 +1,58 @@
+{
+  "name": "devdock-v2",
+  "version": "2.0.0",
+  "description": "Enhanced AI-powered developer onboarding platform with multi-LLM support",
+  "private": true,
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.20.0",
+    "@google/generative-ai": "^0.5.0",
+    "axios": "^1.6.0",
+    "cors": "^2.8.6",
+    "dagre": "^0.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "html-to-image": "^1.11.13",
+    "html2pdf.js": "^0.14.0",
+    "jspdf": "^4.2.1",
+    "mermaid": "^11.14.0",
+    "node-fetch": "^2.7.0",
+    "openai": "^4.28.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-markdown": "^9.0.1",
+    "react-router-dom": "^6.22.0",
+    "reactflow": "^11.11.4",
+    "recharts": "^2.12.0",
+    "zustand": "^4.5.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "server": "node server.js",
+    "build": "CI=false react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "dev": "concurrently \"npm start\" \"npm run server\""
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "http-proxy-middleware": "^3.0.5",
+    "react-scripts": "5.0.1"
+  }
+}

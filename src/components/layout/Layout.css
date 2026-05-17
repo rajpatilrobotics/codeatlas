@@ -1,0 +1,35 @@
+/**
+ * Layout Component Styles
+ * Main application layout structure
+ */
+
+.layout {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-app);
+}
+
+.layout-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-left: 240px;
+  min-width: 0; /* Prevent flex item from overflowing */
+}
+
+.layout-content {
+  flex: 1;
+  margin-top: 60px;
+  overflow: hidden;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .layout-main {
+    margin-left: 0;
+  }
+}
+
+/* Made with Bob */

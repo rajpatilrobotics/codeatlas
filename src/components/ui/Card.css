@@ -1,0 +1,203 @@
+/**
+ * Card Component Styles
+ * Matte black panels with subtle depth
+ * Vercel/Linear/Render aesthetic
+ */
+
+.card {
+  /* Base styles */
+  background: var(--bg-panel-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  
+  /* Subtle shadow for depth */
+  box-shadow: var(--shadow-sm);
+  
+  /* Transitions */
+  transition: all var(--transition-fast);
+  
+  /* Prevent content overflow */
+  overflow: hidden;
+}
+
+/* ============================================
+   VARIANTS
+   ============================================ */
+
+.card-default {
+  background: var(--bg-panel-1);
+}
+
+.card-elevated {
+  background: var(--bg-panel-2);
+  box-shadow: var(--shadow-md);
+}
+
+.card-flat {
+  background: var(--bg-panel-1);
+  border: none;
+  box-shadow: none;
+}
+
+/* ============================================
+   PADDING
+   ============================================ */
+
+.card-padding-sm {
+  padding: 12px;
+}
+
+.card-padding-md {
+  padding: var(--space-md);
+}
+
+.card-padding-lg {
+  padding: var(--space-lg);
+}
+
+.card-padding-xl {
+  padding: var(--space-xl);
+}
+
+/* ============================================
+   INTERACTIVE STATES
+   ============================================ */
+
+.card-hover:hover {
+  border-color: var(--border-medium);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.card-clickable {
+  cursor: pointer;
+}
+
+.card-clickable:active {
+  transform: translateY(0);
+}
+
+/* ============================================
+   CARD HEADER
+   ============================================ */
+
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.card-header-content {
+  flex: 1;
+  min-width: 0; /* Allow text truncation */
+}
+
+.card-title {
+  font-size: var(--font-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 0;
+  line-height: var(--line-height-tight);
+}
+
+.card-subtitle {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  margin: var(--space-xs) 0 0 0;
+  line-height: var(--line-height-normal);
+}
+
+.card-header-action {
+  flex-shrink: 0;
+}
+
+/* ============================================
+   CARD BODY
+   ============================================ */
+
+.card-body {
+  /* Body inherits padding from parent card */
+}
+
+/* ============================================
+   CARD FOOTER
+   ============================================ */
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* ============================================
+   CARD COMBINATIONS
+   ============================================ */
+
+/* Card with header and footer */
+.card-padding-md .card-header:first-child {
+  margin-top: 0;
+}
+
+.card-padding-md .card-footer:last-child {
+  margin-bottom: 0;
+}
+
+/* Nested cards */
+.card .card {
+  box-shadow: none;
+}
+
+/* ============================================
+   CARD GRID
+   ============================================ */
+
+.card-grid {
+  display: grid;
+  gap: var(--space-md);
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.card-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.card-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.card-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* Responsive grid */
+@media (max-width: 1024px) {
+  .card-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .card-grid,
+  .card-grid-2,
+  .card-grid-3,
+  .card-grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================
+   FOCUS STYLES
+   ============================================ */
+
+.card-clickable:focus-visible {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 2px;
+}
+
+/* Made with Bob */
