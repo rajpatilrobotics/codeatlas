@@ -1,0 +1,198 @@
+/**
+ * CodeAtlas API Server
+ * 
+ * Main Express server that orchestrates all services.
+ */
+
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import rateLimit from 'express-rate-limit';
+
+// Import routes
+import repoRoutes from './routes/repo.routes.js';
+import graphRoutes from './routes/graph.routes.js';
+import chatRoutes from './routes/chat.routes.js';
+import systemRoutes from './routes/system.routes.js';
+
+// Import services
+import DatabaseService from './services/database/index.js';
+import { startWorkers } from './workers/index.js';
+import { setupBullBoard } from './config/bullBoard.js';
+import logger from './utils/logger.js';
+import { initSentry, sentryErrorHandler } from './utils/sentry.js';
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Initialize Sentry (error tracking)
+initSentry(app);
+
+// ==================== Middleware ====================
+
+// Security
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable for development
+  crossOriginEmbedderPolicy: false,
+}));
+
+// CORS
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true,
+}));
+
+// Body parsing
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Logging
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+} else {
+  app.use(morgan('combined', {
+    stream: {
+      write: (message) => logger.info(message.trim()),
+    },
+  }));
+}
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+});
+
+app.use('/api/', limiter);
+
+// ==================== Routes ====================
+
+// Health check (no rate limit)
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// API routes
+app.use('/api/repo', repoRoutes);
+app.use('/api/graph', graphRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/system', systemRoutes);
+
+// Bull Board (queue monitoring)
+setupBullBoard(app);
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    name: 'CodeAtlas API',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      health: '/health',
+      api: '/api',
+      docs: '/api/system/info',
+      monitor: '/admin/queues',
+    },
+  });
+});
+
+// ==================== Error Handling ====================
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    error: 'Not Found',
+    message: `Cannot ${req.method} ${req.path}`,
+  });
+});
+
+// Sentry error handler (must be before other error handlers)
+app.use(sentryErrorHandler);
+
+// Global error handler
+app.use((err, req, res, next) => {
+  logger.error('Unhandled error:', err);
+
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal Server Error',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+  });
+});
+
+// ==================== Server Initialization ====================
+
+async function startServer() {
+  try {
+    logger.info('🚀 Starting CodeAtlas API Server...');
+
+    // Connect to database
+    logger.info('📦 Connecting to database...');
+    const db = new DatabaseService();
+    await db.connect();
+    logger.info('✅ Database connected');
+
+    // Start workers
+    logger.info('👷 Starting background workers...');
+    await startWorkers();
+    logger.info('✅ Workers started');
+
+    // Start Express server
+    app.listen(PORT, () => {
+      logger.info(`✅ Server running on port ${PORT}`);
+      logger.info(`📍 API: http://localhost:${PORT}/api`);
+      logger.info(`📊 Monitor: http://localhost:${PORT}/admin/queues`);
+      logger.info(`🏥 Health: http://localhost:${PORT}/health`);
+      logger.info('');
+      logger.info('🎉 CodeAtlas API is ready!');
+    });
+  } catch (error) {
+    logger.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+// ==================== Graceful Shutdown ====================
+
+async function gracefulShutdown(signal) {
+  logger.info(`\n${signal} received. Starting graceful shutdown...`);
+
+  try {
+    // Stop accepting new requests
+    logger.info('Closing server...');
+
+    // Disconnect from database
+    logger.info('Disconnecting from database...');
+    const db = new DatabaseService();
+    await db.disconnect();
+
+    logger.info('✅ Graceful shutdown complete');
+    process.exit(0);
+  } catch (error) {
+    logger.error('❌ Error during shutdown:', error);
+    process.exit(1);
+  }
+}
+
+// Handle shutdown signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Handle uncaught errors
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception:', error);
+  gracefulShutdown('uncaughtException');
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  gracefulShutdown('unhandledRejection');
+});
+
+// Start the server
+startServer();
+
+export default app;
+
+// Made with Bob
