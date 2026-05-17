@@ -1,0 +1,53 @@
+{
+  "name": "codeatlas-api",
+  "version": "1.0.0",
+  "description": "CodeAtlas Backend API - AI-native developer intelligence platform",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio"
+  },
+  "keywords": [
+    "codeatlas",
+    "ast",
+    "graph",
+    "ai",
+    "developer-tools"
+  ],
+  "author": "CodeAtlas Team",
+  "license": "MIT",
+  "dependencies": {
+    "@bull-board/api": "^6.4.0",
+    "@bull-board/express": "^6.4.0",
+    "@bull-board/ui": "^6.4.0",
+    "@langchain/classic": "^1.0.32",
+    "@langchain/community": "^1.1.28",
+    "@langchain/core": "^1.1.28",
+    "@langchain/langgraph": "^1.1.28",
+    "@prisma/client": "^6.3.0",
+    "@sentry/node": "^8.47.0",
+    "bullmq": "^5.37.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "ioredis": "^5.4.2",
+    "morgan": "^1.10.0",
+    "pino": "^9.6.0",
+    "pino-pretty": "^13.0.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9",
+    "prisma": "^6.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
