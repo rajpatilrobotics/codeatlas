@@ -1,9 +1,9 @@
 'use client'
 
-import Heatmap from '@/src/pages/Heatmap'
+import HeatmapContent from './HeatmapContent'
 
 export default function HeatmapPage() {
-  return <Heatmap />
+  return <HeatmapContent />
 }
 
 // Made with Bob
