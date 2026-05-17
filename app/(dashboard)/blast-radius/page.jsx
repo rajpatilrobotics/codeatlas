@@ -1,9 +1,9 @@
 'use client'
 
-import BlastRadius from '@/src/pages/BlastRadius'
+import BlastRadiusContent from './BlastRadiusContent'
 
 export default function BlastRadiusPage() {
-  return <BlastRadius />
+  return <BlastRadiusContent />
 }
 
 // Made with Bob
