@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { apiClient } from '@/lib/api'
 
-export default function AnalyzingPage() {
+function AnalyzingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const repoUrl = searchParams.get('repo')
@@ -159,6 +159,18 @@ export default function AnalyzingPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function AnalyzingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+        <div className="text-gray-400">Loading...</div>
+      </div>
+    }>
+      <AnalyzingContent />
+    </Suspense>
   )
 }
 
