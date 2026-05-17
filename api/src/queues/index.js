@@ -1,14 +1,23 @@
-const { Queue } = require('bullmq');
-const Redis = require('ioredis');
+import { Queue } from 'bullmq';
+import Redis from 'ioredis';
 
 // Redis connection configuration
-const redisConnection = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: process.env.REDIS_PORT || 6379,
-  password: process.env.REDIS_PASSWORD,
-  maxRetriesPerRequest: null,
-  enableReadyCheck: false
-});
+// Use UPSTASH_REDIS_URL if available, otherwise fall back to individual params
+const redisConnection = process.env.UPSTASH_REDIS_URL
+  ? new Redis(process.env.UPSTASH_REDIS_URL, {
+      maxRetriesPerRequest: null,
+      enableReadyCheck: false,
+      tls: {
+        rejectUnauthorized: false
+      }
+    })
+  : new Redis({
+      host: process.env.REDIS_HOST || 'localhost',
+      port: process.env.REDIS_PORT || 6379,
+      password: process.env.REDIS_PASSWORD,
+      maxRetriesPerRequest: null,
+      enableReadyCheck: false
+    });
 
 // Create queues
 const repoAnalysisQueue = new Queue('repo-analysis', {
@@ -113,7 +122,7 @@ const closeQueues = async () => {
 process.on('SIGTERM', closeQueues);
 process.on('SIGINT', closeQueues);
 
-module.exports = {
+export {
   repoAnalysisQueue,
   parsingQueue,
   graphGenerationQueue,

@@ -23,42 +23,42 @@ const Sidebar = () => {
       label: 'OVERVIEW',
       items: [
         { path: '/dashboard', label: 'Dashboard', icon: '◆' },
-        { path: '/summary', label: 'Summary', icon: '◇' },
-        { path: '/architecture', label: 'Architecture', icon: '◈' },
+        { path: '/dashboard/summary', label: 'Summary', icon: '◇' },
+        { path: '/dashboard/architecture', label: 'Architecture', icon: '◈' },
       ]
     },
     {
       id: 'intelligence',
       label: 'INTELLIGENCE',
       items: [
-        { path: '/repository-graph', label: 'Repository Graph', icon: '◉' },
-        { path: '/blast-radius', label: 'Blast Radius', icon: '◎' },
-        { path: '/planner', label: 'Planner', icon: '◐' },
-        { path: '/debug', label: 'Debug Navigator', icon: '◑' },
-        { path: '/heatmap', label: 'Heatmap', icon: '◒' },
+        { path: '/dashboard/repository-graph', label: 'Repository Graph', icon: '◉' },
+        { path: '/dashboard/blast-radius', label: 'Blast Radius', icon: '◎' },
+        { path: '/dashboard/planner', label: 'Planner', icon: '◐' },
+        { path: '/dashboard/debug', label: 'Debug Navigator', icon: '◑' },
+        { path: '/dashboard/heatmap', label: 'Heatmap', icon: '◒' },
       ]
     },
     {
       id: 'security',
       label: 'SECURITY',
       items: [
-        { path: '/security', label: 'Security Scanner', icon: '◓' },
+        { path: '/dashboard/security', label: 'Security Scanner', icon: '◓' },
       ]
     },
     {
       id: 'ai-workspace',
       label: 'AI WORKSPACE',
       items: [
-        { path: '/chat', label: 'Chat', icon: '◔' },
-        { path: '/documentation', label: 'Documentation', icon: '◕' },
-        { path: '/onboarding', label: 'Onboarding', icon: '◖' },
+        { path: '/dashboard/chat', label: 'Chat', icon: '◔' },
+        { path: '/dashboard/documentation', label: 'Documentation', icon: '◕' },
+        { path: '/dashboard/onboarding', label: 'Onboarding', icon: '◖' },
       ]
     },
     {
       id: 'workspaces',
       label: 'WORKSPACES',
       items: [
-        { path: '/workspaces', label: 'Saved Workspaces', icon: '◗' },
+        { path: '/dashboard/workspaces', label: 'Saved Workspaces', icon: '◗' },
       ]
     }
   ];

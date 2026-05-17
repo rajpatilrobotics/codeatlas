@@ -385,7 +385,7 @@ function getDependencyChain(relationships, entityId, maxDepth = 5) {
   return chain;
 }
 
-module.exports = {
+export {
   extractRelationships,
   extractImportRelationships,
   extractInheritanceRelationships,

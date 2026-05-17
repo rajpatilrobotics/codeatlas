@@ -58,14 +58,18 @@ if (process.env.NODE_ENV === 'development') {
   }));
 }
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.',
-});
-
-app.use('/api/', limiter);
+// Rate limiting - DISABLED IN DEVELOPMENT
+if (process.env.NODE_ENV === 'production') {
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: 'Too many requests from this IP, please try again later.',
+  });
+  app.use('/api/', limiter);
+  logger.info('✅ Rate limiting enabled for production');
+} else {
+  logger.info('⚠️  Rate limiting DISABLED for development');
+}
 
 // ==================== Routes ====================
 

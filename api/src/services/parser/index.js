@@ -1,11 +1,11 @@
-const {
+import {
   parseCode,
   extractFunctions,
   extractClasses,
   extractImports,
   extractExports,
   extractVariables
-} = require('./babelParser');
+} from './babelParser.js';
 
 /**
  * Main parser service
@@ -272,6 +272,7 @@ class ParserService {
 }
 
 // Export singleton instance
-module.exports = new ParserService();
+const parserService = new ParserService();
+export default parserService;
 
 // Made with Bob

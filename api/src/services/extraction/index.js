@@ -1,4 +1,4 @@
-const {
+import {
   extractEntities,
   normalizeEntities,
   getEntityById,
@@ -7,16 +7,16 @@ const {
   getEntityStatistics,
   getExportedEntities,
   getImportedEntities
-} = require('./entityExtractor');
+} from './entityExtractor.js';
 
-const {
+import {
   extractRelationships,
   getEntityRelationships,
   getRelationshipsByType,
   getRelationshipStatistics,
   findCircularDependencies,
   getDependencyChain
-} = require('./relationshipExtractor');
+} from './relationshipExtractor.js';
 
 /**
  * Main extraction service
@@ -309,6 +309,7 @@ class ExtractionService {
 }
 
 // Export singleton instance
-module.exports = new ExtractionService();
+const extractionService = new ExtractionService();
+export default extractionService;
 
 // Made with Bob

@@ -1,5 +1,5 @@
-const Sentry = require('@sentry/node');
-const { logger } = require('./logger');
+import * as Sentry from '@sentry/node';
+import { logger } from './logger.js';
 
 /**
  * Sentry Error Tracking Configuration
@@ -163,7 +163,7 @@ const addBreadcrumb = (message, category = 'default', data = {}) => {
   });
 };
 
-module.exports = {
+export {
   initSentry,
   sentryRequestHandler,
   sentryTracingHandler,

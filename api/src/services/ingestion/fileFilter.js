@@ -1,5 +1,7 @@
-const path = require('path');
-const fs = require('fs').promises;
+import path from 'path';
+import fs from 'fs';
+
+const fsPromises = fs.promises;
 
 /**
  * Directories to ignore during repository analysis
@@ -142,7 +144,7 @@ function isSupportedFile(fileName) {
  */
 async function isWithinSizeLimit(filePath) {
   try {
-    const stats = await fs.stat(filePath);
+    const stats = await fsPromises.stat(filePath);
     return stats.size <= MAX_FILE_SIZE;
   } catch (error) {
     console.error(`Error checking file size for ${filePath}:`, error);
@@ -204,7 +206,7 @@ async function filterFiles(dirPath, basePath = dirPath) {
   const files = [];
   
   try {
-    const entries = await fs.readdir(dirPath, { withFileTypes: true });
+    const entries = await fsPromises.readdir(dirPath, { withFileTypes: true });
     
     for (const entry of entries) {
       const fullPath = path.join(dirPath, entry.name);
@@ -276,7 +278,7 @@ function getFileStatistics(files) {
   return stats;
 }
 
-module.exports = {
+export {
   shouldIgnoreDirectory,
   shouldIgnoreFile,
   isSupportedFile,

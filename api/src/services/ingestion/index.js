@@ -1,7 +1,8 @@
-const { cloneRepository, deleteRepository } = require('./cloner');
-const { filterFiles, getFileStatistics } = require('./fileFilter');
-const { validateGitHubUrl } = require('./validator');
-const fs = require('fs').promises;
+import { cloneRepository, deleteRepository } from './cloner.js';
+import { filterFiles, getFileStatistics } from './fileFilter.js';
+import { validateGitHubUrl } from './validator.js';
+import fs from 'fs';
+const fsPromises = fs.promises;
 
 /**
  * Main repository ingestion service
@@ -153,8 +154,8 @@ class IngestionService {
       const file = files[i];
 
       try {
-        const content = await fs.readFile(file.fullPath, 'utf-8');
-        const stats = await fs.stat(file.fullPath);
+        const content = await fsPromises.readFile(file.fullPath, 'utf-8');
+        const stats = await fsPromises.stat(file.fullPath);
 
         filesWithContent.push({
           path: file.path,
@@ -235,6 +236,7 @@ class IngestionService {
 }
 
 // Export singleton instance
-module.exports = new IngestionService();
+const ingestionService = new IngestionService();
+export default ingestionService;
 
 // Made with Bob

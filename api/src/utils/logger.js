@@ -1,4 +1,4 @@
-const pino = require('pino');
+import pino from 'pino';
 
 /**
  * Pino Logger Configuration
@@ -131,7 +131,9 @@ const requestLogger = (req, res, next) => {
   next();
 };
 
-module.exports = {
+export default logger;
+
+export {
   logger,
   createLogger,
   logRequest,

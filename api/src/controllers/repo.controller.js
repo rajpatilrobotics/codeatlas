@@ -46,6 +46,11 @@ export async function analyzeRepository(req, res) {
           message: 'Repository already analyzed',
         });
       }
+
+      // If failed or pending, reset and re-analyze
+      if (repository.status === 'failed' || repository.status === 'pending') {
+        await db.updateRepositoryStatus(repository.id, 'pending', 0);
+      }
     } else {
       // Create new repository
       const urlParts = url.replace('https://github.com/', '').split('/');
@@ -60,10 +65,13 @@ export async function analyzeRepository(req, res) {
       });
     }
 
-    // Add job to queue
+    // Add job to queue with correct data format for worker
     const job = await repoAnalysisQueue.add('analyze-repo', {
-      repositoryId: repository.id,
-      url,
+      repoUrl: url,
+      options: {
+        repositoryId: repository.id,
+        token: process.env.GITHUB_TOKEN
+      }
     });
 
     // Update status to analyzing

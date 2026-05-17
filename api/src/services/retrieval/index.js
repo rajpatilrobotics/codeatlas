@@ -13,14 +13,14 @@
  */
 
 import EmbeddingsService from '../embeddings/index.js';
-import GraphService from '../graph/index.js';
+import graphService from '../graph/index.js';
 import ContextRanker from './contextRanker.js';
 import RetrievalPlanner from './retrievalPlanner.js';
 
 class RetrievalService {
   constructor() {
     this.embeddings = new EmbeddingsService();
-    this.graph = new GraphService();
+    this.graph = graphService;
     this.ranker = new ContextRanker();
     this.planner = new RetrievalPlanner(this.embeddings, this.graph);
   }

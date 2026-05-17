@@ -20,16 +20,21 @@ class PrismaService {
   getClient() {
     if (!this.prisma) {
       this.prisma = new PrismaClient({
-        log: process.env.NODE_ENV === 'development' 
+        log: process.env.NODE_ENV === 'development'
           ? ['query', 'error', 'warn']
           : ['error'],
         errorFormat: 'pretty',
       });
 
-      // Add connection event handlers
-      this.prisma.$on('beforeExit', async () => {
+      // Setup graceful shutdown handlers
+      process.on('SIGTERM', async () => {
         console.log('Prisma client disconnecting...');
-        this.isConnected = false;
+        await this.disconnect();
+      });
+
+      process.on('SIGINT', async () => {
+        console.log('Prisma client disconnecting...');
+        await this.disconnect();
       });
     }
 

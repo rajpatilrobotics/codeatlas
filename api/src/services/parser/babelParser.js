@@ -1,6 +1,6 @@
-const parser = require('@babel/parser');
-const traverse = require('@babel/traverse').default;
-const t = require('@babel/types');
+import * as parser from '@babel/parser';
+import traverse from '@babel/traverse';
+import * as t from '@babel/types';
 
 /**
  * Parse JavaScript/TypeScript code using Babel
@@ -431,7 +431,7 @@ function getParamName(param) {
   return 'unknown';
 }
 
-module.exports = {
+export {
   parseCode,
   extractFunctions,
   extractClasses,

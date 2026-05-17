@@ -5,8 +5,14 @@ import GraphVisualization from '@/src/components/features/GraphVisualization';
 import Card from '@/src/components/ui/Card';
 import Button from '@/src/components/ui/Button';
 import Badge from '@/src/components/ui/Badge';
-import { Layers, Database, Cloud, Server, Box } from 'lucide-react';
 import './ArchitectureContent.css';
+
+// Simple icon components to replace lucide-react
+const IconLayers = () => <span>◈</span>;
+const IconDatabase = () => <span>◉</span>;
+const IconCloud = () => <span>☁</span>;
+const IconServer = () => <span>⬢</span>;
+const IconBox = () => <span>◻</span>;
 
 /**
  * Architecture Content Component
@@ -117,11 +123,11 @@ const ArchitectureContent = () => {
 
   const getLayerIcon = (layer) => {
     switch (layer) {
-      case 'frontend': return <Layers size={16} />;
-      case 'backend': return <Server size={16} />;
-      case 'data': return <Database size={16} />;
-      case 'infrastructure': return <Cloud size={16} />;
-      default: return <Box size={16} />;
+      case 'frontend': return <IconLayers />;
+      case 'backend': return <IconServer />;
+      case 'data': return <IconDatabase />;
+      case 'infrastructure': return <IconCloud />;
+      default: return <IconBox />;
     }
   };
 
@@ -146,7 +152,7 @@ const ArchitectureContent = () => {
       <div className="arch-stats">
         <Card className="stat-card">
           <div className="stat-icon">
-            <Box size={20} />
+            <IconBox />
           </div>
           <div className="stat-info">
             <div className="stat-label">Total Components</div>
@@ -155,7 +161,7 @@ const ArchitectureContent = () => {
         </Card>
         <Card className="stat-card">
           <div className="stat-icon">
-            <Layers size={20} />
+            <IconLayers />
           </div>
           <div className="stat-info">
             <div className="stat-label">Frontend</div>
@@ -164,7 +170,7 @@ const ArchitectureContent = () => {
         </Card>
         <Card className="stat-card">
           <div className="stat-icon">
-            <Server size={20} />
+            <IconServer />
           </div>
           <div className="stat-info">
             <div className="stat-label">Backend</div>
@@ -173,7 +179,7 @@ const ArchitectureContent = () => {
         </Card>
         <Card className="stat-card">
           <div className="stat-icon">
-            <Database size={20} />
+            <IconDatabase />
           </div>
           <div className="stat-info">
             <div className="stat-label">Data Layer</div>
@@ -182,7 +188,7 @@ const ArchitectureContent = () => {
         </Card>
         <Card className="stat-card">
           <div className="stat-icon">
-            <Cloud size={20} />
+            <IconCloud />
           </div>
           <div className="stat-info">
             <div className="stat-label">Connections</div>
@@ -285,19 +291,19 @@ const ArchitectureContent = () => {
         <h4 className="legend-title">Architecture Layers</h4>
         <div className="legend-items">
           <div className="legend-item">
-            <Layers size={16} className="legend-icon" style={{ color: '#ec4899' }} />
+            <span className="legend-icon" style={{ color: '#ec4899' }}><IconLayers /></span>
             <span>Frontend Layer</span>
           </div>
           <div className="legend-item">
-            <Server size={16} className="legend-icon" style={{ color: '#8b5cf6' }} />
+            <span className="legend-icon" style={{ color: '#8b5cf6' }}><IconServer /></span>
             <span>Backend Layer</span>
           </div>
           <div className="legend-item">
-            <Database size={16} className="legend-icon" style={{ color: '#06b6d4' }} />
+            <span className="legend-icon" style={{ color: '#06b6d4' }}><IconDatabase /></span>
             <span>Data Layer</span>
           </div>
           <div className="legend-item">
-            <Cloud size={16} className="legend-icon" style={{ color: '#10b981' }} />
+            <span className="legend-icon" style={{ color: '#10b981' }}><IconCloud /></span>
             <span>Infrastructure</span>
           </div>
         </div>

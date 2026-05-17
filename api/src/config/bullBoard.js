@@ -1,13 +1,13 @@
-const { createBullBoard } = require('@bull-board/api');
-const { BullMQAdapter } = require('@bull-board/api/bullMQAdapter');
-const { ExpressAdapter } = require('@bull-board/express');
-const {
+import { createBullBoard } from '@bull-board/api';
+import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
+import { ExpressAdapter } from '@bull-board/express';
+import {
   repoAnalysisQueue,
   parsingQueue,
   graphGenerationQueue,
   embeddingsQueue,
   summarizationQueue
-} = require('../queues');
+} from '../queues/index.js';
 
 // Create Express adapter for Bull Board
 const serverAdapter = new ExpressAdapter();
@@ -25,6 +25,11 @@ createBullBoard({
   serverAdapter
 });
 
-module.exports = { serverAdapter };
+// Export function to setup Bull Board
+export function setupBullBoard(app) {
+  app.use('/admin/queues', serverAdapter.getRouter());
+}
+
+export { serverAdapter };
 
 // Made with Bob

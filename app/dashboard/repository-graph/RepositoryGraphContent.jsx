@@ -5,8 +5,15 @@ import GraphVisualization from '@/src/components/features/GraphVisualization';
 import Card from '@/src/components/ui/Card';
 import Button from '@/src/components/ui/Button';
 import Badge from '@/src/components/ui/Badge';
-import { Search, Filter, Download, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import './RepositoryGraphContent.css';
+
+// Simple icon components to replace lucide-react
+const IconSearch = () => <span>🔍</span>;
+const IconFilter = () => <span>⚙</span>;
+const IconDownload = () => <span>⬇</span>;
+const IconZoomIn = () => <span>➕</span>;
+const IconZoomOut = () => <span>➖</span>;
+const IconMaximize = () => <span>⛶</span>;
 
 /**
  * Repository Graph Content Component
@@ -96,7 +103,7 @@ const RepositoryGraphContent = () => {
         </div>
         <div className="graph-header-right">
           <Button variant="secondary" size="sm" onClick={handleExport}>
-            <Download size={16} />
+            <IconDownload />
             Export
           </Button>
         </div>
@@ -136,7 +143,7 @@ const RepositoryGraphContent = () => {
         <Card className="graph-card">
           <div className="graph-controls">
             <div className="graph-search">
-              <Search size={16} />
+              <IconSearch />
               <input
                 type="text"
                 placeholder="Search nodes..."

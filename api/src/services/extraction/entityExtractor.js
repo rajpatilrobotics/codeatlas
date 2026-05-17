@@ -317,7 +317,7 @@ function getImportedEntities(entities) {
   return imported;
 }
 
-module.exports = {
+export {
   extractEntities,
   normalizeEntities,
   getEntityById,

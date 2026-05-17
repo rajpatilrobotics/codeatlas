@@ -13,14 +13,14 @@
  */
 
 import RetrievalService from '../retrieval/index.js';
-import GraphService from '../graph/index.js';
+import graphService from '../graph/index.js';
 import DeepSeekClient from './deepseek.js';
 import PromptBuilder from './promptBuilder.js';
 
 class AIService {
   constructor() {
     this.retrieval = new RetrievalService();
-    this.graph = new GraphService();
+    this.graph = graphService;
     this.deepseek = new DeepSeekClient();
     this.promptBuilder = new PromptBuilder();
   }

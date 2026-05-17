@@ -1,7 +1,9 @@
-const simpleGit = require('simple-git');
-const fs = require('fs').promises;
-const path = require('path');
-const { validateGitHubUrl } = require('./validator');
+import simpleGit from 'simple-git';
+import fs from 'fs';
+import path from 'path';
+import { validateGitHubUrl } from './validator.js';
+
+const fsPromises = fs.promises;
 
 /**
  * Base directory for cloned repositories
@@ -13,7 +15,7 @@ const CLONE_BASE_DIR = path.join(process.cwd(), 'repos');
  */
 async function ensureCloneDirectory() {
   try {
-    await fs.mkdir(CLONE_BASE_DIR, { recursive: true });
+    await fsPromises.mkdir(CLONE_BASE_DIR, { recursive: true });
   } catch (error) {
     console.error('Error creating clone directory:', error);
     throw new Error('Failed to create clone directory');
@@ -109,7 +111,7 @@ async function cloneRepository(repoUrl, options = {}) {
   } catch (error) {
     // Clean up on error
     try {
-      await fs.rm(repoDir, { recursive: true, force: true });
+      await fsPromises.rm(repoDir, { recursive: true, force: true });
     } catch (cleanupError) {
       console.error('Error cleaning up failed clone:', cleanupError);
     }
@@ -125,7 +127,7 @@ async function cloneRepository(repoUrl, options = {}) {
  */
 async function deleteRepository(repoPath) {
   try {
-    await fs.rm(repoPath, { recursive: true, force: true });
+    await fsPromises.rm(repoPath, { recursive: true, force: true });
     return true;
   } catch (error) {
     console.error(`Error deleting repository at ${repoPath}:`, error);
@@ -140,7 +142,7 @@ async function deleteRepository(repoPath) {
  */
 async function repositoryExists(repoPath) {
   try {
-    await fs.access(repoPath);
+    await fsPromises.access(repoPath);
     return true;
   } catch {
     return false;
@@ -157,7 +159,7 @@ async function getRepositorySize(repoPath) {
     let totalSize = 0;
 
     async function calculateSize(dirPath) {
-      const entries = await fs.readdir(dirPath, { withFileTypes: true });
+      const entries = await fsPromises.readdir(dirPath, { withFileTypes: true });
 
       for (const entry of entries) {
         const fullPath = path.join(dirPath, entry.name);
@@ -165,7 +167,7 @@ async function getRepositorySize(repoPath) {
         if (entry.isDirectory()) {
           await calculateSize(fullPath);
         } else if (entry.isFile()) {
-          const stats = await fs.stat(fullPath);
+          const stats = await fsPromises.stat(fullPath);
           totalSize += stats.size;
         }
       }
@@ -188,7 +190,7 @@ async function cleanupOldRepositories(maxAgeHours = 24) {
   try {
     await ensureCloneDirectory();
     
-    const entries = await fs.readdir(CLONE_BASE_DIR, { withFileTypes: true });
+    const entries = await fsPromises.readdir(CLONE_BASE_DIR, { withFileTypes: true });
     const now = Date.now();
     const maxAgeMs = maxAgeHours * 60 * 60 * 1000;
     let cleanedCount = 0;
@@ -197,7 +199,7 @@ async function cleanupOldRepositories(maxAgeHours = 24) {
       if (!entry.isDirectory()) continue;
 
       const dirPath = path.join(CLONE_BASE_DIR, entry.name);
-      const stats = await fs.stat(dirPath);
+      const stats = await fsPromises.stat(dirPath);
       const age = now - stats.mtimeMs;
 
       if (age > maxAgeMs) {
@@ -222,14 +224,14 @@ async function listClonedRepositories() {
   try {
     await ensureCloneDirectory();
     
-    const entries = await fs.readdir(CLONE_BASE_DIR, { withFileTypes: true });
+    const entries = await fsPromises.readdir(CLONE_BASE_DIR, { withFileTypes: true });
     const repos = [];
 
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
 
       const dirPath = path.join(CLONE_BASE_DIR, entry.name);
-      const stats = await fs.stat(dirPath);
+      const stats = await fsPromises.stat(dirPath);
       const size = await getRepositorySize(dirPath);
 
       repos.push({
@@ -248,7 +250,7 @@ async function listClonedRepositories() {
   }
 }
 
-module.exports = {
+export {
   cloneRepository,
   deleteRepository,
   repositoryExists,

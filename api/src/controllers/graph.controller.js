@@ -5,10 +5,9 @@
  */
 
 import DatabaseService from '../services/database/index.js';
-import GraphService from '../services/graph/index.js';
+import graphService from '../services/graph/index.js';
 
 const db = new DatabaseService();
-const graphService = new GraphService();
 
 /**
  * Get repository graph

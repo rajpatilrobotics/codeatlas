@@ -1,6 +1,6 @@
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const cors = require('cors');
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import cors from 'cors';
 
 /**
  * Security Middleware Configuration
@@ -51,6 +51,14 @@ const corsConfig = cors({
 
 // Rate limiting configurations
 const createRateLimiter = (windowMs, max, message) => {
+  // COMPLETELY DISABLE rate limiting in development - always return bypass middleware
+  const isDevelopment = process.env.NODE_ENV !== 'production' || process.env.NODE_ENV === 'development';
+  
+  if (isDevelopment) {
+    console.log(`[SECURITY] Rate limiter DISABLED for development (${message})`);
+    return (req, res, next) => next();
+  }
+  
   return rateLimit({
     windowMs,
     max,
@@ -66,42 +74,42 @@ const createRateLimiter = (windowMs, max, message) => {
   });
 };
 
-// General API rate limiter - 100 requests per 15 minutes
+// General API rate limiter - 100 requests per 15 minutes (production only)
 const generalLimiter = createRateLimiter(
   15 * 60 * 1000,
   100,
   'Too many requests from this IP, please try again later.'
 );
 
-// Strict rate limiter for sensitive endpoints - 10 requests per 15 minutes
+// Strict rate limiter for sensitive endpoints - 10 requests per 15 minutes (production only)
 const strictLimiter = createRateLimiter(
   15 * 60 * 1000,
   10,
   'Too many requests to this endpoint, please try again later.'
 );
 
-// Auth rate limiter - 5 requests per 15 minutes
+// Auth rate limiter - 5 requests per 15 minutes (production only)
 const authLimiter = createRateLimiter(
   15 * 60 * 1000,
   5,
   'Too many authentication attempts, please try again later.'
 );
 
-// Repository analysis rate limiter - 3 requests per hour
+// Repository analysis rate limiter - 3 requests per hour (production only)
 const analysisLimiter = createRateLimiter(
   60 * 60 * 1000,
   3,
   'Too many analysis requests, please try again in an hour.'
 );
 
-// Chat rate limiter - 50 requests per 15 minutes
+// Chat rate limiter - 50 requests per 15 minutes (production only)
 const chatLimiter = createRateLimiter(
   15 * 60 * 1000,
   50,
   'Too many chat requests, please slow down.'
 );
 
-module.exports = {
+export {
   helmetConfig,
   corsConfig,
   generalLimiter,

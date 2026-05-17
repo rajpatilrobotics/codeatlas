@@ -1,11 +1,17 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const { securityMiddleware, rateLimiters } = require('./middleware/security');
-const { requestLogger, errorLogger } = require('./utils/logger');
-const { initSentry, sentryErrorHandler } = require('./utils/sentry');
-const { serverAdapter } = require('./config/bullBoard');
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import { securityMiddleware, rateLimiters } from './middleware/security.js';
+import { requestLogger, errorLogger } from './utils/logger.js';
+import { initSentry, sentryErrorHandler } from './utils/sentry.js';
+import { serverAdapter } from './config/bullBoard.js';
+
+// Import route modules
+import repoRoutes from './routes/repo.routes.js';
+import graphRoutes from './routes/graph.routes.js';
+import chatRoutes from './routes/chat.routes.js';
+import systemRoutes from './routes/system.routes.js';
 
 // Initialize Sentry
 initSentry();
@@ -44,7 +50,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API routes (to be implemented)
+// API routes
 app.get('/api', (req, res) => {
   res.json({
     message: 'CodeAtlas API',
@@ -55,68 +61,16 @@ app.get('/api', (req, res) => {
       repo: '/api/repo',
       graph: '/api/graph',
       chat: '/api/chat',
-      security: '/api/security',
-      planner: '/api/planner',
-      debug: '/api/debug',
-      heatmap: '/api/heatmap'
+      system: '/api/system'
     }
   });
 });
 
-// Repository routes
-app.post('/api/repo/analyze', rateLimiters.repo, (req, res) => {
-  res.json({ message: 'Repository analysis endpoint - to be implemented' });
-});
-
-app.get('/api/repo/status/:jobId', (req, res) => {
-  res.json({ message: 'Job status endpoint - to be implemented' });
-});
-
-app.get('/api/repo/summary/:repoId', (req, res) => {
-  res.json({ message: 'Repository summary endpoint - to be implemented' });
-});
-
-// Graph routes
-app.get('/api/graph/architecture/:repoId', rateLimiters.graph, (req, res) => {
-  res.json({ message: 'Architecture graph endpoint - to be implemented' });
-});
-
-app.get('/api/graph/blast-radius/:repoId', rateLimiters.graph, (req, res) => {
-  res.json({ message: 'Blast radius endpoint - to be implemented' });
-});
-
-app.get('/api/graph/heatmap/:repoId', rateLimiters.graph, (req, res) => {
-  res.json({ message: 'Heatmap endpoint - to be implemented' });
-});
-
-// Chat routes
-app.post('/api/chat/query', rateLimiters.chat, (req, res) => {
-  res.json({ message: 'Chat query endpoint - to be implemented' });
-});
-
-app.get('/api/chat/history/:repoId', (req, res) => {
-  res.json({ message: 'Chat history endpoint - to be implemented' });
-});
-
-// Security routes
-app.get('/api/security/scan/:repoId', (req, res) => {
-  res.json({ message: 'Security scan endpoint - to be implemented' });
-});
-
-// Planner routes
-app.post('/api/planner/analyze', (req, res) => {
-  res.json({ message: 'Planner analysis endpoint - to be implemented' });
-});
-
-// Debug routes
-app.get('/api/debug/trace/:repoId', (req, res) => {
-  res.json({ message: 'Debug trace endpoint - to be implemented' });
-});
-
-// Heatmap routes
-app.get('/api/heatmap/activity/:repoId', (req, res) => {
-  res.json({ message: 'Activity heatmap endpoint - to be implemented' });
-});
+// Mount route modules
+app.use('/api/repo', repoRoutes);
+app.use('/api/graph', graphRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/system', systemRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -168,6 +122,6 @@ process.on('SIGINT', () => {
   });
 });
 
-module.exports = app;
+export default app;
 
 // Made with Bob

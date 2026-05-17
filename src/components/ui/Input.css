@@ -1,0 +1,200 @@
+/**
+ * Input Component Styles
+ * Minimal, monochrome, infra-tool style
+ */
+
+.input-wrapper {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+/* ============================================
+   INPUT FIELD
+   ============================================ */
+
+.input-field {
+  /* Base styles */
+  width: 100%;
+  font-family: inherit;
+  font-size: var(--font-sm);
+  line-height: 1.5;
+  color: var(--text-primary);
+  
+  /* Background */
+  background: var(--bg-secondary);
+  
+  /* Border */
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  
+  /* Spacing */
+  padding: 0 var(--space-md);
+  
+  /* Transitions */
+  transition: all var(--transition-fast);
+  
+  /* Remove default styles */
+  outline: none;
+  appearance: none;
+}
+
+.input-field::placeholder {
+  color: var(--text-muted);
+}
+
+/* Focus state */
+.input-field:focus {
+  border-color: var(--accent-cyan);
+  background: var(--bg-primary);
+}
+
+/* Hover state */
+.input-field:hover:not(:disabled):not(:focus) {
+  border-color: var(--border-strong);
+}
+
+/* Disabled state */
+.input-field:disabled {
+  opacity: var(--opacity-disabled);
+  cursor: not-allowed;
+  background: var(--bg-tertiary);
+}
+
+/* ============================================
+   SIZES
+   ============================================ */
+
+.input-sm .input-field {
+  height: 32px;
+  font-size: var(--font-xs);
+  padding: 0 var(--space-sm);
+}
+
+.input-md .input-field {
+  height: 40px;
+  font-size: var(--font-sm);
+  padding: 0 var(--space-md);
+}
+
+.input-lg .input-field {
+  height: 48px;
+  font-size: var(--font-base);
+  padding: 0 var(--space-lg);
+}
+
+/* Textarea */
+.input-wrapper textarea.input-field {
+  height: auto;
+  padding: var(--space-sm) var(--space-md);
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* ============================================
+   WITH ICON
+   ============================================ */
+
+.input-with-icon-left .input-field {
+  padding-left: 40px;
+}
+
+.input-with-icon-right .input-field {
+  padding-right: 40px;
+}
+
+.input-icon {
+  position: absolute;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  width: 40px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.input-icon-left {
+  left: 0;
+}
+
+.input-icon-right {
+  right: 0;
+}
+
+.input-sm .input-icon {
+  height: 32px;
+  width: 32px;
+}
+
+.input-lg .input-icon {
+  height: 48px;
+  width: 48px;
+}
+
+/* ============================================
+   ERROR STATE
+   ============================================ */
+
+.input-error .input-field {
+  border-color: var(--error);
+}
+
+.input-error .input-field:focus {
+  border-color: var(--error);
+  box-shadow: 0 0 0 3px var(--error-bg);
+}
+
+.input-error-message {
+  font-size: var(--font-xs);
+  color: var(--error);
+  margin-top: var(--space-xs);
+}
+
+/* ============================================
+   FULL WIDTH
+   ============================================ */
+
+.input-full-width {
+  width: 100%;
+}
+
+/* ============================================
+   INPUT LABEL
+   ============================================ */
+
+.input-label {
+  display: block;
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
+}
+
+.input-required {
+  color: var(--error);
+  margin-left: var(--space-xs);
+}
+
+/* ============================================
+   INPUT GROUP
+   ============================================ */
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* ============================================
+   FOCUS STYLES
+   ============================================ */
+
+.input-field:focus-visible {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 2px;
+}
+
+/* Made with Bob */

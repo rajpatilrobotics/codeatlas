@@ -5,8 +5,14 @@ import GraphVisualization from '@/src/components/features/GraphVisualization';
 import Card from '@/src/components/ui/Card';
 import Button from '@/src/components/ui/Button';
 import Badge from '@/src/components/ui/Badge';
-import { AlertTriangle, AlertCircle, Info, CheckCircle, Target } from 'lucide-react';
 import './BlastRadiusContent.css';
+
+// Simple icon components to replace lucide-react
+const IconAlertTriangle = () => <span>⚠️</span>;
+const IconAlertCircle = () => <span>🔴</span>;
+const IconInfo = () => <span>ℹ️</span>;
+const IconCheckCircle = () => <span>✅</span>;
+const IconTarget = () => <span>🎯</span>;
 
 /**
  * Blast Radius Content Component
@@ -106,11 +112,11 @@ const BlastRadiusContent = () => {
 
   const getRiskIcon = (risk) => {
     switch (risk) {
-      case 'critical': return <AlertTriangle size={16} />;
-      case 'high': return <AlertCircle size={16} />;
-      case 'medium': return <Info size={16} />;
-      case 'low': return <CheckCircle size={16} />;
-      default: return <Target size={16} />;
+      case 'critical': return <IconAlertTriangle />;
+      case 'high': return <IconAlertCircle />;
+      case 'medium': return <IconInfo />;
+      case 'low': return <IconCheckCircle />;
+      default: return <IconTarget />;
     }
   };
 
@@ -144,7 +150,7 @@ const BlastRadiusContent = () => {
       {/* Target File Selector */}
       <Card className="target-selector">
         <div className="target-label">
-          <Target size={16} />
+          <IconTarget />
           <span>Target File:</span>
         </div>
         <input
@@ -163,7 +169,7 @@ const BlastRadiusContent = () => {
       <div className="blast-stats">
         <Card className="stat-card impact-score">
           <div className="stat-icon">
-            <Target size={20} />
+            <IconTarget />
           </div>
           <div className="stat-info">
             <div className="stat-label">Impact Score</div>
@@ -172,7 +178,7 @@ const BlastRadiusContent = () => {
         </Card>
         <Card className="stat-card">
           <div className="stat-icon">
-            <AlertTriangle size={20} style={{ color: '#ef4444' }} />
+            <IconAlertTriangle />
           </div>
           <div className="stat-info">
             <div className="stat-label">Critical</div>
@@ -181,7 +187,7 @@ const BlastRadiusContent = () => {
         </Card>
         <Card className="stat-card">
           <div className="stat-icon">
-            <AlertCircle size={20} style={{ color: '#f97316' }} />
+            <IconAlertCircle />
           </div>
           <div className="stat-info">
             <div className="stat-label">High Risk</div>
@@ -190,7 +196,7 @@ const BlastRadiusContent = () => {
         </Card>
         <Card className="stat-card">
           <div className="stat-icon">
-            <Info size={20} style={{ color: '#f59e0b' }} />
+            <IconInfo />
           </div>
           <div className="stat-info">
             <div className="stat-label">Medium Risk</div>
@@ -199,7 +205,7 @@ const BlastRadiusContent = () => {
         </Card>
         <Card className="stat-card">
           <div className="stat-icon">
-            <CheckCircle size={20} style={{ color: '#84cc16' }} />
+            <IconCheckCircle />
           </div>
           <div className="stat-info">
             <div className="stat-label">Low Risk</div>

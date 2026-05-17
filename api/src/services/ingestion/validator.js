@@ -1,4 +1,4 @@
-const { z } = require('zod');
+import { z } from 'zod';
 
 /**
  * GitHub URL validation schema
@@ -85,7 +85,7 @@ function isGitHubUrl(url) {
   }
 }
 
-module.exports = {
+export {
   validateGitHubUrl,
   validateRepoName,
   validateOwnerName,

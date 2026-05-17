@@ -386,7 +386,7 @@ function topologicalSort(graph) {
   return result;
 }
 
-module.exports = {
+export {
   bfs,
   dfs,
   reverseTraversal,

@@ -5,8 +5,14 @@ import GraphVisualization from '@/src/components/features/GraphVisualization';
 import Card from '@/src/components/ui/Card';
 import Button from '@/src/components/ui/Button';
 import Badge from '@/src/components/ui/Badge';
-import { Activity, TrendingUp, Flame, Code, GitCommit } from 'lucide-react';
 import './HeatmapContent.css';
+
+// Simple icon components to replace lucide-react
+const IconActivity = () => <span>📊</span>;
+const IconTrendingUp = () => <span>📈</span>;
+const IconFlame = () => <span>🔥</span>;
+const IconCode = () => <span>💻</span>;
+const IconGitCommit = () => <span>⚡</span>;
 
 /**
  * Heatmap Content Component
@@ -195,7 +201,7 @@ const HeatmapContent = () => {
               size="sm"
               onClick={() => setMetricType('activity')}
             >
-              <Activity size={16} />
+              <IconActivity />
               Activity
             </Button>
             <Button
@@ -203,7 +209,7 @@ const HeatmapContent = () => {
               size="sm"
               onClick={() => setMetricType('complexity')}
             >
-              <Code size={16} />
+              <IconCode />
               Complexity
             </Button>
             <Button
@@ -211,7 +217,7 @@ const HeatmapContent = () => {
               size="sm"
               onClick={() => setMetricType('changes')}
             >
-              <GitCommit size={16} />
+              <IconGitCommit />
               Changes
             </Button>
           </div>
@@ -249,7 +255,7 @@ const HeatmapContent = () => {
       <div className="heatmap-stats">
         <Card className="stat-card">
           <div className="stat-icon">
-            <TrendingUp size={20} />
+            <IconTrendingUp />
           </div>
           <div className="stat-info">
             <div className="stat-label">Average {metricType}</div>
@@ -258,7 +264,7 @@ const HeatmapContent = () => {
         </Card>
         <Card className="stat-card">
           <div className="stat-icon">
-            <Flame size={20} style={{ color: '#ef4444' }} />
+            <span style={{ color: '#ef4444' }}><IconFlame /></span>
           </div>
           <div className="stat-info">
             <div className="stat-label">Hotspots</div>
@@ -267,7 +273,7 @@ const HeatmapContent = () => {
         </Card>
         <Card className="stat-card">
           <div className="stat-icon">
-            <Activity size={20} />
+            <IconActivity />
           </div>
           <div className="stat-info">
             <div className="stat-label">Maximum</div>
@@ -276,7 +282,7 @@ const HeatmapContent = () => {
         </Card>
         <Card className="stat-card">
           <div className="stat-icon">
-            <Activity size={20} />
+            <IconActivity />
           </div>
           <div className="stat-info">
             <div className="stat-label">Minimum</div>
@@ -285,7 +291,7 @@ const HeatmapContent = () => {
         </Card>
         <Card className="stat-card">
           <div className="stat-icon">
-            <Code size={20} />
+            <IconCode />
           </div>
           <div className="stat-info">
             <div className="stat-label">Total Files</div>
@@ -319,11 +325,11 @@ const HeatmapContent = () => {
           <Card className="file-details-card">
             <div className="file-details-header">
               <div className="file-header-left">
-                <div 
-                  className="heat-indicator" 
+                <div
+                  className="heat-indicator"
                   style={{ background: getHeatColor(getMetricValue(selectedNode)) }}
                 >
-                  <Flame size={16} />
+                  <IconFlame />
                 </div>
                 <h3>{selectedNode.data.label}</h3>
               </div>

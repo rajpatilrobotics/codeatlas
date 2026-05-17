@@ -1,4 +1,4 @@
-const { reverseTraversal, calculateDistances } = require('./traversal');
+import { reverseTraversal, calculateDistances } from './traversal.js';
 
 /**
  * Blast Radius Analysis
@@ -316,7 +316,7 @@ function generateBlastRadiusVisualization(graph, entityId, entityMap = new Map()
   };
 }
 
-module.exports = {
+export {
   calculateBlastRadius,
   calculateImpactScore,
   findCriticalPaths,

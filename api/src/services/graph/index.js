@@ -1,4 +1,4 @@
-const {
+import {
   bfs,
   dfs,
   reverseTraversal,
@@ -7,15 +7,15 @@ const {
   calculateDistances,
   findStronglyConnectedComponents,
   topologicalSort
-} = require('./traversal');
+} from './traversal.js';
 
-const {
+import {
   calculateBlastRadius,
   calculateImpactScore,
   findCriticalPaths,
   analyzeMultipleChanges,
   generateBlastRadiusVisualization
-} = require('./blastRadius');
+} from './blastRadius.js';
 
 /**
  * Main Graph Service
@@ -402,6 +402,7 @@ class GraphService {
 }
 
 // Export singleton instance
-module.exports = new GraphService();
+const graphService = new GraphService();
+export default graphService;
 
 // Made with Bob

@@ -3,8 +3,8 @@
  * Starts and manages all BullMQ workers
  */
 
-const repoAnalysisWorker = require('./repoAnalysisWorker');
-const logger = require('../utils/logger');
+import repoAnalysisWorker from './repoAnalysisWorker.js';
+import logger from '../utils/logger.js';
 
 // Store active workers
 const workers = {
@@ -66,25 +66,7 @@ async function getWorkerStatus() {
   return status;
 }
 
-// Auto-start workers if this file is run directly
-if (require.main === module) {
-  startWorkers();
-
-  // Handle graceful shutdown
-  process.on('SIGTERM', async () => {
-    logger.info('SIGTERM received');
-    await stopWorkers();
-    process.exit(0);
-  });
-
-  process.on('SIGINT', async () => {
-    logger.info('SIGINT received');
-    await stopWorkers();
-    process.exit(0);
-  });
-}
-
-module.exports = {
+export {
   workers,
   startWorkers,
   stopWorkers,

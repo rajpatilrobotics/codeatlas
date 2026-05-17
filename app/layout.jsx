@@ -24,7 +24,7 @@ export default function RootLayout({ children }) {
         <meta name="description" content="CodeAtlas - AI-native developer intelligence platform" />
         <title>CodeAtlas - AI Developer Intelligence</title>
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <QueryClientProvider client={queryClient}>
           {children}
           <ReactQueryDevtools initialIsOpen={false} />
