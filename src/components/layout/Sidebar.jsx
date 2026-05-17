@@ -2,31 +2,21 @@
 
 /**
  * Sidebar Component
- * Main navigation for CodeAtlas
- * Hierarchical structure with 5 main sections
+ * Main navigation for CodeAtlas V2
+ * Flat structure with section labels
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import './Sidebar.css';
 
 const Sidebar = () => {
   const pathname = usePathname();
-  const [expandedSections, setExpandedSections] = useState(['overview', 'intelligence']);
-
-  const toggleSection = (sectionId) => {
-    setExpandedSections(prev => 
-      prev.includes(sectionId) 
-        ? prev.filter(id => id !== sectionId)
-        : [...prev, sectionId]
-    );
-  };
 
   const isActive = (path) => pathname === path;
-  const isExpanded = (sectionId) => expandedSections.includes(sectionId);
 
-  // Navigation structure
+  // Navigation structure - CodeAtlas V2 Final Structure
   const navigation = [
     {
       id: 'overview',
@@ -34,25 +24,25 @@ const Sidebar = () => {
       items: [
         { path: '/dashboard', label: 'Dashboard', icon: '◆' },
         { path: '/summary', label: 'Summary', icon: '◇' },
+        { path: '/architecture', label: 'Architecture', icon: '◈' },
       ]
     },
     {
       id: 'intelligence',
       label: 'INTELLIGENCE',
       items: [
-        { path: '/architecture', label: 'Architecture', icon: '◈' },
-        { path: '/repository-graph', label: 'Repository Graph', icon: '◉', badge: 'New' },
-        { path: '/blast-radius', label: 'Blast Radius', icon: '◎', badge: 'New' },
-        { path: '/planner', label: 'Planner', icon: '◐', badge: 'New' },
-        { path: '/debug-navigator', label: 'Debug Navigator', icon: '◑', badge: 'New' },
-        { path: '/heatmap', label: 'Heatmap', icon: '◒', badge: 'New' },
+        { path: '/repository-graph', label: 'Repository Graph', icon: '◉' },
+        { path: '/blast-radius', label: 'Blast Radius', icon: '◎' },
+        { path: '/planner', label: 'Planner', icon: '◐' },
+        { path: '/debug', label: 'Debug Navigator', icon: '◑' },
+        { path: '/heatmap', label: 'Heatmap', icon: '◒' },
       ]
     },
     {
       id: 'security',
       label: 'SECURITY',
       items: [
-        { path: '/security-scanner', label: 'Security Scanner', icon: '◓' },
+        { path: '/security', label: 'Security Scanner', icon: '◓' },
       ]
     },
     {
@@ -68,7 +58,7 @@ const Sidebar = () => {
       id: 'workspaces',
       label: 'WORKSPACES',
       items: [
-        { path: '/workspaces', label: 'Saved Workspaces', icon: '◗', badge: 'New' },
+        { path: '/workspaces', label: 'Saved Workspaces', icon: '◗' },
       ]
     }
   ];
@@ -77,55 +67,37 @@ const Sidebar = () => {
     <aside className="sidebar">
       {/* Logo */}
       <div className="sidebar-header">
-        <Link to="/" className="sidebar-logo">
+        <Link href="/" className="sidebar-logo">
           <div className="sidebar-logo-icon">CA</div>
           <span className="sidebar-logo-text">CodeAtlas</span>
         </Link>
       </div>
 
-      {/* Navigation */}
+      {/* Navigation - Flat Structure */}
       <nav className="sidebar-nav">
         {navigation.map((section) => (
           <div key={section.id} className="sidebar-section">
-            <button
-              className={`sidebar-section-header ${isExpanded(section.id) ? 'sidebar-section-expanded' : ''}`}
-              onClick={() => toggleSection(section.id)}
-            >
+            {/* Section Label (not clickable) */}
+            <div className="sidebar-section-header">
               <span className="sidebar-section-label">{section.label}</span>
-              <svg 
-                className="sidebar-section-icon" 
-                width="12" 
-                height="12" 
-                viewBox="0 0 12 12" 
-                fill="none"
-              >
-                <path 
-                  d="M4.5 3L7.5 6L4.5 9" 
-                  stroke="currentColor" 
-                  strokeWidth="1.5" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
+            </div>
 
-            {isExpanded(section.id) && (
-              <div className="sidebar-section-items">
-                {section.items.map((item) => (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={`sidebar-item ${isActive(item.path) ? 'sidebar-item-active' : ''}`}
-                  >
-                    <span className="sidebar-item-icon">{item.icon}</span>
-                    <span className="sidebar-item-label">{item.label}</span>
-                    {item.badge && (
-                      <span className="sidebar-item-badge">{item.badge}</span>
-                    )}
-                  </Link>
-                ))}
-              </div>
-            )}
+            {/* Always visible items */}
+            <div className="sidebar-section-items">
+              {section.items.map((item) => (
+                <Link
+                  key={item.path}
+                  href={item.path}
+                  className={`sidebar-item ${isActive(item.path) ? 'sidebar-item-active' : ''}`}
+                >
+                  <span className="sidebar-item-icon">{item.icon}</span>
+                  <span className="sidebar-item-label">{item.label}</span>
+                  {item.badge && (
+                    <span className="sidebar-item-badge">{item.badge}</span>
+                  )}
+                </Link>
+              ))}
+            </div>
           </div>
         ))}
       </nav>
