@@ -21,6 +21,9 @@
   "author": "CodeAtlas Team",
   "license": "MIT",
   "dependencies": {
+    "@babel/parser": "^7.29.3",
+    "@babel/traverse": "^7.29.0",
+    "@babel/types": "^7.29.0",
     "@bull-board/api": "^6.4.0",
     "@bull-board/express": "^6.4.0",
     "@bull-board/ui": "^6.4.0",
