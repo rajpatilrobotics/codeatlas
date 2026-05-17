@@ -1,0 +1,229 @@
+// Prisma Schema for CodeAtlas
+// Database: PostgreSQL (Neon)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Repository Model
+model Repository {
+  id          String   @id @default(cuid())
+  name        String
+  owner       String
+  url         String   @unique
+  description String?
+  language    String?
+  stars       Int      @default(0)
+  forks       Int      @default(0)
+  
+  // Analysis metadata
+  status      String   @default("pending") // pending, analyzing, completed, failed
+  progress    Int      @default(0)
+  
+  // Statistics
+  fileCount   Int      @default(0)
+  lineCount   Int      @default(0)
+  entityCount Int      @default(0)
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  analyzedAt  DateTime?
+  
+  // Relations
+  files       File[]
+  entities    Entity[]
+  relationships Relationship[]
+  chatSessions ChatSession[]
+  
+  @@index([owner, name])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// File Model
+model File {
+  id           String   @id @default(cuid())
+  repositoryId String
+  path         String
+  language     String?
+  size         Int
+  lineCount    Int      @default(0)
+  
+  // Content hash for change detection
+  contentHash  String
+  
+  // Timestamps
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  entities     Entity[]
+  
+  @@unique([repositoryId, path])
+  @@index([repositoryId])
+  @@index([language])
+}
+
+// Entity Model (functions, classes, variables, etc.)
+model Entity {
+  id           String   @id @default(cuid())
+  repositoryId String
+  fileId       String
+  
+  // Entity details
+  type         String   // function, class, method, variable, import, export
+  name         String
+  signature    String?
+  documentation String?
+  
+  // Location
+  startLine    Int
+  endLine      Int
+  
+  // Metadata
+  complexity   Int?
+  params       String[] // JSON array of parameters
+  returnType   String?
+  async        Boolean  @default(false)
+  static       Boolean  @default(false)
+  
+  // Timestamps
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  file         File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  
+  outgoingRelationships Relationship[] @relation("SourceEntity")
+  incomingRelationships Relationship[] @relation("TargetEntity")
+  
+  @@index([repositoryId])
+  @@index([fileId])
+  @@index([type])
+  @@index([name])
+}
+
+// Relationship Model (dependencies, calls, imports, etc.)
+model Relationship {
+  id           String   @id @default(cuid())
+  repositoryId String
+  
+  // Relationship details
+  type         String   // IMPORTS, CALLS, EXTENDS, USES, DEPENDS_ON, EXPORTS
+  sourceId     String
+  targetId     String
+  
+  // Metadata
+  weight       Int      @default(1)
+  metadata     Json?
+  
+  // Timestamps
+  createdAt    DateTime @default(now())
+  
+  // Relations
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  source       Entity @relation("SourceEntity", fields: [sourceId], references: [id], onDelete: Cascade)
+  target       Entity @relation("TargetEntity", fields: [targetId], references: [id], onDelete: Cascade)
+  
+  @@unique([repositoryId, sourceId, targetId, type])
+  @@index([repositoryId])
+  @@index([sourceId])
+  @@index([targetId])
+  @@index([type])
+}
+
+// Chat Session Model
+model ChatSession {
+  id           String   @id @default(cuid())
+  repositoryId String
+  
+  // Session metadata
+  title        String?
+  metadata     Json?
+  
+  // Timestamps
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  lastActivity DateTime @default(now())
+  
+  // Relations
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  messages     ChatMessage[]
+  
+  @@index([repositoryId])
+  @@index([lastActivity])
+}
+
+// Chat Message Model
+model ChatMessage {
+  id           String   @id @default(cuid())
+  sessionId    String
+  
+  // Message details
+  role         String   // user, assistant
+  content      String   @db.Text
+  reasoning    String?  @db.Text
+  
+  // Context
+  focusEntity  String?
+  metadata     Json?
+  
+  // Timestamps
+  createdAt    DateTime @default(now())
+  
+  // Relations
+  session      ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@index([sessionId])
+  @@index([createdAt])
+}
+
+// Analysis Job Model
+model AnalysisJob {
+  id           String   @id @default(cuid())
+  repositoryId String?
+  
+  // Job details
+  type         String   // repo-analysis, embeddings, graph-generation
+  status       String   @default("pending") // pending, running, completed, failed
+  progress     Int      @default(0)
+  
+  // Results
+  result       Json?
+  error        String?  @db.Text
+  
+  // Timestamps
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  startedAt    DateTime?
+  completedAt  DateTime?
+  
+  @@index([repositoryId])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// User Model (for future auth)
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  
+  // Auth
+  passwordHash String?
+  
+  // Timestamps
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@index([email])
+}
