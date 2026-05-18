@@ -287,7 +287,7 @@ export async function getRepositorySummary(req, res) {
             .filter(Boolean)
             .join('\n');
 
-    const insights = [];
+    let insights = [];
     if (statistics.files > 0) {
       insights.push({
         title: 'Repository indexed',
@@ -298,6 +298,35 @@ export async function getRepositorySummary(req, res) {
           title: 'Languages detected',
           description: techStack.map((t) => `${t.name} (${t.fileCount} files)`).join(', '),
         });
+      }
+
+      // Generate actual AI insights
+      try {
+        logger.info('[RepoController] Generating AI insights for repository', { repositoryId });
+        const insightsPrompt = `Based on the following repository stats (Files: ${statistics.files}, Entities: ${statistics.entities}, Relationships: ${statistics.relationships}, Top Files: ${topFiles.join(', ')}), generate 3 deep technical insights about the codebase architecture or potential technical debt. Return strictly as a JSON array of objects with 'title' and 'description' keys.`;
+
+        const aiResponse = await aiService.generateResponse(repositoryId, insightsPrompt, {
+          taskType: 'general',
+          includeReasoning: false
+        });
+
+        try {
+          // Attempt to parse JSON from AI response. Sometimes AI wraps in markdown block
+          let jsonStr = aiResponse.response;
+          if (jsonStr.includes('```json')) {
+             jsonStr = jsonStr.split('```json')[1].split('```')[0];
+          } else if (jsonStr.includes('```')) {
+             jsonStr = jsonStr.split('```')[1].split('```')[0];
+          }
+          const generatedInsights = JSON.parse(jsonStr.trim());
+          if (Array.isArray(generatedInsights)) {
+            insights = [...insights, ...generatedInsights];
+          }
+        } catch (parseErr) {
+          logger.warn('[RepoController] Failed to parse AI insights JSON', { response: aiResponse.response });
+        }
+      } catch (aiErr) {
+        logger.warn('[RepoController] AI insights generation failed', { error: aiErr.message });
       }
     }
     if (repository.status === 'analyzing') {
