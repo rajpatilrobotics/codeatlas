@@ -105,10 +105,19 @@ function DashboardContent() {
     )
   }
 
-  const stats = summary?.stats || {}
+  const stats =
+    summary?.stats ||
+    (summary?.statistics
+      ? {
+          totalFiles: summary.statistics.files,
+          totalEntities: summary.statistics.entities,
+          totalRelationships: summary.statistics.relationships,
+          totalDependencies: summary.statistics.relationships,
+        }
+      : {})
   const repoName = currentRepo.name || currentRepo.url?.split('/').pop() || 'Unknown'
-  const lastAnalyzed = summary?.analyzedAt
-    ? new Date(summary.analyzedAt).toLocaleDateString()
+  const lastAnalyzed = summary?.repository?.analyzedAt
+    ? new Date(summary.repository.analyzedAt).toLocaleDateString()
     : '—'
 
   return (

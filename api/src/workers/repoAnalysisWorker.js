@@ -18,6 +18,7 @@ import graphService from '../services/graph/index.js';
 logger.info('✅ WORKER MODULE: graphService imported');
 
 import DatabaseService from '../services/database/index.js';
+import { buildFileIdForRepository } from '../services/extraction/pathResolver.js';
 logger.info('✅ WORKER MODULE: DatabaseService imported');
 
 const db = new DatabaseService();
@@ -356,314 +357,138 @@ const worker = new Worker(
         statistics: result.statistics
       });
 
-      // Stage 9: Complete (100%)
-      try {
-        await job.updateProgress(100);
-        await job.log('Repository analysis complete!');
-      } catch (progressError) {
-        console.error('⚠️ Progress update failed (non-critical):', progressError.message);
-      }
-      
-      // Save data to database
-      logger.info('🔍 DEBUG: Checking if repositoryId exists', { repositoryId });
-      
+      // Save data to database before marking job complete
+      let filesSaved = 0;
+      let entitiesSaved = 0;
+      let relationshipsSaved = 0;
+
       if (repositoryId) {
-        logger.info('🔍 DEBUG: repositoryId exists, checking result data');
-        logger.info('🔍 DEBUG: result.files', { count: result.files?.length || 0 });
-        logger.info('🔍 DEBUG: result.entities', { count: result.entities?.length || 0 });
-        logger.info('🔍 DEBUG: result.relationships', { count: result.relationships?.length || 0 });
-        
         logger.info('=== CHECKPOINT 5: Database Persistence Starting ===', {
           repositoryId,
           dataToSave: {
             files: result.files?.length || 0,
             entities: result.entities?.length || 0,
-            relationships: result.relationships?.length || 0
-          }
+            relationships: result.relationships?.length || 0,
+          },
         });
 
         try {
-          // Transform and save files to database
-          console.log('🔍 DEBUG: About to check files condition...');
-          if (result.files && result.files.length > 0) {
-            console.log('🔍 DEBUG: Files condition TRUE, transforming files...');
-            logger.info('Transforming and saving files to database', { count: result.files.length });
-            
-            const filesForDb = result.files.map(file => {
-              const contentHash = crypto
+          await db.clearRepositoryAnalysisData(repositoryId);
+
+          if (result.files?.length > 0) {
+            const filesForDb = result.files.map((file) => ({
+              id: buildFileIdForRepository(repositoryId, file.path),
+              repositoryId,
+              path: file.path,
+              language: file.language || 'unknown',
+              size: file.size || 0,
+              lineCount: file.lines || file.lineCount || 0,
+              contentHash: crypto
                 .createHash('md5')
                 .update(file.content || file.path)
-                .digest('hex');
-              
+                .digest('hex'),
+            }));
+
+            filesSaved = await db.createFiles(filesForDb);
+            logger.info('Files saved successfully', { count: filesSaved });
+          }
+
+          let entitiesForDb = [];
+          if (result.entities?.length > 0) {
+            entitiesForDb = result.entities.map((entity) => {
+              const loc = entity.loc;
+              const isFileEntity = entity.entityType === 'file' || entity.type === 'file';
+
               return {
-                id: `${repositoryId}_${file.path}`.replace(/[^a-zA-Z0-9_-]/g, '_'),
+                id: entity.id,
                 repositoryId,
-                path: file.path,
-                language: file.language || 'unknown',
-                size: file.size || 0,
-                lineCount: file.lines || 0,
-                contentHash,
-                createdAt: new Date(),
-                updatedAt: new Date()
+                fileId: !isFileEntity && entity.filePath
+                  ? buildFileIdForRepository(repositoryId, entity.filePath)
+                  : null,
+                name: entity.name || entity.path || 'unknown',
+                type: entity.entityType || entity.type || 'unknown',
+                startLine: loc?.start?.line ?? entity.startLine ?? 0,
+                endLine: loc?.end?.line ?? entity.endLine ?? 0,
+                complexity: entity.complexity || 0,
+                params: Array.isArray(entity.params) ? entity.params : [],
+                returnType: entity.returnType || null,
+                async: Boolean(entity.async),
+                static: Boolean(entity.static),
               };
             });
-            
-            console.log('🔍 DEBUG: Calling db.createFiles with', filesForDb.length, 'files');
-            console.log('🔍 DEBUG: Sample file:', filesForDb[0]);
-            await db.createFiles(filesForDb);
-            console.log('✅ DEBUG: Files saved successfully!');
-            logger.info('Files saved successfully', { count: filesForDb.length });
-          } else {
-            console.log('❌ DEBUG: Files condition FALSE - no files to save');
+
+            entitiesSaved = await db.createEntities(entitiesForDb);
+            logger.info('Entities saved successfully', { count: entitiesSaved });
           }
 
-          // Transform and save entities to database
-          console.log('🔍 DEBUG: About to check entities condition...');
-          if (result.entities && result.entities.length > 0) {
-            console.log('🔍 DEBUG: Entities condition TRUE, transforming entities...');
-            logger.info('Transforming and saving entities to database', { count: result.entities.length });
-            
-            const entitiesForDb = result.entities.map(entity => ({
-              id: entity.id || `${repositoryId}_${entity.name}_${entity.entityType}`.replace(/[^a-zA-Z0-9_-]/g, '_'),
-              repositoryId,
-              fileId: entity.fileId ? `${repositoryId}_${entity.fileId}`.replace(/[^a-zA-Z0-9_-]/g, '_') : null,
-              name: entity.name,
-              type: entity.entityType || entity.type, // Use entityType field, fallback to type
-              startLine: entity.startLine || 0,
-              endLine: entity.endLine || 0,
-              complexity: entity.complexity || 0,
-              // metadata field removed - not in Prisma schema
-              createdAt: new Date(),
-              updatedAt: new Date()
-            }));
-            
-            console.log('🔍 DEBUG: Calling db.createEntities with', entitiesForDb.length, 'entities');
-            console.log('🔍 DEBUG: Sample entity:', entitiesForDb[0]);
-            await db.createEntities(entitiesForDb);
-            console.log('✅ DEBUG: Entities saved successfully!');
-            logger.info('Entities saved successfully', { count: entitiesForDb.length });
-          } else {
-            console.log('❌ DEBUG: Entities condition FALSE - no entities to save');
-          }
-  
-          // Transform and save relationships to database
-          console.log('🔍 DEBUG: About to check relationships condition...');
-          if (result.relationships && result.relationships.length > 0 && entitiesForDb && entitiesForDb.length > 0) {
-            console.log('🔍 DEBUG: Relationships condition TRUE, resolving entity IDs...');
-            logger.info('Resolving and saving relationships to database', { count: result.relationships.length });
-            
-            // Build entity ID mapping for relationship resolution
-            const entityIdMap = new Map();
-            const pathToEntityIdMap = new Map();
-            
-            entitiesForDb.forEach(entity => {
-              // Map by entity ID
-              entityIdMap.set(entity.id, entity);
-              
-              // Map file entities by extracting path from their ID
-              // File IDs are like: "file:source_index_ts" → path is "source/index.ts"
-              if (entity.type === 'file' && entity.id.startsWith('file:')) {
-                // Extract path from ID: "file:source_index_ts" → "source/index.ts"
-                const pathPart = entity.id.replace('file:', '');
-                const fullPath = pathPart.replace(/_/g, '/').replace(/\//g, '/');
-                
-                // Try multiple path variations
-                const variations = [
-                  fullPath,
-                  fullPath.replace(/\.ts$/, ''),
-                  fullPath.replace(/\.tsx$/, ''),
-                  fullPath.replace(/\.js$/, ''),
-                  fullPath.replace(/\.jsx$/, ''),
-                  entity.name, // Just filename
-                  entity.name.replace(/\.(ts|tsx|js|jsx)$/, '')
-                ];
-                
-                variations.forEach(v => {
-                  if (v && !pathToEntityIdMap.has(v)) {
-                    pathToEntityIdMap.set(v, entity.id);
-                  }
-                });
-              }
-            });
-            
-            console.log(`🔍 DEBUG: Built entity maps - ${entityIdMap.size} entities, ${pathToEntityIdMap.size} path mappings`);
-            console.log(`🔍 DEBUG: Sample path mappings:`, Array.from(pathToEntityIdMap.entries()).slice(0, 5));
-            
-            // Helper function to resolve import path to file entity ID
-            const resolveImportPath = (importPath, sourceFilePath) => {
-              if (!importPath || !sourceFilePath) return null;
-              
-              // If it's already an entity ID, return it
-              if (importPath.startsWith('file:')) {
-                return importPath;
-              }
-              
-              // Remove file extension variations
-              const cleanPath = importPath.replace(/\.(ts|tsx|js|jsx)$/, '');
-              
-              // Try direct path match first
-              if (pathToEntityIdMap.has(cleanPath)) {
-                return pathToEntityIdMap.get(cleanPath);
-              }
-              
-              // Handle relative imports (./file or ../file)
-              if (importPath.startsWith('./') || importPath.startsWith('../')) {
-                const sourceDir = sourceFilePath.split('/').slice(0, -1).join('/');
-                const parts = importPath.split('/');
-                const dirParts = sourceDir ? sourceDir.split('/') : [];
-                
-                for (const part of parts) {
-                  if (part === '..') {
-                    dirParts.pop();
-                  } else if (part !== '.') {
-                    dirParts.push(part);
-                  }
-                }
-                
-                const resolvedPath = dirParts.join('/');
-                
-                // Try with various extensions
-                for (const ext of ['', '.ts', '.tsx', '.js', '.jsx']) {
-                  const pathWithExt = resolvedPath + ext;
-                  if (pathToEntityIdMap.has(pathWithExt)) {
-                    return pathToEntityIdMap.get(pathWithExt);
-                  }
-                }
-              }
-              
-              // Try just the filename as fallback
-              const filename = importPath.split('/').pop().replace(/\.(ts|tsx|js|jsx)$/, '');
-              if (pathToEntityIdMap.has(filename)) {
-                return pathToEntityIdMap.get(filename);
-              }
-              
-              return null;
-            };
-            
-            // Resolve relationships to entity IDs
+          if (result.relationships?.length > 0 && entitiesForDb.length > 0) {
+            const entityIds = new Set(entitiesForDb.map((e) => e.id));
             const relationshipsForDb = [];
-            let skippedCount = 0;
-            let resolvedCount = 0;
-            
+
             result.relationships.forEach((rel, index) => {
               const sourceId = rel.sourceId || rel.source;
-              let targetId = rel.targetId || rel.target;
-              const originalTargetId = targetId;
-              
-              // Debug first 3 relationships
-              if (index < 3) {
-                console.log(`\n🔍 DEBUG Relationship #${index}:`);
-                console.log(`  Type: ${rel.type}`);
-                console.log(`  Source: "${sourceId}"`);
-                console.log(`  Target: "${targetId}"`);
-                console.log(`  FilePath: "${rel.metadata?.filePath}"`);
+              const targetId = rel.targetId || rel.target;
+
+              if (!sourceId || !targetId || !entityIds.has(sourceId) || !entityIds.has(targetId)) {
+                return;
               }
-              
-              // Try to resolve target if it's an import path
-              if (targetId && !targetId.startsWith('file:') && rel.metadata?.filePath) {
-                const resolved = resolveImportPath(targetId, rel.metadata.filePath);
-                if (index < 3) {
-                  console.log(`  Resolved: "${resolved || 'NULL'}"`);
-                }
-                if (resolved) {
-                  targetId = resolved;
-                  resolvedCount++;
-                }
-              }
-              
-              // Check if both IDs are valid entity IDs
-              const sourceExists = entityIdMap.has(sourceId);
-              const targetExists = entityIdMap.has(targetId);
-              
-              if (index < 3) {
-                console.log(`  Source exists: ${sourceExists}`);
-                console.log(`  Target exists: ${targetExists}`);
-                console.log(`  Will save: ${sourceExists && targetExists ? 'YES ✅' : 'NO ❌'}`);
-              }
-              
-              if (sourceExists && targetExists) {
-                relationshipsForDb.push({
-                  id: rel.id || `${repositoryId}_rel_${index}`,
-                  repositoryId,
-                  sourceId,
-                  targetId,
-                  type: rel.type,
-                  metadata: rel.metadata || {},
-                  createdAt: new Date()
-                });
-              } else {
-                skippedCount++;
-                if (skippedCount <= 10) {
-                  console.log(`⚠️  Skip #${skippedCount}: source="${sourceId}" (${sourceExists ? 'OK' : 'MISS'}) -> target="${originalTargetId}" → "${targetId}" (${targetExists ? 'OK' : 'MISS'})`);
-                }
-              }
-            });
-            
-            console.log(`🔍 DEBUG: Resolved ${resolvedCount} import paths to entity IDs`);
-            
-            console.log(`🔍 DEBUG: Resolved ${relationshipsForDb.length} relationships, skipped ${skippedCount} unresolved`);
-            
-            if (relationshipsForDb.length > 0) {
-              console.log('🔍 DEBUG: Calling db.createRelationships with', relationshipsForDb.length, 'relationships');
-              console.log('🔍 DEBUG: Sample relationship:', relationshipsForDb[0]);
-              await db.createRelationships(relationshipsForDb);
-              console.log('✅ DEBUG: Relationships saved successfully!');
-              logger.info('Relationships saved successfully', {
-                saved: relationshipsForDb.length,
-                skipped: skippedCount,
-                total: result.relationships.length
+
+              relationshipsForDb.push({
+                id: rel.id || `${repositoryId}_rel_${index}`.replace(/[^a-zA-Z0-9_-]/g, '_'),
+                repositoryId,
+                sourceId,
+                targetId,
+                type: rel.type,
+                metadata: rel.metadata || {},
               });
-            } else {
-              console.log('⚠️  No valid relationships to save after resolution');
-              logger.warn('No valid relationships after entity ID resolution', {
+            });
+
+            if (relationshipsForDb.length > 0) {
+              relationshipsSaved = await db.createRelationships(relationshipsForDb);
+              logger.info('Relationships saved successfully', {
+                saved: relationshipsSaved,
                 total: result.relationships.length,
-                skipped: skippedCount
+                skipped: result.relationships.length - relationshipsForDb.length,
               });
             }
-          } else {
-            console.log('❌ DEBUG: Relationships condition FALSE - no relationships or entities to save');
           }
 
-          // Update repository with final results
-          console.log('🔍 DEBUG: Updating repository record...');
+          const stats = await db.getRepositoryStats(repositoryId);
+
           await db.updateRepository(repositoryId, {
             status: 'completed',
             progress: 100,
-            fileCount: result.files?.length || 0,
-            lineCount: result.statistics.files.totalLines || 0,
-            entityCount: result.entities?.length || 0,
-            analyzedAt: new Date()
+            fileCount: stats.fileCount,
+            lineCount: result.statistics?.files?.totalLines || 0,
+            entityCount: stats.entityCount,
+            analyzedAt: new Date(),
           });
-          console.log('✅ DEBUG: Repository record updated!');
 
           logger.info('=== CHECKPOINT 6: Database Persistence Complete ===', {
             repositoryId,
-            savedSuccessfully: true,
-            filesSaved: result.files?.length || 0,
-            entitiesSaved: result.entities?.length || 0,
-            relationshipsSaved: result.relationships?.length || 0
+            filesSaved: stats.fileCount,
+            entitiesSaved: stats.entityCount,
+            relationshipsSaved: stats.relationshipCount,
           });
         } catch (dbError) {
-          console.log('❌ DEBUG: Database persistence ERROR:', dbError.message);
-          console.log('❌ DEBUG: Error stack:', dbError.stack);
           logger.error('Database persistence failed', {
             error: dbError.message,
             stack: dbError.stack,
-            repositoryId
+            repositoryId,
           });
-          
-          // Update repository status to failed
+
           await db.updateRepository(repositoryId, {
             status: 'failed',
-            progress: 100,
-            analyzedAt: new Date()
+            progress: 0,
           });
-          
+
           throw dbError;
         }
-      } else {
-        console.log('❌ DEBUG: No repositoryId - skipping database persistence');
       }
+
+      // Stage 9: Complete (100%) — only after DB persistence succeeds
+      await job.updateProgress(100);
+      await job.log('Repository analysis complete!');
 
       // Final result summary
       logger.info('=== PIPELINE COMPLETE: Final Result Summary ===', {

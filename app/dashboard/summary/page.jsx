@@ -86,7 +86,16 @@ export default function SummaryPage() {
   }
 
   const repoName = currentRepo.name || currentRepo.url?.split('/').pop() || 'Unknown'
-  const stats = summary?.stats || {}
+  const stats =
+    summary?.stats ||
+    (summary?.statistics
+      ? {
+          totalFiles: summary.statistics.files,
+          totalEntities: summary.statistics.entities,
+          totalRelationships: summary.statistics.relationships,
+          totalDependencies: summary.statistics.relationships,
+        }
+      : {})
   const techStack = summary?.techStack || []
   const aiSummary = summary?.summary || summary?.description
   const quickStart = summary?.quickStart || summary?.setupInstructions

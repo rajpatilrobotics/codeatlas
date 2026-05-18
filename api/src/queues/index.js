@@ -119,9 +119,6 @@ const closeQueues = async () => {
   console.log('All queues closed');
 };
 
-process.on('SIGTERM', closeQueues);
-process.on('SIGINT', closeQueues);
-
 export {
   repoAnalysisQueue,
   parsingQueue,
@@ -130,5 +127,7 @@ export {
   summarizationQueue,
   closeQueues
 };
+
+// Graceful shutdown is handled in server.js (stopWorkers + closeQueues)
 
 // Made with Bob

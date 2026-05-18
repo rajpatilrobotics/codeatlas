@@ -4,6 +4,7 @@
  */
 
 import logger from '../../utils/logger.js';
+import { resolveImportPath } from './pathResolver.js';
 
 /**
  * Extract relationships from entities
@@ -18,82 +19,50 @@ function extractRelationships(entities) {
       classes: entities.classes?.length || 0,
       variables: entities.variables?.length || 0,
       imports: entities.imports?.length || 0,
-      exports: entities.exports?.length || 0
-    }
+      exports: entities.exports?.length || 0,
+    },
   });
 
   const relationships = [];
 
-  // 1. File imports relationships
-  const importRels = extractImportRelationships(entities);
-  logger.debug('[RelationshipExtractor] Extracted import relationships', {
-    count: importRels.length
-  });
-  relationships.push(...importRels);
-
-  // 2. Class inheritance relationships
-  const inheritanceRels = extractInheritanceRelationships(entities);
-  logger.debug('[RelationshipExtractor] Extracted inheritance relationships', {
-    count: inheritanceRels.length
-  });
-  relationships.push(...inheritanceRels);
-
-  // 3. Function call relationships (basic - from imports)
-  const callRels = extractCallRelationships(entities);
-  logger.debug('[RelationshipExtractor] Extracted call relationships', {
-    count: callRels.length
-  });
-  relationships.push(...callRels);
-
-  // 4. Export relationships
-  const exportRels = extractExportRelationships(entities);
-  logger.debug('[RelationshipExtractor] Extracted export relationships', {
-    count: exportRels.length
-  });
-  relationships.push(...exportRels);
-
-  // 5. File dependency relationships
-  const depRels = extractFileDependencies(entities);
-  logger.debug('[RelationshipExtractor] Extracted file dependency relationships', {
-    count: depRels.length
-  });
-  relationships.push(...depRels);
+  relationships.push(...extractImportRelationships(entities));
+  relationships.push(...extractInheritanceRelationships(entities));
+  relationships.push(...extractCallRelationships(entities));
+  relationships.push(...extractExportRelationships(entities));
+  relationships.push(...extractFileDependencies(entities));
 
   const stats = getRelationshipStatistics(relationships);
   logger.info('[RelationshipExtractor] Relationship extraction completed', {
     total: stats.total,
-    byType: stats.byType
+    byType: stats.byType,
   });
 
   return relationships;
 }
 
-/**
- * Extract import relationships
- * @param {Object} entities - Extracted entities
- * @returns {Array} Import relationships
- */
 function extractImportRelationships(entities) {
   const relationships = [];
 
-  entities.imports?.forEach(imp => {
-    const sourceFile = entities.files?.find(f => f.path === imp.filePath);
+  entities.imports?.forEach((imp) => {
+    const sourceFile = entities.files?.find((f) => f.path === imp.filePath);
     if (!sourceFile) return;
 
-    // Create relationship for each import
-    imp.specifiers?.forEach(spec => {
+    const targetId = resolveImportPath(imp.source, imp.filePath, entities.files);
+    if (!targetId) return;
+
+    imp.specifiers?.forEach((spec) => {
       relationships.push({
         id: `import:${imp.filePath}:${imp.source}:${spec.name}`,
         type: 'IMPORTS',
-        source: sourceFile.id,
-        target: imp.source,
+        sourceId: sourceFile.id,
+        targetId,
         metadata: {
           importType: spec.type,
           importedName: spec.imported || spec.name,
           localName: spec.name,
           filePath: imp.filePath,
-          targetPath: imp.source
-        }
+          targetPath: imp.source,
+        },
       });
     });
   });
@@ -101,72 +70,67 @@ function extractImportRelationships(entities) {
   return relationships;
 }
 
-/**
- * Extract class inheritance relationships
- * @param {Object} entities - Extracted entities
- * @returns {Array} Inheritance relationships
- */
 function extractInheritanceRelationships(entities) {
   const relationships = [];
 
-  entities.classes?.forEach(cls => {
-    if (cls.superClass) {
-      // Find the parent class
-      const parentClass = entities.classes?.find(c => 
-        c.name === cls.superClass && c.filePath === cls.filePath
-      );
+  entities.classes?.forEach((cls) => {
+    if (!cls.superClass) return;
 
-      relationships.push({
-        id: `extends:${cls.id}:${cls.superClass}`,
-        type: 'EXTENDS',
-        source: cls.id,
-        target: parentClass?.id || `class:unknown:${cls.superClass}`,
-        metadata: {
-          childClass: cls.name,
-          parentClass: cls.superClass,
-          filePath: cls.filePath
-        }
-      });
-    }
+    const parentClass = entities.classes?.find(
+      (c) => c.name === cls.superClass && c.filePath === cls.filePath
+    );
+    if (!parentClass) return;
+
+    relationships.push({
+      id: `extends:${cls.id}:${cls.superClass}`,
+      type: 'EXTENDS',
+      sourceId: cls.id,
+      targetId: parentClass.id,
+      metadata: {
+        childClass: cls.name,
+        parentClass: cls.superClass,
+        filePath: cls.filePath,
+      },
+    });
   });
 
   return relationships;
 }
 
-/**
- * Extract function call relationships (basic)
- * @param {Object} entities - Extracted entities
- * @returns {Array} Call relationships
- */
 function extractCallRelationships(entities) {
   const relationships = [];
 
-  // For now, we'll create potential call relationships based on imports
-  // A more sophisticated version would analyze function bodies
-  
-  entities.imports?.forEach(imp => {
-    const sourceFile = entities.files?.find(f => f.path === imp.filePath);
+  entities.imports?.forEach((imp) => {
+    const sourceFile = entities.files?.find((f) => f.path === imp.filePath);
     if (!sourceFile) return;
 
-    imp.specifiers?.forEach(spec => {
-      // Find functions in the same file that might use this import
-      const functionsInFile = entities.functions?.filter(f => 
-        f.filePath === imp.filePath
-      );
+    const functionsInFile = entities.functions?.filter((f) => f.filePath === imp.filePath);
+    if (!functionsInFile?.length) return;
 
-      functionsInFile?.forEach(func => {
+    imp.specifiers?.forEach((spec) => {
+      const targetEntity =
+        entities.functions?.find(
+          (f) => f.name === spec.name && f.filePath !== imp.filePath
+        ) ||
+        entities.variables?.find(
+          (v) => v.name === spec.name && v.filePath !== imp.filePath
+        );
+
+      if (!targetEntity) return;
+
+      functionsInFile.forEach((func) => {
         relationships.push({
-          id: `uses:${func.id}:${spec.name}`,
+          id: `uses:${func.id}:${targetEntity.id}`,
           type: 'USES',
-          source: func.id,
-          target: spec.name,
+          sourceId: func.id,
+          targetId: targetEntity.id,
           metadata: {
             functionName: func.name,
             usedEntity: spec.name,
             importSource: imp.source,
             filePath: imp.filePath,
-            confidence: 'potential' // Indicates this is inferred
-          }
+            confidence: 'potential',
+          },
         });
       });
     });
@@ -175,101 +139,67 @@ function extractCallRelationships(entities) {
   return relationships;
 }
 
-/**
- * Extract export relationships
- * @param {Object} entities - Extracted entities
- * @returns {Array} Export relationships
- */
 function extractExportRelationships(entities) {
   const relationships = [];
 
-  entities.exports?.forEach(exp => {
-    const sourceFile = entities.files?.find(f => f.path === exp.filePath);
+  entities.exports?.forEach((exp) => {
+    const sourceFile = entities.files?.find((f) => f.path === exp.filePath);
     if (!sourceFile) return;
 
-    // Find the entity being exported
-    let exportedEntity = null;
+    const entityName = exp.local || exp.name;
+    let exportedEntity =
+      entities.functions?.find((f) => f.name === entityName && f.filePath === exp.filePath) ||
+      entities.classes?.find((c) => c.name === entityName && c.filePath === exp.filePath) ||
+      entities.variables?.find((v) => v.name === entityName && v.filePath === exp.filePath);
 
-    if (exp.type === 'named' || exp.type === 'default') {
-      const entityName = exp.local || exp.name;
-      
-      // Search in functions
-      exportedEntity = entities.functions?.find(f => 
-        f.name === entityName && f.filePath === exp.filePath
-      );
+    if (!exportedEntity) return;
 
-      // Search in classes
-      if (!exportedEntity) {
-        exportedEntity = entities.classes?.find(c => 
-          c.name === entityName && c.filePath === exp.filePath
-        );
-      }
-
-      // Search in variables
-      if (!exportedEntity) {
-        exportedEntity = entities.variables?.find(v => 
-          v.name === entityName && v.filePath === exp.filePath
-        );
-      }
-    }
-
-    if (exportedEntity) {
-      relationships.push({
-        id: `exports:${sourceFile.id}:${exportedEntity.id}`,
-        type: 'EXPORTS',
-        source: sourceFile.id,
-        target: exportedEntity.id,
-        metadata: {
-          exportType: exp.type,
-          exportedName: exp.name,
-          localName: exp.local,
-          filePath: exp.filePath
-        }
-      });
-    }
+    relationships.push({
+      id: `exports:${sourceFile.id}:${exportedEntity.id}`,
+      type: 'EXPORTS',
+      sourceId: sourceFile.id,
+      targetId: exportedEntity.id,
+      metadata: {
+        exportType: exp.type,
+        exportedName: exp.name,
+        localName: exp.local,
+        filePath: exp.filePath,
+      },
+    });
   });
 
   return relationships;
 }
 
-/**
- * Extract file dependency relationships
- * @param {Object} entities - Extracted entities
- * @returns {Array} File dependency relationships
- */
 function extractFileDependencies(entities) {
   const relationships = [];
   const fileDeps = new Map();
 
-  // Group imports by file
-  entities.imports?.forEach(imp => {
+  entities.imports?.forEach((imp) => {
     if (!fileDeps.has(imp.filePath)) {
       fileDeps.set(imp.filePath, new Set());
     }
     fileDeps.get(imp.filePath).add(imp.source);
   });
 
-  // Create file dependency relationships
   fileDeps.forEach((deps, filePath) => {
-    const sourceFile = entities.files?.find(f => f.path === filePath);
+    const sourceFile = entities.files?.find((f) => f.path === filePath);
     if (!sourceFile) return;
 
-    deps.forEach(depPath => {
-      // Try to find the target file
-      const targetFile = entities.files?.find(f => 
-        f.path === depPath || f.path.endsWith(depPath)
-      );
+    deps.forEach((depPath) => {
+      const targetId = resolveImportPath(depPath, filePath, entities.files);
+      if (!targetId) return;
 
       relationships.push({
         id: `depends:${filePath}:${depPath}`,
         type: 'DEPENDS_ON',
-        source: sourceFile.id,
-        target: targetFile?.id || `file:external:${depPath}`,
+        sourceId: sourceFile.id,
+        targetId,
         metadata: {
           sourceFile: filePath,
           targetFile: depPath,
-          isExternal: !targetFile
-        }
+          isExternal: false,
+        },
       });
     });
   });
@@ -277,61 +207,28 @@ function extractFileDependencies(entities) {
   return relationships;
 }
 
-/**
- * Get relationships for an entity
- * @param {Array} relationships - All relationships
- * @param {string} entityId - Entity ID
- * @param {string} direction - 'incoming', 'outgoing', or 'both'
- * @returns {Array} Filtered relationships
- */
 function getEntityRelationships(relationships, entityId, direction = 'both') {
   if (direction === 'incoming') {
-    return relationships.filter(r => r.target === entityId);
-  } else if (direction === 'outgoing') {
-    return relationships.filter(r => r.source === entityId);
-  } else {
-    return relationships.filter(r => 
-      r.source === entityId || r.target === entityId
-    );
+    return relationships.filter((r) => r.targetId === entityId);
   }
+  if (direction === 'outgoing') {
+    return relationships.filter((r) => r.sourceId === entityId);
+  }
+  return relationships.filter((r) => r.sourceId === entityId || r.targetId === entityId);
 }
 
-/**
- * Get relationships by type
- * @param {Array} relationships - All relationships
- * @param {string} type - Relationship type
- * @returns {Array} Filtered relationships
- */
 function getRelationshipsByType(relationships, type) {
-  return relationships.filter(r => r.type === type);
+  return relationships.filter((r) => r.type === type);
 }
 
-/**
- * Get relationship statistics
- * @param {Array} relationships - All relationships
- * @returns {Object} Statistics
- */
 function getRelationshipStatistics(relationships) {
-  const stats = {
-    total: relationships.length,
-    byType: {}
-  };
-
-  relationships.forEach(rel => {
-    if (!stats.byType[rel.type]) {
-      stats.byType[rel.type] = 0;
-    }
-    stats.byType[rel.type]++;
+  const stats = { total: relationships.length, byType: {} };
+  relationships.forEach((rel) => {
+    stats.byType[rel.type] = (stats.byType[rel.type] || 0) + 1;
   });
-
   return stats;
 }
 
-/**
- * Find circular dependencies
- * @param {Array} relationships - All relationships
- * @returns {Array} Circular dependency chains
- */
 function findCircularDependencies(relationships) {
   const graph = buildDependencyGraph(relationships);
   const visited = new Set();
@@ -340,84 +237,48 @@ function findCircularDependencies(relationships) {
 
   function dfs(node, path = []) {
     if (recursionStack.has(node)) {
-      // Found a cycle
       const cycleStart = path.indexOf(node);
-      if (cycleStart !== -1) {
-        cycles.push(path.slice(cycleStart));
-      }
+      if (cycleStart !== -1) cycles.push(path.slice(cycleStart));
       return;
     }
-
-    if (visited.has(node)) {
-      return;
-    }
+    if (visited.has(node)) return;
 
     visited.add(node);
     recursionStack.add(node);
     path.push(node);
 
-    const neighbors = graph.get(node) || [];
-    neighbors.forEach(neighbor => {
-      dfs(neighbor, [...path]);
-    });
-
+    (graph.get(node) || []).forEach((neighbor) => dfs(neighbor, [...path]));
     recursionStack.delete(node);
   }
 
-  // Run DFS from each node
   graph.forEach((_, node) => {
-    if (!visited.has(node)) {
-      dfs(node);
-    }
+    if (!visited.has(node)) dfs(node);
   });
 
   return cycles;
 }
 
-/**
- * Build dependency graph from relationships
- * @param {Array} relationships - All relationships
- * @returns {Map} Dependency graph
- */
 function buildDependencyGraph(relationships) {
   const graph = new Map();
-
-  relationships.forEach(rel => {
+  relationships.forEach((rel) => {
     if (rel.type === 'DEPENDS_ON' || rel.type === 'IMPORTS') {
-      if (!graph.has(rel.source)) {
-        graph.set(rel.source, []);
-      }
-      graph.get(rel.source).push(rel.target);
+      if (!graph.has(rel.sourceId)) graph.set(rel.sourceId, []);
+      graph.get(rel.sourceId).push(rel.targetId);
     }
   });
-
   return graph;
 }
 
-/**
- * Get dependency chain
- * @param {Array} relationships - All relationships
- * @param {string} entityId - Starting entity ID
- * @param {number} maxDepth - Maximum depth
- * @returns {Array} Dependency chain
- */
 function getDependencyChain(relationships, entityId, maxDepth = 5) {
   const graph = buildDependencyGraph(relationships);
   const chain = [];
   const visited = new Set();
 
   function traverse(node, depth = 0) {
-    if (depth >= maxDepth || visited.has(node)) {
-      return;
-    }
-
+    if (depth >= maxDepth || visited.has(node)) return;
     visited.add(node);
     chain.push({ node, depth });
-
-    const neighbors = graph.get(node) || [];
-    neighbors.forEach(neighbor => {
-      traverse(neighbor, depth + 1);
-    });
+    (graph.get(node) || []).forEach((neighbor) => traverse(neighbor, depth + 1));
   }
 
   traverse(entityId);
@@ -436,7 +297,5 @@ export {
   getRelationshipStatistics,
   findCircularDependencies,
   getDependencyChain,
-  buildDependencyGraph
+  buildDependencyGraph,
 };
-
-// Made with Bob

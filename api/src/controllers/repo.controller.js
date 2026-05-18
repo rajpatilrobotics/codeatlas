@@ -44,6 +44,7 @@ export async function analyzeRepository(req, res) {
           repositoryId: repository.id,
           url: repository.url
         });
+        await db.clearRepositoryAnalysisData(repository.id);
         await db.updateRepositoryStatus(repository.id, 'pending', 0);
       }
       // If completed with data, return existing data
@@ -58,6 +59,7 @@ export async function analyzeRepository(req, res) {
 
       // If failed or pending, reset and re-analyze
       if (repository.status === 'failed' || repository.status === 'pending') {
+        await db.clearRepositoryAnalysisData(repository.id);
         await db.updateRepositoryStatus(repository.id, 'pending', 0);
       }
     } else {
@@ -135,10 +137,12 @@ export async function getRepositoryStatus(req, res) {
       repositoryId: repository.id,
       name: repository.name,
       owner: repository.owner,
+      url: repository.url,
       status: repository.status,
       progress: repository.progress,
       fileCount: repository._count?.files || 0,
       entityCount: repository._count?.entities || 0,
+      relationshipCount: repository._count?.relationships || 0,
       analyzedAt: repository.analyzedAt,
     });
   } catch (error) {
@@ -184,24 +188,37 @@ export async function getRepositorySummary(req, res) {
       }
     });
 
-    const stats = await db.getRepositoryStats(repositoryId);
+    const repoStats = await db.getRepositoryStats(repositoryId);
 
     logger.info('[RepoController] Repository stats retrieved', {
       repositoryId,
       statsFromQuery: {
-        fileCount: stats.fileCount,
-        entityCount: stats.entityCount,
-        relationshipCount: stats.relationshipCount
+        fileCount: repoStats.fileCount,
+        entityCount: repoStats.entityCount,
+        relationshipCount: repoStats.relationshipCount
       }
     });
 
     // Check for empty data
-    if (stats.entityCount === 0) {
+    if (repoStats.entityCount === 0) {
       logger.warn('[RepoController] No entities found for repository', { repositoryId });
     }
-    if (stats.relationshipCount === 0) {
+    if (repoStats.relationshipCount === 0) {
       logger.warn('[RepoController] No relationships found for repository', { repositoryId });
     }
+
+    const statistics = {
+      files: repoStats.fileCount || 0,
+      entities: repoStats.entityCount || 0,
+      relationships: repoStats.relationshipCount || 0,
+    };
+
+    const stats = {
+      totalFiles: statistics.files,
+      totalEntities: statistics.entities,
+      totalRelationships: statistics.relationships,
+      totalDependencies: statistics.relationships,
+    };
 
     const response = {
       repository: {
@@ -214,11 +231,8 @@ export async function getRepositorySummary(req, res) {
         status: repository.status,
         analyzedAt: repository.analyzedAt,
       },
-      statistics: {
-        files: stats.fileCount || 0,
-        entities: stats.entityCount || 0,
-        relationships: stats.relationshipCount || 0,
-      },
+      statistics,
+      stats,
     };
 
     logger.info('[RepoController] Sending summary response', {

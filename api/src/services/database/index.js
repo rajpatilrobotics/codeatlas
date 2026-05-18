@@ -163,6 +163,23 @@ class DatabaseService {
   }
 
   /**
+   * Clear analysis data for a repository (keeps the repository row).
+   * @param {string} repositoryId - Repository ID
+   */
+  async clearRepositoryAnalysisData(repositoryId) {
+    await this.prisma.relationship.deleteMany({ where: { repositoryId } });
+    await this.prisma.entity.deleteMany({ where: { repositoryId } });
+    await this.prisma.file.deleteMany({ where: { repositoryId } });
+
+    await this.updateRepository(repositoryId, {
+      fileCount: 0,
+      lineCount: 0,
+      entityCount: 0,
+      progress: 0,
+    });
+  }
+
+  /**
    * List repositories
    * @param {Object} options - Query options
    * @returns {Promise<Object[]>} - Repositories

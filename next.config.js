@@ -1,3 +1,5 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -7,7 +9,7 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: process.env.NEXT_PUBLIC_API_URL + '/api/:path*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/:path*`,
       },
     ];
   },
@@ -35,9 +37,9 @@ const nextConfig = {
   // Disable x-powered-by header
   poweredByHeader: false,
   
-  // Turbopack configuration (Next.js 16+)
+  // Turbopack configuration (Next.js 16+) — pin root so a lockfile in $HOME is not picked
   turbopack: {
-    // Empty config to acknowledge Turbopack usage
+    root: path.join(__dirname),
   },
   
   // Webpack configuration (fallback for when using --webpack flag)

@@ -19,7 +19,8 @@ import heatmapRoutes from './routes/heatmap.routes.js';
 
 // Import services
 import DatabaseService from './services/database/index.js';
-import { startWorkers } from './workers/index.js';
+import { startWorkers, stopWorkers } from './workers/index.js';
+import { closeQueues } from './queues/index.js';
 import { setupBullBoard } from './config/bullBoard.js';
 import logger from './utils/logger.js';
 import { initSentry, sentryErrorHandler } from './utils/sentry.js';
@@ -43,12 +44,20 @@ app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
-    
+
+    // Dev: Next may use 3000, 3001, 3002, etc. if the default port is busy
+    if (process.env.NODE_ENV !== 'production') {
+      if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin)) {
+        return callback(null, true);
+      }
+    }
+
     const allowedOrigins = [
       process.env.FRONTEND_URL,
       'http://localhost:3000',
+      'http://127.0.0.1:3000',
       'https://codeatlas.vercel.app',
-    ];
+    ].filter(Boolean);
     
     // Allow all Vercel preview deployments (*.vercel.app)
     if (origin.endsWith('.vercel.app')) {
@@ -190,10 +199,12 @@ async function gracefulShutdown(signal) {
   logger.info(`\n${signal} received. Starting graceful shutdown...`);
 
   try {
-    // Stop accepting new requests
-    logger.info('Closing server...');
+    logger.info('Stopping workers...');
+    await stopWorkers();
 
-    // Disconnect from database
+    logger.info('Closing job queues...');
+    await closeQueues();
+
     logger.info('Disconnecting from database...');
     const db = new DatabaseService();
     await db.disconnect();
@@ -211,7 +222,7 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Handle uncaught errors
-process.on('uncaught Exception', (error) => {
+process.on('uncaughtException', (error) => {
   console.error('❌ UNCAUGHT EXCEPTION:');
   console.error('Error:', error);
   console.error('Stack:', error.stack);

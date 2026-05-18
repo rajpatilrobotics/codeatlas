@@ -32,14 +32,15 @@ console.log('📝 Step 1: Parsing files...');
 const parseResult = await parserService.parseFiles(testFiles);
 
 console.log('Parse Results:');
-console.log('  Total files:', parseResult.results.length);
-console.log('  Successful:', parseResult.statistics.successful);
-console.log('  Failed:', parseResult.statistics.failed);
+console.log('  Total files:', testFiles.length);
+console.log('  Successful parses:', parseResult.results.length);
+console.log('  Failed parses:', parseResult.errors?.length || 0);
 
-if (parseResult.statistics.failed > 0) {
+if (parseResult.errors?.length > 0) {
   console.log('\n❌ Parse failures detected!');
-  parseResult.results.filter(r => !r.success).forEach(r => {
-    console.log(`  - ${r.path}: ${r.error}`);
+  parseResult.errors.forEach((e) => {
+    const err = e.error?.message || e.error;
+    console.log(`  - ${e.path}: ${err}`);
   });
 }
 
@@ -73,8 +74,8 @@ if (extractionResult.relationships && extractionResult.relationships.length > 0)
   console.log('\n✅ Sample relationships (first 5):');
   extractionResult.relationships.slice(0, 5).forEach((rel, i) => {
     console.log(`\n${i + 1}. Type: ${rel.type}`);
-    console.log(`   From: ${rel.from}`);
-    console.log(`   To: ${rel.to}`);
+    console.log(`   SourceId: ${rel.sourceId}`);
+    console.log(`   TargetId: ${rel.targetId}`);
     if (rel.metadata) {
       console.log(`   Metadata:`, rel.metadata);
     }

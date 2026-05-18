@@ -9,11 +9,16 @@ export default function LandingPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
 
   const handleAnalyze = async () => {
-    if (!repoUrl.trim()) return
-    
+    const trimmed = repoUrl.trim()
+    if (!trimmed) return
+
     setIsAnalyzing(true)
-    // Navigate to analyzing page with repo URL
-    router.push(`/analyzing?repo=${encodeURIComponent(repoUrl)}`)
+    try {
+      sessionStorage.setItem('codeatlas_pendingRepo', trimmed)
+    } catch {
+      /* private mode / blocked storage */
+    }
+    router.push(`/analyzing?repo=${encodeURIComponent(trimmed)}`)
   }
 
   return (
@@ -36,7 +41,12 @@ export default function LandingPage() {
               placeholder="https://github.com/username/repository"
               value={repoUrl}
               onChange={(e) => setRepoUrl(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleAnalyze()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  handleAnalyze()
+                }
+              }}
               className="flex-1 px-4 py-3 bg-[#111111] border border-[#222222] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#00D9FF] transition-colors"
               disabled={isAnalyzing}
             />
