@@ -1,7 +1,15 @@
+import {
+  parseCode,
+  extractFunctions,
+  extractClasses,
+  extractImports,
+  extractExports,
+  extractVariables
+} from './babelParser.js';
+
 /**
  * Main parser service
- * Orchestrates parsing of different file types using lightweight regex-based extraction
- * Replaces heavy Babel AST parsing to ensure stability and fast processing for MVP.
+ * Orchestrates parsing of different file types
  */
 class ParserService {
   /**
@@ -22,17 +30,33 @@ class ParserService {
     }
 
     try {
-      // Lightweight regex extraction
-      const imports = this.extractImportsRegex(content, path);
-      const exports = this.extractExportsRegex(content, path);
-      const functions = this.extractFunctionsRegex(content, path);
-      const classes = this.extractClassesRegex(content, path);
-      const variables = []; // Skip variable extraction to save time/memory
+      // Parse code to AST
+      const parseResult = parseCode(content, {
+        language,
+        filePath: path
+      });
+
+      if (!parseResult.success) {
+        return {
+          success: false,
+          error: parseResult.error,
+          path
+        };
+      }
+
+      const { ast } = parseResult;
+
+      // Extract all entities
+      const functions = extractFunctions(ast, path);
+      const classes = extractClasses(ast, path);
+      const imports = extractImports(ast, path);
+      const exports = extractExports(ast, path);
+      const variables = extractVariables(ast, path);
 
       return {
         success: true,
         path,
-        language,
+        language: parseResult.language,
         entities: {
           functions,
           classes,
@@ -68,6 +92,12 @@ class ParserService {
    */
   async parseFiles(files, onProgress = null) {
     console.log('🔍 [ParserService] parseFiles called with', files.length, 'files');
+    console.log('🔍 [ParserService] Sample file:', files[0] ? {
+      path: files[0].path,
+      language: files[0].language,
+      hasContent: !!files[0].content,
+      contentLength: files[0].content?.length
+    } : 'no files');
     
     const results = [];
     const errors = [];
@@ -81,15 +111,28 @@ class ParserService {
 
         if (result.success) {
           results.push(result);
+          if (i === 0) {
+            console.log('🔍 [ParserService] First successful parse:', {
+              path: result.path,
+              functionCount: result.statistics?.functionCount,
+              classCount: result.statistics?.classCount
+            });
+          }
         } else {
           errors.push({
             path: file.path,
             error: result.error
           });
+          if (i === 0) {
+            console.log('❌ [ParserService] First parse failed:', {
+              path: file.path,
+              error: result.error
+            });
+          }
         }
 
-        // Report progress periodically
-        if (onProgress && (i % 50 === 0 || i === total - 1)) {
+        // Report progress
+        if (onProgress && (i % 10 === 0 || i === total - 1)) {
           const progress = Math.round(((i + 1) / total) * 100);
           onProgress({
             stage: 'parsing',
@@ -110,6 +153,7 @@ class ParserService {
       }
     }
 
+    // Calculate aggregate statistics
     const statistics = this.calculateStatistics(results);
 
     console.log('🔍 [ParserService] parseFiles complete:', {
@@ -125,118 +169,6 @@ class ParserService {
       errors,
       statistics
     };
-  }
-
-  // --- Lightweight Regex Extractors ---
-
-  extractImportsRegex(code, filePath) {
-    const imports = [];
-    // Matches: import { a, b } from "source"; import a from "source";
-    const importRegex = /import\s+(?:(?:\*\s+as\s+\w+)|(?:{[^}]+})|(?:\w+))(?:\s*,\s*(?:(?:{[^}]+})|(?:\w+)))?\s+from\s+['"]([^'"]+)['"]/g;
-    // Matches: require("source")
-    const requireRegex = /require\(['"]([^'"]+)['"]\)/g;
-
-    let match;
-    while ((match = importRegex.exec(code)) !== null) {
-      imports.push({
-        source: match[1],
-        specifiers: [], // Keep it lightweight, don't parse specifiers deeply
-        loc: { start: { line: 1 }, end: { line: 1 } },
-        filePath
-      });
-    }
-
-    while ((match = requireRegex.exec(code)) !== null) {
-      imports.push({
-        source: match[1],
-        specifiers: [{ type: 'require', name: 'unknown' }],
-        loc: { start: { line: 1 }, end: { line: 1 } },
-        filePath
-      });
-    }
-
-    return imports;
-  }
-
-  extractExportsRegex(code, filePath) {
-    const exportsList = [];
-    // Very basic regex to match "export const/let/var/function/class name"
-    const namedExportRegex = /export\s+(?:const|let|var|function|class)\s+([a-zA-Z0-9_]+)/g;
-    const defaultExportRegex = /export\s+default\s+([a-zA-Z0-9_]+)/g;
-
-    let match;
-    while ((match = namedExportRegex.exec(code)) !== null) {
-      exportsList.push({
-        type: 'named',
-        name: match[1],
-        loc: { start: { line: 1 }, end: { line: 1 } },
-        filePath
-      });
-    }
-
-    while ((match = defaultExportRegex.exec(code)) !== null) {
-      exportsList.push({
-        type: 'default',
-        name: match[1] || 'default',
-        loc: { start: { line: 1 }, end: { line: 1 } },
-        filePath
-      });
-    }
-
-    return exportsList;
-  }
-
-  extractFunctionsRegex(code, filePath) {
-    const functions = [];
-    const functionRegex = /function\s+([a-zA-Z0-9_]+)\s*\(/g;
-    // simple arrow functions e.g., const myFunc = () =>
-    const arrowRegex = /(?:const|let|var)\s+([a-zA-Z0-9_]+)\s*=\s*(?:async\s*)?(?:\([^)]*\)|[a-zA-Z0-9_]+)\s*=>/g;
-
-    let match;
-    while ((match = functionRegex.exec(code)) !== null) {
-      functions.push({
-        type: 'function',
-        name: match[1],
-        params: [], // skip params parsing
-        async: false,
-        generator: false,
-        loc: { start: { line: 1 }, end: { line: 1 } },
-        filePath
-      });
-    }
-
-    while ((match = arrowRegex.exec(code)) !== null) {
-      functions.push({
-        type: 'arrow_function',
-        name: match[1],
-        params: [],
-        async: false,
-        loc: { start: { line: 1 }, end: { line: 1 } },
-        filePath
-      });
-    }
-
-    return functions;
-  }
-
-  extractClassesRegex(code, filePath) {
-    const classes = [];
-    const classRegex = /class\s+([a-zA-Z0-9_]+)(?:\s+extends\s+([a-zA-Z0-9_]+))?\s*{/g;
-
-    let match;
-    while ((match = classRegex.exec(code)) !== null) {
-      classes.push({
-        type: 'class',
-        name: match[1],
-        superClass: match[2] || null,
-        methods: [],
-        properties: [],
-        loc: { start: { line: 1 }, end: { line: 1 } },
-        filePath
-      });
-    }
-
-    return classes;
   }
 
   /**
@@ -263,6 +195,7 @@ class ParserService {
         stats.totalExports += result.statistics.exportCount;
         stats.totalVariables += result.statistics.variableCount;
 
+        // Count by language
         const lang = result.language || 'unknown';
         if (!stats.byLanguage[lang]) {
           stats.byLanguage[lang] = {
@@ -366,5 +299,8 @@ class ParserService {
   }
 }
 
+// Export singleton instance
 const parserService = new ParserService();
 export default parserService;
+
+// Made with Bob

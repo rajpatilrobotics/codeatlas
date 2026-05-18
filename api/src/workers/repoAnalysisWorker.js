@@ -18,10 +18,12 @@ import graphService from '../services/graph/index.js';
 logger.info('✅ WORKER MODULE: graphService imported');
 
 import DatabaseService from '../services/database/index.js';
+import EmbeddingsService from '../services/embeddings/index.js';
 import { buildFileIdForRepository } from '../services/extraction/pathResolver.js';
 logger.info('✅ WORKER MODULE: DatabaseService imported');
 
 const db = new DatabaseService();
+const embeddingsService = new EmbeddingsService();
 logger.info('✅ WORKER MODULE: All imports complete, creating worker...');
 
 /**
@@ -87,28 +89,42 @@ const worker = new Worker(
         await db.updateRepositoryStatus(repositoryId, 'analyzing', 40);
       }
 
-      // Stage 4: Parsing files (60%)
-      await job.log('Stage 4: Parsing code (lightweight)...');
+      // Stage 4: AST parsing with batch processing (60%)
+      await job.log('Stage 4: Parsing code in batches...');
       
-      const batchResult = await parserService.parseFiles(
-        ingestionResult.files,
-        (progress) => {
-          job.log(`Parsing: ${progress.message}`);
-        }
-      );
+      const BATCH_SIZE = 50;
+      const allParseResults = [];
 
-      // Update progress after parsing stage (40% to 60%)
-      await job.updateProgress(60);
-      if (repositoryId) {
-        await db.updateRepositoryStatus(repositoryId, 'analyzing', 60);
+      for (let i = 0; i < ingestionResult.files.length; i += BATCH_SIZE) {
+        const batch = ingestionResult.files.slice(i, i + BATCH_SIZE);
+        const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+        const totalBatches = Math.ceil(ingestionResult.files.length / BATCH_SIZE);
+
+        await job.log(`Processing batch ${batchNum}/${totalBatches} (${batch.length} files)`);
+
+        const batchResult = await parserService.parseFiles(
+          batch,
+          (progress) => {
+            job.log(`Parsing: ${progress.message}`);
+          }
+        );
+
+        allParseResults.push(...batchResult.results);
+
+        // Update progress within parsing stage (40% to 60%)
+        const parsingProgress = 40 + Math.floor((i / ingestionResult.files.length) * 20);
+        await job.updateProgress(parsingProgress);
+        if (repositoryId) {
+          await db.updateRepositoryStatus(repositoryId, 'analyzing', parsingProgress);
+        }
       }
 
       const parseResult = {
-        results: batchResult.results,
+        results: allParseResults,
         statistics: {
-          totalFiles: batchResult.results.length,
-          successful: batchResult.results.filter(r => r.success).length,
-          failed: batchResult.results.filter(r => !r.success).length
+          totalFiles: allParseResults.length,
+          successful: allParseResults.filter(r => r.success).length,
+          failed: allParseResults.filter(r => !r.success).length
         }
       };
 
@@ -199,6 +215,25 @@ const worker = new Worker(
       }
 
       // Stage 6: Embeddings generated (80%)
+      await job.log('Stage 6: Generating embeddings and semantic chunks...');
+
+      try {
+        if (repositoryId) {
+          const indexingResult = await embeddingsService.indexRepository(
+            repositoryId,
+            parseResult.results.map(r => ({ result: r, filePath: r.path || r.filePath })),
+            (progress, msg) => {
+               // Map 0-100% of embeddings to 70-80% of job progress
+               job.log(`Embeddings: ${msg}`);
+            }
+          );
+          await job.log(`Indexed ${indexingResult.chunksGenerated} chunks & ${indexingResult.vectorsIndexed} vectors`);
+        }
+      } catch (err) {
+        logger.error('Failed to generate embeddings, continuing without semantic search', { error: err.message });
+      }
+
+      await job.updateProgress(80);
       await job.updateProgress(80);
       await job.log(`Extracted ${extractionResult.statistics.entities.totalFiles} entities`);
       if (repositoryId) {
