@@ -106,10 +106,12 @@ export async function getApiInfo(req, res) {
         'POST /api/repo/analyze',
         'GET /api/repo/status/:repositoryId',
         'GET /api/repo/summary/:repositoryId',
+        'GET /api/repo/onboarding/:repositoryId',
         'GET /api/repo/list',
         'DELETE /api/repo/:repositoryId',
       ],
       graph: [
+        'GET /api/graph/heatmap/:repositoryId',
         'GET /api/graph/:repositoryId',
         'GET /api/graph/blast-radius/:repositoryId',
         'GET /api/graph/architecture/:repositoryId',
@@ -125,6 +127,22 @@ export async function getApiInfo(req, res) {
         'POST /api/chat/quick-ask',
         'GET /api/chat/suggestions/:sessionId',
         'DELETE /api/chat/history/:sessionId',
+      ],
+      security: [
+        'POST /api/security/scan',
+        'GET /api/security/report/:repoId',
+      ],
+      planner: [
+        'POST /api/planner/analyze',
+        'GET /api/planner/impact/:repoId',
+      ],
+      debug: [
+        'POST /api/debug/analyze',
+        'GET /api/debug/suggestions/:repoId',
+      ],
+      heatmap: [
+        'GET /api/heatmap/complexity/:repositoryId',
+        'GET /api/heatmap/changes/:repositoryId',
       ],
       system: [
         'GET /api/system/health',

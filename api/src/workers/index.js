@@ -3,6 +3,8 @@
  * Starts and manages all BullMQ workers
  */
 
+import '../loadEnv.js';
+
 import repoAnalysisWorker from './repoAnalysisWorker.js';
 import logger from '../utils/logger.js';
 

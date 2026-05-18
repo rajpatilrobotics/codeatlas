@@ -19,6 +19,9 @@ router.get('/summary/:repositoryId', repoController.getRepositorySummary);
 // List repositories
 router.get('/list', repoController.listRepositories);
 
+// Onboarding guide (client: lib/api.js)
+router.get('/onboarding/:repositoryId', repoController.getRepositoryOnboarding);
+
 // Delete repository
 router.delete('/:repositoryId', repoController.deleteRepository);
 

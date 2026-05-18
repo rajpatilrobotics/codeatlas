@@ -309,4 +309,83 @@ export async function getCircularDependencies(req, res) {
   }
 }
 
+/**
+ * Heatmap-style file graph for React Flow (`lib/api.js` → GET /api/graph/heatmap/:repositoryId).
+ */
+export async function getGraphHeatmap(req, res) {
+  try {
+    const { repositoryId } = req.params;
+
+    const repository = await db.getRepository(repositoryId);
+    if (!repository) {
+      return res.status(404).json({ error: 'Repository not found' });
+    }
+
+    const files = await db.getFilesByRepository(repositoryId);
+    const entities = await db.getEntitiesByRepository(repositoryId);
+    const relationships = await db.getRelationshipsByRepository(repositoryId);
+
+    const complexityByFile = new Map();
+    for (const e of entities) {
+      if (!e.fileId) continue;
+      const c = e.complexity ?? 0;
+      complexityByFile.set(e.fileId, Math.max(complexityByFile.get(e.fileId) || 0, c));
+    }
+
+    const fileRows = files.map((f) => ({
+      id: f.id,
+      path: f.path,
+      name: f.path,
+      type: 'file',
+      complexity: complexityByFile.get(f.id) || Math.min(99, Math.max(1, Math.floor((f.lineCount || 0) / 20))),
+      activity: Math.min(100, Math.floor((f.lineCount || 0) / 15)),
+      changes: 0,
+      lineCount: f.lineCount,
+    }));
+
+    const entityToFile = new Map();
+    for (const e of entities) {
+      if (e.fileId) entityToFile.set(e.id, e.fileId);
+    }
+
+    const edgeKey = new Set();
+    const dependencies = [];
+    for (const r of relationships) {
+      const from = entityToFile.get(r.sourceId);
+      const to = entityToFile.get(r.targetId);
+      if (!from || !to || from === to) continue;
+      const key = `${from}->${to}`;
+      if (edgeKey.has(key)) continue;
+      edgeKey.add(key);
+      dependencies.push({
+        id: r.id,
+        source: from,
+        target: to,
+        from,
+        to,
+        label: r.type || 'depends on',
+      });
+    }
+
+    return res.json({
+      repositoryId,
+      files: fileRows,
+      dependencies,
+      metrics: {
+        totalFiles: fileRows.length,
+        totalEdges: dependencies.length,
+      },
+    });
+  } catch (error) {
+    logger.error('[GraphController] getGraphHeatmap error', {
+      error: error.message,
+      repositoryId: req.params.repositoryId,
+    });
+    return res.status(500).json({
+      error: 'Failed to get heatmap graph',
+      message: error.message,
+    });
+  }
+}
+
 // Made with Bob

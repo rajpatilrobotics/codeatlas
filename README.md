@@ -31,83 +31,63 @@
 ## 📦 Tech Stack
 
 ### Frontend
-- React 18.2.0
-- React Router 6.22.0
-- Zustand 4.5.0 (State Management)
-- ReactFlow 11.11.4 (Diagrams)
-- Recharts 2.12.0 (Analytics)
-- Mermaid 11.14.0 (Diagram Generation)
+- **Next.js** (App Router) + React 18
+- Zustand, TanStack Query, React Flow, Tailwind-style utility classes
 
-### Backend
-- Express 5.2.1
-- Node.js 18+
+### Backend (canonical)
+- **Express** API in `api/` (port **3001** by default)
+- Prisma, BullMQ, Redis, Qdrant, LangChain, DeepSeek, Hugging Face embeddings
 
-### AI/LLM Integration
-- IBM Watsonx.ai (Granite)
-- OpenAI GPT-4
-- Anthropic Claude
-- Google Gemini
-
-### External APIs
-- GitHub REST API v3
-- Multiple LLM providers
+### Optional / legacy
+- `server/` — older duplicate Express app (**not** started by `npm run dev:all`); use `npm run server:legacy` only if you intend to debug it.
 
 ## 🚦 Getting Started
 
 ### Prerequisites
 - Node.js 18+
-- npm or yarn
-- API keys for LLM providers (at least one)
+- npm
+- PostgreSQL (e.g. Neon), Redis (e.g. Upstash), Qdrant, and API keys as listed in `api/.env.example`
 
 ### Installation
 
 ```bash
-# Navigate to project
-cd devdock-v2
+cd devdock
 
-# Install dependencies
+# Frontend + shared root deps
 npm install
 
-# Copy environment template
-cp .env.example .env
-
-# Edit .env with your API keys
-# Add keys for the LLMs you want to use
+# API (workers start with the API process)
+cd api && npm install && cd ..
 ```
 
-### Environment Variables
+### Environment
 
-```env
-# IBM Watsonx (Required)
-REACT_APP_WATSONX_API_KEY=your_key
-REACT_APP_WATSONX_PROJECT_ID=your_project_id
-REACT_APP_WATSONX_REGION_URL=https://us-south.ml.cloud.ibm.com
+1. **Root** — `cp .env.example .env` and paste your real keys (Neon, Upstash, Qdrant, Hugging Face, DeepSeek, GitHub).
+2. Run **`npm run env:sync`** — copies backend vars into `api/.env`.
+3. The API also reads **root `.env` automatically** (`api/src/loadEnv.js`), so one file is enough.
 
-# OpenAI (Optional)
-REACT_APP_OPENAI_API_KEY=your_key
+Minimum for Next: `NEXT_PUBLIC_API_URL=http://localhost:3001` (already in `.env.example`).
 
-# Anthropic Claude (Optional)
-REACT_APP_ANTHROPIC_API_KEY=your_key
-
-# Google Gemini (Optional)
-REACT_APP_GEMINI_API_KEY=your_key
-
-# GitHub
-REACT_APP_GITHUB_TOKEN=your_token
-```
-
-### Running the Application
+### Running the application
 
 ```bash
-# Development mode (runs both frontend and backend)
-npm run dev
+# Recommended: Next (3000) + CodeAtlas API + workers (3001)
+npm run dev:all
+```
 
-# Or run separately:
-# Terminal 1 - Frontend
-npm start
+Or in two terminals:
 
-# Terminal 2 - Backend
-npm run server
+```bash
+npm run api:dev    # from repo root — runs api/server.js + workers
+npm run dev        # Next.js
+```
+
+Open **http://localhost:3000**. API health: **http://localhost:3001/health**. Queue UI: **http://localhost:3001/admin/queues** (when enabled).
+
+```bash
+# Production-style
+cd api && npm start   # API on PORT or 3001
+npm run build && npm start   # Next
 ```
 
 ## 📁 Project Structure

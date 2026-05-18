@@ -5,7 +5,7 @@
  */
 
 import express from 'express';
-import { getComplexityHeatmap } from '../controllers/heatmap.controller.js';
+import { getComplexityHeatmap, getChangeFrequencyHeatmap } from '../controllers/heatmap.controller.js';
 
 const router = express.Router();
 
@@ -14,6 +14,12 @@ const router = express.Router();
  * Get complexity heatmap for a repository
  */
 router.get('/complexity/:repositoryId', getComplexityHeatmap);
+
+/**
+ * GET /api/heatmap/changes/:repositoryId
+ * Change-frequency style heatmap (client: lib/api.js)
+ */
+router.get('/changes/:repositoryId', getChangeFrequencyHeatmap);
 
 export default router;
 

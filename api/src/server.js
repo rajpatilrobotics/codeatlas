@@ -4,6 +4,8 @@
  * Main Express server that orchestrates all services.
  */
 
+import './loadEnv.js';
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -16,6 +18,9 @@ import graphRoutes from './routes/graph.routes.js';
 import chatRoutes from './routes/chat.routes.js';
 import systemRoutes from './routes/system.routes.js';
 import heatmapRoutes from './routes/heatmap.routes.js';
+import securityRoutes from './routes/security.routes.js';
+import plannerRoutes from './routes/planner.routes.js';
+import debugRoutes from './routes/debug.routes.js';
 
 // Import services
 import DatabaseService from './services/database/index.js';
@@ -119,6 +124,9 @@ app.use('/api/graph', graphRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/heatmap', heatmapRoutes);
+app.use('/api/security', securityRoutes);
+app.use('/api/planner', plannerRoutes);
+app.use('/api/debug', debugRoutes);
 
 // Bull Board (queue monitoring)
 setupBullBoard(app);

@@ -255,6 +255,80 @@ export async function getRepositorySummary(req, res) {
 }
 
 /**
+ * Onboarding guide derived from repository summary.
+ * GET /api/repo/onboarding/:repositoryId
+ */
+export async function getRepositoryOnboarding(req, res) {
+  try {
+    const { repositoryId } = req.params;
+
+    const repository = await db.getRepository(repositoryId);
+    if (!repository) {
+      return res.status(404).json({ error: 'Repository not found' });
+    }
+
+    const repoStats = await db.getRepositoryStats(repositoryId);
+    const stats = {
+      files: repoStats.fileCount || 0,
+      entities: repoStats.entityCount || 0,
+      relationships: repoStats.relationshipCount || 0,
+    };
+
+    const sections = [
+      {
+        title: 'Repository overview',
+        items: [
+          `Analyze **${repository.owner}/${repository.name}** from your indexed graph.`,
+          `Indexed files: **${stats.files}**, entities: **${stats.entities}**, relationships: **${stats.relationships}**.`,
+        ],
+      },
+      {
+        title: 'Suggested first steps',
+        items: [
+          'Open **Summary** for health metrics and language mix.',
+          'Use **Repository Graph** to explore dependency structure.',
+          'Try **Chat** with a concrete question about a module or API.',
+        ],
+      },
+      {
+        title: 'When analysis is still running',
+        items: [
+          'Watch **Dashboard** progress until status is **completed**.',
+          'Graph and heatmap views work best after the first successful ingest.',
+        ],
+      },
+    ];
+
+    const markdown = sections
+      .map((s) => `## ${s.title}\n\n${s.items.map((i) => `- ${i}`).join('\n')}`)
+      .join('\n\n');
+
+    return res.json({
+      repositoryId,
+      repository: {
+        id: repository.id,
+        name: repository.name,
+        owner: repository.owner,
+        url: repository.url,
+        status: repository.status,
+      },
+      statistics: stats,
+      sections,
+      markdown,
+    });
+  } catch (error) {
+    logger.error('[RepoController] getRepositoryOnboarding error', {
+      error: error.message,
+      repositoryId: req.params.repositoryId,
+    });
+    return res.status(500).json({
+      error: 'Failed to build onboarding guide',
+      message: error.message,
+    });
+  }
+}
+
+/**
  * List repositories
  * GET /api/repo/list
  */
