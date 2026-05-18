@@ -66,8 +66,13 @@ class IngestionService {
         onProgress({ stage: 'filtering', progress: 0, message: 'Filtering files...' });
       }
 
+      console.log('🔍 DEBUG: About to filter files from path:', cloneResult.path);
       const files = await filterFiles(cloneResult.path);
+      console.log('🔍 DEBUG: filterFiles returned:', files.length, 'files');
+      console.log('🔍 DEBUG: Sample files:', files.slice(0, 3).map(f => ({ path: f.path, language: f.language })));
+      
       const fileStats = getFileStatistics(files);
+      console.log('🔍 DEBUG: File statistics:', fileStats);
 
       if (onProgress) {
         onProgress({

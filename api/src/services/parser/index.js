@@ -91,6 +91,14 @@ class ParserService {
    * @returns {Promise<Object>} Parsed results
    */
   async parseFiles(files, onProgress = null) {
+    console.log('🔍 [ParserService] parseFiles called with', files.length, 'files');
+    console.log('🔍 [ParserService] Sample file:', files[0] ? {
+      path: files[0].path,
+      language: files[0].language,
+      hasContent: !!files[0].content,
+      contentLength: files[0].content?.length
+    } : 'no files');
+    
     const results = [];
     const errors = [];
     const total = files.length;
@@ -103,11 +111,24 @@ class ParserService {
 
         if (result.success) {
           results.push(result);
+          if (i === 0) {
+            console.log('🔍 [ParserService] First successful parse:', {
+              path: result.path,
+              functionCount: result.statistics?.functionCount,
+              classCount: result.statistics?.classCount
+            });
+          }
         } else {
           errors.push({
             path: file.path,
             error: result.error
           });
+          if (i === 0) {
+            console.log('❌ [ParserService] First parse failed:', {
+              path: file.path,
+              error: result.error
+            });
+          }
         }
 
         // Report progress
@@ -134,6 +155,13 @@ class ParserService {
 
     // Calculate aggregate statistics
     const statistics = this.calculateStatistics(results);
+
+    console.log('🔍 [ParserService] parseFiles complete:', {
+      totalFiles: files.length,
+      successfulParses: results.length,
+      failedParses: errors.length,
+      statistics
+    });
 
     return {
       success: true,

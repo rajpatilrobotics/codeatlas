@@ -1,10 +1,15 @@
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { apiClient } from '@/lib/api';
+import useRepoStore from '@/store/useRepoStore';
 import GraphVisualization from '@/src/components/features/GraphVisualization';
 import Card from '@/src/components/ui/Card';
 import Button from '@/src/components/ui/Button';
 import Badge from '@/src/components/ui/Badge';
+import LoadingState from '@/src/components/ui/LoadingState';
+import ErrorState from '@/src/components/ui/ErrorState';
+import EmptyState from '@/src/components/ui/EmptyState';
 import './HeatmapContent.css';
 
 // Simple icon components to replace lucide-react
@@ -19,11 +24,67 @@ const IconGitCommit = () => <span>⚡</span>;
  * Displays code activity and complexity heatmap visualization
  */
 const HeatmapContent = () => {
+  const currentRepo = useRepoStore((state) => state.currentRepo);
+  const [heatmapData, setHeatmapData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
-  const [metricType, setMetricType] = useState('activity'); // activity, complexity, changes
+  const [metricType, setMetricType] = useState('complexity'); // activity, complexity, changes
   const [timeRange, setTimeRange] = useState('7d'); // 7d, 30d, 90d
 
-  // Mock heatmap data - will be replaced with real API data
+  useEffect(() => {
+    async function fetchHeatmap() {
+      if (!currentRepo?.id) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        const result = await apiClient.getComplexityHeatmap(currentRepo.id);
+        setHeatmapData(result);
+      } catch (err) {
+        console.error('Failed to fetch heatmap:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchHeatmap();
+  }, [currentRepo?.id]);
+
+  // Transform API data to graph format
+  const { nodes, edges } = useMemo(() => {
+    if (!heatmapData?.files) {
+      return { nodes: [], edges: [] };
+    }
+
+    const transformedNodes = heatmapData.files.map((file, index) => ({
+      id: file.id || `file-${index}`,
+      type: 'default',
+      data: {
+        label: file.path || file.name || file.id,
+        type: file.type || 'file',
+        activity: file.activity || file.changeFrequency || 0,
+        complexity: file.complexity || file.complexityScore || 0,
+        changes: file.changes || file.commitCount || 0
+      },
+      position: file.position || { x: (index % 5) * 150, y: Math.floor(index / 5) * 150 }
+    }));
+
+    const transformedEdges = (heatmapData.dependencies || []).map((edge, index) => ({
+      id: edge.id || `edge-${index}`,
+      source: edge.source || edge.from,
+      target: edge.target || edge.to,
+      label: edge.label || 'depends on'
+    }));
+
+    return { nodes: transformedNodes, edges: transformedEdges };
+  }, [heatmapData]);
+
+  // Mock heatmap data - fallback for development
   const mockNodes = useMemo(() => [
     // Hot files (high activity/complexity)
     {
@@ -159,7 +220,17 @@ const HeatmapContent = () => {
   };
 
   const stats = useMemo(() => {
-    const values = mockNodes.map(n => getMetricValue(n));
+    if (nodes.length === 0) {
+      return {
+        average: 0,
+        maximum: 0,
+        minimum: 0,
+        hotspots: 0,
+        totalFiles: 0,
+      };
+    }
+
+    const values = nodes.map(n => getMetricValue(n));
     const avg = values.reduce((a, b) => a + b, 0) / values.length;
     const max = Math.max(...values);
     const min = Math.min(...values);
@@ -170,9 +241,41 @@ const HeatmapContent = () => {
       maximum: max,
       minimum: min,
       hotspots: hot,
-      totalFiles: mockNodes.length,
+      totalFiles: nodes.length,
     };
-  }, [mockNodes, metricType]);
+  }, [nodes, metricType]);
+
+  if (loading) {
+    return (
+      <div className="heatmap-content">
+        <LoadingState message="Loading heatmap..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="heatmap-content">
+        <ErrorState message={error} />
+      </div>
+    );
+  }
+
+  if (!currentRepo) {
+    return (
+      <div className="heatmap-content">
+        <EmptyState message="No repository selected. Please analyze a repository first." />
+      </div>
+    );
+  }
+
+  if (!nodes.length) {
+    return (
+      <div className="heatmap-content">
+        <EmptyState message="No heatmap data available for this repository." />
+      </div>
+    );
+  }
 
   return (
     <div className="heatmap-content">
@@ -305,7 +408,7 @@ const HeatmapContent = () => {
         {/* Heatmap Visualization */}
         <Card className="heatmap-card">
           <GraphVisualization
-            initialNodes={mockNodes.map(node => ({
+            initialNodes={nodes.map(node => ({
               ...node,
               style: {
                 background: getHeatColor(getMetricValue(node)),
@@ -313,7 +416,7 @@ const HeatmapContent = () => {
                 borderColor: getHeatColor(getMetricValue(node)),
               }
             }))}
-            initialEdges={mockEdges}
+            initialEdges={edges}
             graphType="heatmap"
             onNodeClick={handleNodeClick}
             height="700px"

@@ -15,6 +15,7 @@ import repoRoutes from './routes/repo.routes.js';
 import graphRoutes from './routes/graph.routes.js';
 import chatRoutes from './routes/chat.routes.js';
 import systemRoutes from './routes/system.routes.js';
+import heatmapRoutes from './routes/heatmap.routes.js';
 
 // Import services
 import DatabaseService from './services/database/index.js';
@@ -108,6 +109,7 @@ app.use('/api/repo', repoRoutes);
 app.use('/api/graph', graphRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/system', systemRoutes);
+app.use('/api/heatmap', heatmapRoutes);
 
 // Bull Board (queue monitoring)
 setupBullBoard(app);
@@ -209,12 +211,19 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Handle uncaught errors
-process.on('uncaughtException', (error) => {
+process.on('uncaught Exception', (error) => {
+  console.error('❌ UNCAUGHT EXCEPTION:');
+  console.error('Error:', error);
+  console.error('Stack:', error.stack);
   logger.error('Uncaught Exception:', error);
+  logger.error('Stack trace:', error.stack);
   gracefulShutdown('uncaughtException');
 });
 
 process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ UNHANDLED REJECTION:');
+  console.error('Reason:', reason);
+  console.error('Promise:', promise);
   logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
   gracefulShutdown('unhandledRejection');
 });

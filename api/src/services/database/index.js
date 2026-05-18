@@ -1,6 +1,6 @@
 /**
  * Database Service
- * 
+ *
  * Main database service providing high-level operations for:
  * - Repositories
  * - Files
@@ -11,6 +11,7 @@
  */
 
 import prismaService from './prisma.js';
+import logger from '../../utils/logger.js';
 
 class DatabaseService {
   constructor() {
@@ -25,17 +26,45 @@ class DatabaseService {
    * @returns {Promise<Object>} - Created repository
    */
   async createRepository(data) {
-    return this.prisma.repository.create({
-      data: {
-        name: data.name,
-        owner: data.owner,
-        url: data.url,
-        description: data.description,
-        language: data.language,
-        stars: data.stars || 0,
-        forks: data.forks || 0,
-      },
+    logger.info('[DatabaseService] Creating/updating repository', {
+      name: data.name,
+      owner: data.owner,
+      url: data.url
     });
+
+    try {
+      const repository = await this.prisma.repository.upsert({
+        where: { url: data.url },
+        update: {
+          status: 'pending',
+          progress: 0,
+        },
+        create: {
+          name: data.name,
+          owner: data.owner,
+          url: data.url,
+          description: data.description,
+          language: data.language,
+          stars: data.stars || 0,
+          forks: data.forks || 0,
+          status: 'pending',
+          progress: 0,
+        },
+      });
+
+      logger.info('[DatabaseService] Repository created/updated successfully', {
+        id: repository.id,
+        name: repository.name
+      });
+
+      return repository;
+    } catch (error) {
+      logger.error('[DatabaseService] Failed to create/update repository', {
+        error: error.message,
+        data
+      });
+      throw error;
+    }
   }
 
   /**
@@ -90,6 +119,12 @@ class DatabaseService {
    * @returns {Promise<Object>} - Updated repository
    */
   async updateRepositoryStatus(id, status, progress = null) {
+    logger.info('[DatabaseService] Updating repository status', {
+      id,
+      status,
+      progress
+    });
+
     const data = { status };
     if (progress !== null) {
       data.progress = progress;
@@ -97,7 +132,23 @@ class DatabaseService {
     if (status === 'completed') {
       data.analyzedAt = new Date();
     }
-    return this.updateRepository(id, data);
+
+    try {
+      const result = await this.updateRepository(id, data);
+      logger.info('[DatabaseService] Repository status updated successfully', {
+        id,
+        status,
+        progress
+      });
+      return result;
+    } catch (error) {
+      logger.error('[DatabaseService] Failed to update repository status', {
+        error: error.message,
+        id,
+        status
+      });
+      throw error;
+    }
   }
 
   /**
@@ -153,11 +204,33 @@ class DatabaseService {
    * @returns {Promise<number>} - Count of created files
    */
   async createFiles(files) {
-    const result = await this.prisma.file.createMany({
-      data: files,
-      skipDuplicates: true,
+    logger.info('[DatabaseService] Batch creating files', {
+      count: files.length
     });
-    return result.count;
+
+    try {
+      console.log('Creating files, sample:', JSON.stringify(files[0], null, 2));
+      const result = await this.prisma.file.createMany({
+        data: files,
+        skipDuplicates: true,
+      });
+
+      logger.info('[DatabaseService] Files created successfully', {
+        requested: files.length,
+        created: result.count,
+        skipped: files.length - result.count
+      });
+
+      return result.count;
+    } catch (error) {
+      console.error('createFiles FULL ERROR:', error.message);
+      console.error('First file data:', JSON.stringify(files[0], null, 2));
+      logger.error('[DatabaseService] Failed to create files', {
+        error: error.message,
+        count: files.length
+      });
+      throw error;
+    }
   }
 
   /**
@@ -205,11 +278,40 @@ class DatabaseService {
    * @returns {Promise<number>} - Count of created entities
    */
   async createEntities(entities) {
-    const result = await this.prisma.entity.createMany({
-      data: entities,
-      skipDuplicates: true,
+    logger.info('[DatabaseService] Batch creating entities', {
+      count: entities.length
     });
-    return result.count;
+
+    // Log entity type breakdown
+    const typeBreakdown = entities.reduce((acc, entity) => {
+      acc[entity.type] = (acc[entity.type] || 0) + 1;
+      return acc;
+    }, {});
+
+    logger.debug('[DatabaseService] Entity type breakdown', typeBreakdown);
+
+    try {
+      const result = await this.prisma.entity.createMany({
+        data: entities,
+        skipDuplicates: true,
+      });
+
+      logger.info('[DatabaseService] Entities created successfully', {
+        requested: entities.length,
+        created: result.count,
+        skipped: entities.length - result.count,
+        typeBreakdown
+      });
+
+      return result.count;
+    } catch (error) {
+      logger.error('[DatabaseService] Failed to create entities', {
+        error: error.message,
+        count: entities.length,
+        sample: entities.slice(0, 3).map(e => ({ id: e.id, type: e.type, name: e.name }))
+      });
+      throw error;
+    }
   }
 
   /**
@@ -294,11 +396,68 @@ class DatabaseService {
    * @returns {Promise<number>} - Count of created relationships
    */
   async createRelationships(relationships) {
-    const result = await this.prisma.relationship.createMany({
-      data: relationships,
-      skipDuplicates: true,
+    logger.info('[DatabaseService] Batch creating relationships', {
+      count: relationships.length
     });
-    return result.count;
+
+    // Log relationship type breakdown
+    const typeBreakdown = relationships.reduce((acc, rel) => {
+      acc[rel.type] = (acc[rel.type] || 0) + 1;
+      return acc;
+    }, {});
+
+    logger.debug('[DatabaseService] Relationship type breakdown', typeBreakdown);
+
+    try {
+      // Split into smaller batches to avoid PostgreSQL limits
+      const BATCH_SIZE = 1000;
+      let totalCreated = 0;
+      
+      if (relationships.length <= BATCH_SIZE) {
+        // Small batch - process in one go
+        const result = await this.prisma.relationship.createMany({
+          data: relationships,
+          skipDuplicates: true,
+        });
+        totalCreated = result.count;
+      } else {
+        // Large batch - split into chunks
+        logger.info(`[DatabaseService] Splitting ${relationships.length} relationships into batches of ${BATCH_SIZE}`);
+        
+        for (let i = 0; i < relationships.length; i += BATCH_SIZE) {
+          const batch = relationships.slice(i, i + BATCH_SIZE);
+          const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+          const totalBatches = Math.ceil(relationships.length / BATCH_SIZE);
+          
+          logger.info(`[DatabaseService] Processing relationship batch ${batchNum}/${totalBatches} (${batch.length} items)`);
+          
+          const result = await this.prisma.relationship.createMany({
+            data: batch,
+            skipDuplicates: true,
+          });
+          
+          totalCreated += result.count;
+          logger.info(`[DatabaseService] Batch ${batchNum}/${totalBatches} complete: ${result.count} created`);
+        }
+      }
+
+      logger.info('[DatabaseService] Relationships created successfully', {
+        requested: relationships.length,
+        created: totalCreated,
+        skipped: relationships.length - totalCreated,
+        typeBreakdown
+      });
+
+      return totalCreated;
+    } catch (error) {
+      logger.error('[DatabaseService] Failed to create relationships', {
+        error: error.message,
+        stack: error.stack,
+        count: relationships.length,
+        sample: relationships.slice(0, 3).map(r => ({ id: r.id, type: r.type, source: r.sourceId, target: r.targetId }))
+      });
+      throw error;
+    }
   }
 
   /**

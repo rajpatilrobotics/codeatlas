@@ -3,28 +3,67 @@
  * Builds relationships between code entities
  */
 
+import logger from '../../utils/logger.js';
+
 /**
  * Extract relationships from entities
  * @param {Object} entities - Extracted entities
  * @returns {Array} Relationships
  */
 function extractRelationships(entities) {
+  logger.info('[RelationshipExtractor] Starting relationship extraction', {
+    entityCounts: {
+      files: entities.files?.length || 0,
+      functions: entities.functions?.length || 0,
+      classes: entities.classes?.length || 0,
+      variables: entities.variables?.length || 0,
+      imports: entities.imports?.length || 0,
+      exports: entities.exports?.length || 0
+    }
+  });
+
   const relationships = [];
 
   // 1. File imports relationships
-  relationships.push(...extractImportRelationships(entities));
+  const importRels = extractImportRelationships(entities);
+  logger.debug('[RelationshipExtractor] Extracted import relationships', {
+    count: importRels.length
+  });
+  relationships.push(...importRels);
 
   // 2. Class inheritance relationships
-  relationships.push(...extractInheritanceRelationships(entities));
+  const inheritanceRels = extractInheritanceRelationships(entities);
+  logger.debug('[RelationshipExtractor] Extracted inheritance relationships', {
+    count: inheritanceRels.length
+  });
+  relationships.push(...inheritanceRels);
 
   // 3. Function call relationships (basic - from imports)
-  relationships.push(...extractCallRelationships(entities));
+  const callRels = extractCallRelationships(entities);
+  logger.debug('[RelationshipExtractor] Extracted call relationships', {
+    count: callRels.length
+  });
+  relationships.push(...callRels);
 
   // 4. Export relationships
-  relationships.push(...extractExportRelationships(entities));
+  const exportRels = extractExportRelationships(entities);
+  logger.debug('[RelationshipExtractor] Extracted export relationships', {
+    count: exportRels.length
+  });
+  relationships.push(...exportRels);
 
   // 5. File dependency relationships
-  relationships.push(...extractFileDependencies(entities));
+  const depRels = extractFileDependencies(entities);
+  logger.debug('[RelationshipExtractor] Extracted file dependency relationships', {
+    count: depRels.length
+  });
+  relationships.push(...depRels);
+
+  const stats = getRelationshipStatistics(relationships);
+  logger.info('[RelationshipExtractor] Relationship extraction completed', {
+    total: stats.total,
+    byType: stats.byType
+  });
 
   return relationships;
 }

@@ -54,8 +54,10 @@ function AnalyzingContent() {
             // Check if completed
             if (status.status === 'completed' || currentProgress >= 100) {
               clearInterval(pollInterval)
+              // Store repository ID in localStorage as backup
+              localStorage.setItem('currentRepoId', response.repositoryId)
               setTimeout(() => {
-                router.push('/dashboard')
+                router.push(`/dashboard?repoId=${response.repositoryId}`)
               }, 1000)
             }
             

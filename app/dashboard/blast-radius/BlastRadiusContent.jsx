@@ -1,10 +1,15 @@
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { apiClient } from '@/lib/api';
+import useRepoStore from '@/store/useRepoStore';
 import GraphVisualization from '@/src/components/features/GraphVisualization';
 import Card from '@/src/components/ui/Card';
 import Button from '@/src/components/ui/Button';
 import Badge from '@/src/components/ui/Badge';
+import LoadingState from '@/src/components/ui/LoadingState';
+import ErrorState from '@/src/components/ui/ErrorState';
+import EmptyState from '@/src/components/ui/EmptyState';
 import './BlastRadiusContent.css';
 
 // Simple icon components to replace lucide-react
@@ -19,11 +24,63 @@ const IconTarget = () => <span>🎯</span>;
  * Displays impact analysis and blast radius visualization
  */
 const BlastRadiusContent = () => {
+  const currentRepo = useRepoStore((state) => state.currentRepo);
+  const [blastRadiusData, setBlastRadiusData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
-  const [targetFile, setTargetFile] = useState('src/api/auth.js');
+  const [targetEntityId, setTargetEntityId] = useState('');
+  const [targetFile, setTargetFile] = useState('');
   const [riskFilter, setRiskFilter] = useState('all');
 
-  // Mock blast radius data - will be replaced with real API data
+  const handleAnalyze = useCallback(async () => {
+    if (!currentRepo?.id || !targetEntityId) {
+      setError('Please enter an entity ID to analyze');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await apiClient.getBlastRadius(currentRepo.id, targetEntityId);
+      setBlastRadiusData(result);
+    } catch (err) {
+      console.error('Failed to fetch blast radius:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentRepo?.id, targetEntityId]);
+
+  // Transform API data to graph format
+  const { nodes, edges } = useMemo(() => {
+    if (!blastRadiusData?.impactedNodes) {
+      return { nodes: [], edges: [] };
+    }
+
+    const transformedNodes = blastRadiusData.impactedNodes.map((node, index) => ({
+      id: node.id || `node-${index}`,
+      type: 'default',
+      data: {
+        label: node.name || node.label || node.id,
+        type: node.type || 'file',
+        risk: node.riskLevel || node.impact || 'low'
+      },
+      position: node.position || { x: Math.random() * 500, y: Math.random() * 500 }
+    }));
+
+    const transformedEdges = (blastRadiusData.relationships || []).map((edge, index) => ({
+      id: edge.id || `edge-${index}`,
+      source: edge.source || edge.from,
+      target: edge.target || edge.to,
+      label: edge.label || edge.type || 'affects',
+      animated: edge.direct || false
+    }));
+
+    return { nodes: transformedNodes, edges: transformedEdges };
+  }, [blastRadiusData]);
+
+  // Mock blast radius data - fallback for development
   const mockNodes = useMemo(() => [
     // Target node
     {
@@ -95,20 +152,28 @@ const BlastRadiusContent = () => {
   }, []);
 
   const stats = useMemo(() => {
-    const riskCounts = mockNodes.reduce((acc, node) => {
+    const riskCounts = nodes.reduce((acc, node) => {
       acc[node.data.risk] = (acc[node.data.risk] || 0) + 1;
       return acc;
     }, {});
     
     return {
-      totalAffected: mockNodes.length - 1, // Exclude target
+      totalAffected: nodes.length > 0 ? nodes.length - 1 : 0, // Exclude target
       critical: riskCounts.critical || 0,
       high: riskCounts.high || 0,
       medium: riskCounts.medium || 0,
       low: riskCounts.low || 0,
-      impactScore: 87, // Mock score
+      impactScore: blastRadiusData?.impactScore || 0,
     };
-  }, [mockNodes]);
+  }, [nodes, blastRadiusData]);
+
+  if (!currentRepo) {
+    return (
+      <div className="blast-radius-content">
+        <EmptyState message="No repository selected. Please analyze a repository first." />
+      </div>
+    );
+  }
 
   const getRiskIcon = (risk) => {
     switch (risk) {
@@ -151,19 +216,40 @@ const BlastRadiusContent = () => {
       <Card className="target-selector">
         <div className="target-label">
           <IconTarget />
-          <span>Target File:</span>
+          <span>Target Entity ID:</span>
         </div>
         <input
           type="text"
-          value={targetFile}
-          onChange={(e) => setTargetFile(e.target.value)}
+          value={targetEntityId}
+          onChange={(e) => setTargetEntityId(e.target.value)}
           className="target-input"
-          placeholder="Enter file path..."
+          placeholder="Enter entity ID to analyze..."
         />
-        <Button variant="primary" size="sm">
-          Analyze
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={handleAnalyze}
+          disabled={loading || !targetEntityId}
+        >
+          {loading ? 'Analyzing...' : 'Analyze'}
         </Button>
       </Card>
+
+      {error && !loading && (
+        <div className="mb-4 p-4 rounded-lg" style={{
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          border: '1px solid rgba(239, 68, 68, 0.3)',
+          color: 'rgba(239, 68, 68, 0.9)'
+        }}>
+          {error}
+        </div>
+      )}
+
+      {loading && (
+        <div className="mb-4">
+          <LoadingState message="Analyzing blast radius..." />
+        </div>
+      )}
 
       {/* Stats Bar */}
       <div className="blast-stats">
@@ -260,13 +346,17 @@ const BlastRadiusContent = () => {
       <div className="blast-main">
         {/* Blast Radius Visualization */}
         <Card className="blast-card">
-          <GraphVisualization
-            initialNodes={mockNodes}
-            initialEdges={mockEdges}
-            graphType="blast-radius"
-            onNodeClick={handleNodeClick}
-            height="700px"
-          />
+          {nodes.length > 0 ? (
+            <GraphVisualization
+              initialNodes={nodes}
+              initialEdges={edges}
+              graphType="blast-radius"
+              onNodeClick={handleNodeClick}
+              height="700px"
+            />
+          ) : (
+            <EmptyState message="Enter an entity ID and click Analyze to see the blast radius." />
+          )}
         </Card>
 
         {/* Impact Details Panel */}

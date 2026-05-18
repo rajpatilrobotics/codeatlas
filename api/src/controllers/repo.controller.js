@@ -1,11 +1,12 @@
 /**
  * Repository Controller
- * 
+ *
  * Handles repository analysis requests and status tracking.
  */
 
 import DatabaseService from '../services/database/index.js';
 import { repoAnalysisQueue } from '../queues/index.js';
+import logger from '../utils/logger.js';
 
 const db = new DatabaseService();
 
@@ -37,8 +38,16 @@ export async function analyzeRepository(req, res) {
         });
       }
 
-      // If completed, return existing data
-      if (repository.status === 'completed') {
+      // If completed but has zero data, force re-analyze
+      if (repository.status === 'completed' && repository.fileCount === 0) {
+        logger.info('[RepoController] Force re-analyzing repository with zero data', {
+          repositoryId: repository.id,
+          url: repository.url
+        });
+        await db.updateRepositoryStatus(repository.id, 'pending', 0);
+      }
+      // If completed with data, return existing data
+      else if (repository.status === 'completed') {
         return res.json({
           repositoryId: repository.id,
           status: repository.status,
@@ -101,13 +110,26 @@ export async function getRepositoryStatus(req, res) {
   try {
     const { repositoryId } = req.params;
 
+    logger.info('[RepoController] Getting repository status', { repositoryId });
+
     const repository = await db.getRepository(repositoryId);
 
     if (!repository) {
+      logger.warn('[RepoController] Repository not found', { repositoryId });
       return res.status(404).json({
         error: 'Repository not found',
       });
     }
+
+    logger.info('[RepoController] Repository status retrieved', {
+      repositoryId: repository.id,
+      name: repository.name,
+      status: repository.status,
+      progress: repository.progress,
+      fileCount: repository._count?.files || 0,
+      entityCount: repository._count?.entities || 0,
+      relationshipCount: repository._count?.relationships || 0
+    });
 
     res.json({
       repositoryId: repository.id,
@@ -115,12 +137,16 @@ export async function getRepositoryStatus(req, res) {
       owner: repository.owner,
       status: repository.status,
       progress: repository.progress,
-      fileCount: repository.fileCount,
-      entityCount: repository.entityCount,
+      fileCount: repository._count?.files || 0,
+      entityCount: repository._count?.entities || 0,
       analyzedAt: repository.analyzedAt,
     });
   } catch (error) {
-    console.error('Get repository status error:', error);
+    logger.error('[RepoController] Get repository status error', {
+      error: error.message,
+      stack: error.stack,
+      repositoryId: req.params.repositoryId
+    });
     res.status(500).json({
       error: 'Failed to get repository status',
       message: error.message,
@@ -136,17 +162,48 @@ export async function getRepositorySummary(req, res) {
   try {
     const { repositoryId } = req.params;
 
+    logger.info('[RepoController] Getting repository summary', { repositoryId });
+
     const repository = await db.getRepository(repositoryId);
 
     if (!repository) {
+      logger.warn('[RepoController] Repository not found', { repositoryId });
       return res.status(404).json({
         error: 'Repository not found',
       });
     }
 
+    logger.info('[RepoController] Repository found', {
+      repositoryId: repository.id,
+      name: repository.name,
+      status: repository.status,
+      countsFromRepo: {
+        files: repository._count?.files || 0,
+        entities: repository._count?.entities || 0,
+        relationships: repository._count?.relationships || 0
+      }
+    });
+
     const stats = await db.getRepositoryStats(repositoryId);
 
-    res.json({
+    logger.info('[RepoController] Repository stats retrieved', {
+      repositoryId,
+      statsFromQuery: {
+        fileCount: stats.fileCount,
+        entityCount: stats.entityCount,
+        relationshipCount: stats.relationshipCount
+      }
+    });
+
+    // Check for empty data
+    if (stats.entityCount === 0) {
+      logger.warn('[RepoController] No entities found for repository', { repositoryId });
+    }
+    if (stats.relationshipCount === 0) {
+      logger.warn('[RepoController] No relationships found for repository', { repositoryId });
+    }
+
+    const response = {
       repository: {
         id: repository.id,
         name: repository.name,
@@ -158,13 +215,24 @@ export async function getRepositorySummary(req, res) {
         analyzedAt: repository.analyzedAt,
       },
       statistics: {
-        files: stats.fileCount,
-        entities: stats.entityCount,
-        relationships: stats.relationshipCount,
+        files: stats.fileCount || 0,
+        entities: stats.entityCount || 0,
+        relationships: stats.relationshipCount || 0,
       },
+    };
+
+    logger.info('[RepoController] Sending summary response', {
+      repositoryId,
+      responseStats: response.statistics
     });
+
+    res.json(response);
   } catch (error) {
-    console.error('Get repository summary error:', error);
+    logger.error('[RepoController] Get repository summary error', {
+      error: error.message,
+      stack: error.stack,
+      repositoryId: req.params.repositoryId
+    });
     res.status(500).json({
       error: 'Failed to get repository summary',
       message: error.message,
@@ -181,9 +249,23 @@ export async function listRepositories(req, res) {
     const { page = 1, limit = 20 } = req.query;
     const skip = (page - 1) * limit;
 
+    logger.info('[RepoController] Listing repositories', { page, limit, skip });
+
     const repositories = await db.listRepositories({
       skip,
       take: parseInt(limit),
+    });
+
+    logger.info('[RepoController] Repositories retrieved', {
+      count: repositories.length,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sampleRepos: repositories.slice(0, 3).map(r => ({
+        id: r.id,
+        name: r.name,
+        status: r.status,
+        entityCount: r._count?.entities || 0
+      }))
     });
 
     res.json({
@@ -192,7 +274,12 @@ export async function listRepositories(req, res) {
       limit: parseInt(limit),
     });
   } catch (error) {
-    console.error('List repositories error:', error);
+    logger.error('[RepoController] List repositories error', {
+      error: error.message,
+      stack: error.stack,
+      page: req.query.page,
+      limit: req.query.limit
+    });
     res.status(500).json({
       error: 'Failed to list repositories',
       message: error.message,

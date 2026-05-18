@@ -75,7 +75,7 @@ model File {
 model Entity {
   id           String   @id @default(cuid())
   repositoryId String
-  fileId       String
+  fileId       String?  // Optional - imports don't belong to a specific file
   
   // Entity details
   type         String   // function, class, method, variable, import, export
@@ -100,7 +100,7 @@ model Entity {
   
   // Relations
   repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
-  file         File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  file         File? @relation(fields: [fileId], references: [id], onDelete: Cascade)
   
   outgoingRelationships Relationship[] @relation("SourceEntity")
   incomingRelationships Relationship[] @relation("TargetEntity")

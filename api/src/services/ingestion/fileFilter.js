@@ -4,7 +4,7 @@ import fs from 'fs';
 const fsPromises = fs.promises;
 
 /**
- * Directories to ignore during repository analysis
+ * Directories to ignore completely during repository analysis
  */
 const IGNORED_DIRECTORIES = new Set([
   'node_modules',
@@ -13,22 +13,47 @@ const IGNORED_DIRECTORIES = new Set([
   'dist',
   'build',
   'coverage',
-  '.nuxt',
+  'vendor',
+  'venv',
+  '__pycache__',
+  'target',
+  'bin',
+  'obj',
   'out',
+  'public/assets',
+  'generated',
+  'tmp',
+  'cache',
+  '.nuxt',
   '.cache',
   '.parcel-cache',
   '.vscode',
   '.idea',
-  '__pycache__',
   '.pytest_cache',
-  'venv',
   'env',
   '.env',
-  'target',
-  'bin',
-  'obj',
   '.gradle',
   '.mvn'
+]);
+
+/**
+ * Priority directories to process first
+ */
+const PRIORITY_DIRECTORIES = new Set([
+  'src',
+  'app',
+  'components',
+  'services',
+  'api',
+  'controllers',
+  'hooks',
+  'lib',
+  'utils',
+  'models',
+  'routes',
+  'db',
+  'config',
+  'docs'
 ]);
 
 /**
@@ -54,43 +79,60 @@ const IGNORED_EXTENSIONS = new Set([
 ]);
 
 /**
- * File extensions to analyze
+ * File extensions to analyze (only these will be processed)
  */
 const SUPPORTED_EXTENSIONS = new Set([
   // JavaScript/TypeScript
-  '.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs',
+  '.js', '.jsx', '.ts', '.tsx',
   // Python
-  '.py', '.pyw',
+  '.py',
   // Java
   '.java',
   // Go
   '.go',
-  // Rust
-  '.rs',
-  // C/C++
-  '.c', '.cpp', '.cc', '.h', '.hpp',
-  // C#
-  '.cs',
-  // Ruby
-  '.rb',
-  // PHP
-  '.php',
-  // Swift
-  '.swift',
-  // Kotlin
-  '.kt', '.kts',
-  // Scala
-  '.scala',
-  // Config files
-  '.json', '.yaml', '.yml', '.toml', '.xml',
   // Markdown
-  '.md', '.mdx'
+  '.md'
 ]);
 
 /**
- * Maximum file size to analyze (5MB)
+ * Important files without extensions that should be included
  */
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const IMPORTANT_FILES_NO_EXT = new Set([
+  'README',
+  'LICENSE',
+  'CHANGELOG',
+  'CONTRIBUTING',
+  'AUTHORS',
+  'NOTICE',
+  'Makefile',
+  'Dockerfile',
+  'Jenkinsfile',
+  'Vagrantfile'
+]);
+
+/**
+ * Maximum file size to analyze (1MB)
+ */
+const MAX_FILE_SIZE = 1 * 1024 * 1024;
+
+/**
+ * Maximum number of files to process per repository
+ */
+const MAX_FILES_PER_REPO = 500;
+
+/**
+ * Lockfiles to skip
+ */
+const LOCKFILES = new Set([
+  'package-lock.json',
+  'yarn.lock',
+  'pnpm-lock.yaml',
+  'composer.lock',
+  'Gemfile.lock',
+  'Pipfile.lock',
+  'poetry.lock',
+  'cargo.lock'
+]);
 
 /**
  * Check if directory should be ignored
@@ -102,15 +144,44 @@ function shouldIgnoreDirectory(dirName) {
 }
 
 /**
+ * Check if file is minified
+ * @param {string} fileName - File name
+ * @returns {boolean} Is minified
+ */
+function isMinifiedFile(fileName) {
+  return fileName.includes('.min.');
+}
+
+/**
+ * Check if file is a lockfile
+ * @param {string} fileName - File name
+ * @returns {boolean} Is lockfile
+ */
+function isLockfile(fileName) {
+  return LOCKFILES.has(fileName);
+}
+
+/**
  * Check if file should be ignored based on extension
  * @param {string} fileName - File name
  * @returns {boolean} Should ignore
  */
 function shouldIgnoreFile(fileName) {
   const ext = path.extname(fileName).toLowerCase();
+  const baseName = path.basename(fileName);
   
-  // Ignore files without extension or with ignored extensions
-  if (!ext || IGNORED_EXTENSIONS.has(ext)) {
+  // Allow important files without extensions
+  if (!ext && IMPORTANT_FILES_NO_EXT.has(baseName)) {
+    return false;
+  }
+  
+  // Ignore files without extension (unless they're important files above)
+  if (!ext) {
+    return true;
+  }
+  
+  // Ignore files with ignored extensions
+  if (IGNORED_EXTENSIONS.has(ext)) {
     return true;
   }
   
@@ -119,8 +190,13 @@ function shouldIgnoreFile(fileName) {
     return true;
   }
   
-  // Ignore lock files
-  if (fileName.includes('.lock') || fileName.includes('-lock.')) {
+  // Ignore minified files
+  if (isMinifiedFile(fileName)) {
+    return true;
+  }
+  
+  // Ignore lockfiles
+  if (isLockfile(fileName)) {
     return true;
   }
   
@@ -134,6 +210,13 @@ function shouldIgnoreFile(fileName) {
  */
 function isSupportedFile(fileName) {
   const ext = path.extname(fileName).toLowerCase();
+  const baseName = path.basename(fileName);
+  
+  // Important files without extensions are supported
+  if (!ext && IMPORTANT_FILES_NO_EXT.has(baseName)) {
+    return true;
+  }
+  
   return SUPPORTED_EXTENSIONS.has(ext);
 }
 
@@ -197,62 +280,135 @@ function getFileLanguage(fileName) {
 }
 
 /**
- * Filter files in a directory recursively
+ * Check if directory is a priority directory
+ * @param {string} dirName - Directory name
+ * @returns {boolean} Is priority
+ */
+function isPriorityDirectory(dirName) {
+  return PRIORITY_DIRECTORIES.has(dirName);
+}
+
+/**
+ * Filter files in a directory recursively with smart prioritization
  * @param {string} dirPath - Directory path
  * @param {string} basePath - Base repository path
+ * @param {Object} options - Filter options
  * @returns {Promise<Array>} Filtered file list
  */
-async function filterFiles(dirPath, basePath = dirPath) {
-  const files = [];
+async function filterFiles(dirPath, basePath = dirPath, options = {}) {
+  const { maxFiles = MAX_FILES_PER_REPO } = options;
+  const priorityFiles = [];
+  const regularFiles = [];
+  
+  console.log('🔍 [FileFilter] Scanning directory:', dirPath);
   
   try {
     const entries = await fsPromises.readdir(dirPath, { withFileTypes: true });
+    console.log('🔍 [FileFilter] Found', entries.length, 'entries in', path.basename(dirPath));
+    
+    // Separate priority and regular directories
+    const priorityDirs = [];
+    const regularDirs = [];
     
     for (const entry of entries) {
-      const fullPath = path.join(dirPath, entry.name);
-      const relativePath = path.relative(basePath, fullPath);
-      
       if (entry.isDirectory()) {
-        // Skip ignored directories
         if (shouldIgnoreDirectory(entry.name)) {
           continue;
         }
         
-        // Recursively process subdirectory
-        const subFiles = await filterFiles(fullPath, basePath);
-        files.push(...subFiles);
-      } else if (entry.isFile()) {
-        // Skip ignored files
-        if (shouldIgnoreFile(entry.name)) {
-          continue;
+        if (isPriorityDirectory(entry.name)) {
+          priorityDirs.push(entry);
+        } else {
+          regularDirs.push(entry);
         }
+      }
+    }
+    
+    // Process priority directories first
+    for (const entry of priorityDirs) {
+      const fullPath = path.join(dirPath, entry.name);
+      const subFiles = await filterFiles(fullPath, basePath, { maxFiles });
+      priorityFiles.push(...subFiles);
+      
+      // Stop if we've reached max files
+      if (priorityFiles.length >= maxFiles) {
+        break;
+      }
+    }
+    
+    // Process regular directories if we haven't reached max files
+    if (priorityFiles.length < maxFiles) {
+      for (const entry of regularDirs) {
+        const fullPath = path.join(dirPath, entry.name);
+        const subFiles = await filterFiles(fullPath, basePath, { maxFiles });
+        regularFiles.push(...subFiles);
         
-        // Only include supported files
-        if (!isSupportedFile(entry.name)) {
-          continue;
+        // Stop if we've reached max files
+        if (priorityFiles.length + regularFiles.length >= maxFiles) {
+          break;
         }
-        
-        // Check file size
-        const withinLimit = await isWithinSizeLimit(fullPath);
-        if (!withinLimit) {
-          console.warn(`Skipping large file: ${relativePath}`);
-          continue;
-        }
-        
-        files.push({
-          path: relativePath,
-          fullPath: fullPath,
-          name: entry.name,
-          extension: path.extname(entry.name),
-          language: getFileLanguage(entry.name)
-        });
+      }
+    }
+    
+    // Process files in current directory
+    for (const entry of entries) {
+      if (!entry.isFile()) continue;
+      
+      // Stop if we've reached max files
+      if (priorityFiles.length + regularFiles.length >= maxFiles) {
+        break;
+      }
+      
+      const fullPath = path.join(dirPath, entry.name);
+      const relativePath = path.relative(basePath, fullPath);
+      
+      console.log('🔍 [FileFilter] Checking file:', entry.name);
+      
+      // Skip ignored files
+      if (shouldIgnoreFile(entry.name)) {
+        console.log('  ❌ Ignored (shouldIgnoreFile)');
+        continue;
+      }
+      
+      // Only include supported files
+      if (!isSupportedFile(entry.name)) {
+        const ext = path.extname(entry.name).toLowerCase();
+        console.log('  ❌ Not supported - extension:', ext, '- supported:', Array.from(SUPPORTED_EXTENSIONS).join(', '));
+        continue;
+      }
+      
+      console.log('  ✅ Passed initial checks');
+      
+      // Check file size
+      const withinLimit = await isWithinSizeLimit(fullPath);
+      if (!withinLimit) {
+        console.warn(`Skipping large file (>1MB): ${relativePath}`);
+        continue;
+      }
+      
+      const fileInfo = {
+        path: relativePath,
+        fullPath: fullPath,
+        name: entry.name,
+        extension: path.extname(entry.name),
+        language: getFileLanguage(entry.name)
+      };
+      
+      // Add to priority or regular based on directory
+      const dirName = path.basename(dirPath);
+      if (isPriorityDirectory(dirName)) {
+        priorityFiles.push(fileInfo);
+      } else {
+        regularFiles.push(fileInfo);
       }
     }
   } catch (error) {
     console.error(`Error filtering files in ${dirPath}:`, error);
   }
   
-  return files;
+  // Combine priority files first, then regular files, up to max limit
+  const allFiles = [...priorityFiles, ...regularFiles];
+  return allFiles.slice(0, maxFiles);
 }
 
 /**
@@ -286,10 +442,16 @@ export {
   getFileLanguage,
   filterFiles,
   getFileStatistics,
+  isPriorityDirectory,
+  isMinifiedFile,
+  isLockfile,
   IGNORED_DIRECTORIES,
+  PRIORITY_DIRECTORIES,
   IGNORED_EXTENSIONS,
   SUPPORTED_EXTENSIONS,
-  MAX_FILE_SIZE
+  MAX_FILE_SIZE,
+  MAX_FILES_PER_REPO,
+  LOCKFILES
 };
 
 // Made with Bob

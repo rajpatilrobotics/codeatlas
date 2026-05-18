@@ -40,10 +40,27 @@ function getRepoDirectory(owner, repo) {
  * @param {Object} options - Clone options
  * @returns {Promise<Object>} Clone result
  */
+/**
+ * Clone repository with timeout protection
+ * @param {string} authCloneUrl - Authenticated clone URL
+ * @param {string} repoDir - Target directory
+ * @param {Array} cloneOptions - Git clone options
+ * @returns {Promise<void>}
+ */
+async function cloneWithTimeout(authCloneUrl, repoDir, cloneOptions) {
+  const git = simpleGit();
+  
+  return Promise.race([
+    git.clone(authCloneUrl, repoDir, cloneOptions),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Clone timeout after 60s')), 60000)
+    )
+  ]);
+}
+
 async function cloneRepository(repoUrl, options = {}) {
   const {
     token = process.env.GITHUB_TOKEN,
-    depth = 1, // Shallow clone by default
     onProgress = null
   } = options;
 
@@ -68,19 +85,20 @@ async function cloneRepository(repoUrl, options = {}) {
       authCloneUrl = cloneUrl.replace('https://', `https://${token}@`);
     }
 
-    // Initialize git
-    const git = simpleGit();
-
-    // Clone options
-    const cloneOptions = ['--depth', depth.toString()];
+    // Smart clone options - shallow clone only
+    const cloneOptions = [
+      '--depth', '1',
+      '--single-branch',
+      '--no-tags'
+    ];
 
     // Report progress
     if (onProgress) {
-      onProgress({ stage: 'cloning', progress: 0, message: 'Starting clone...' });
+      onProgress({ stage: 'cloning', progress: 0, message: 'Starting shallow clone...' });
     }
 
-    // Clone repository
-    await git.clone(authCloneUrl, repoDir, cloneOptions);
+    // Clone repository with timeout protection
+    await cloneWithTimeout(authCloneUrl, repoDir, cloneOptions);
 
     if (onProgress) {
       onProgress({ stage: 'cloning', progress: 100, message: 'Clone complete' });

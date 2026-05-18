@@ -1,6 +1,9 @@
 import * as parser from '@babel/parser';
-import traverse from '@babel/traverse';
 import * as t from '@babel/types';
+
+// Import traverse - handle ES module default export
+import traverseImport from '@babel/traverse';
+const traverse = traverseImport.default || traverseImport;
 
 /**
  * Parse JavaScript/TypeScript code using Babel

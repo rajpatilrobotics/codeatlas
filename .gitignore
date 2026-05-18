@@ -108,3 +108,5 @@ dist
 # bob_sessions/
 
 # Made with Bob
+.vercel
+railway-env-variables*.txt

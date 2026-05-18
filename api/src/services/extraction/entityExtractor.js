@@ -3,12 +3,18 @@
  * Extracts and normalizes code entities from parsed AST data
  */
 
+import logger from '../../utils/logger.js';
+
 /**
  * Extract entities from parse results
  * @param {Array} parseResults - Results from parser service
  * @returns {Object} Extracted entities
  */
 function extractEntities(parseResults) {
+  logger.info('[EntityExtractor] Starting entity extraction', {
+    totalParseResults: parseResults?.length || 0
+  });
+
   const entities = {
     files: [],
     functions: [],
@@ -18,17 +24,50 @@ function extractEntities(parseResults) {
     exports: []
   };
 
+  if (!parseResults || parseResults.length === 0) {
+    logger.warn('[EntityExtractor] No parse results provided');
+    return entities;
+  }
+
+  let successfulFiles = 0;
+  let skippedFiles = 0;
+
   parseResults.forEach(result => {
-    if (!result.success || !result.entities) return;
+    if (!result.success || !result.entities) {
+      skippedFiles++;
+      logger.debug('[EntityExtractor] Skipping file (no success or entities)', {
+        path: result.path,
+        success: result.success,
+        hasEntities: !!result.entities
+      });
+      return;
+    }
+
+    successfulFiles++;
 
     const filePath = result.path;
 
-    // Extract file entity
-    entities.files.push({
-      id: generateId('file', filePath),
+    logger.debug('[EntityExtractor] Processing file', {
       path: filePath,
       language: result.language,
-      type: 'file'
+      entityCounts: {
+        functions: result.entities.functions?.length || 0,
+        classes: result.entities.classes?.length || 0,
+        variables: result.entities.variables?.length || 0,
+        imports: result.entities.imports?.length || 0,
+        exports: result.entities.exports?.length || 0
+      }
+    });
+
+    // Extract file entity
+    const fileName = filePath.split('/').pop() || filePath; // Get filename from path
+    entities.files.push({
+      id: generateId('file', filePath),
+      name: fileName, // Add name field for database compatibility
+      path: filePath,
+      language: result.language,
+      type: 'file',
+      entityType: 'file'
     });
 
     // Extract function entities
@@ -98,6 +137,7 @@ function extractEntities(parseResults) {
     result.entities.imports.forEach(imp => {
       entities.imports.push({
         id: generateId('import', filePath, imp.source),
+        name: imp.source, // Use source as name for database compatibility
         source: imp.source,
         specifiers: imp.specifiers,
         filePath: filePath,
@@ -120,6 +160,19 @@ function extractEntities(parseResults) {
       });
     });
   });
+
+  const stats = {
+    totalFiles: entities.files.length,
+    totalFunctions: entities.functions.length,
+    totalClasses: entities.classes.length,
+    totalVariables: entities.variables.length,
+    totalImports: entities.imports.length,
+    totalExports: entities.exports.length,
+    successfulFiles,
+    skippedFiles
+  };
+
+  logger.info('[EntityExtractor] Entity extraction completed', stats);
 
   return entities;
 }

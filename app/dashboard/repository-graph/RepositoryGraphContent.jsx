@@ -1,10 +1,15 @@
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { apiClient } from '@/lib/api';
+import useRepoStore from '@/store/useRepoStore';
 import GraphVisualization from '@/src/components/features/GraphVisualization';
 import Card from '@/src/components/ui/Card';
 import Button from '@/src/components/ui/Button';
 import Badge from '@/src/components/ui/Badge';
+import LoadingState from '@/src/components/ui/LoadingState';
+import ErrorState from '@/src/components/ui/ErrorState';
+import EmptyState from '@/src/components/ui/EmptyState';
 import './RepositoryGraphContent.css';
 
 // Simple icon components to replace lucide-react
@@ -20,58 +25,62 @@ const IconMaximize = () => <span>⛶</span>;
  * Displays the dependency graph of the repository
  */
 const RepositoryGraphContent = () => {
+  const currentRepo = useRepoStore((state) => state.currentRepo);
+  const [graphData, setGraphData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
   const [filterType, setFilterType] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Mock data - will be replaced with real API data
-  const mockNodes = useMemo(() => [
-    {
-      id: '1',
-      type: 'default',
-      data: { label: 'src/index.js', type: 'file' },
-      position: { x: 250, y: 50 },
-    },
-    {
-      id: '2',
-      type: 'default',
-      data: { label: 'src/App.jsx', type: 'component' },
-      position: { x: 100, y: 150 },
-    },
-    {
-      id: '3',
-      type: 'default',
-      data: { label: 'src/api/client.js', type: 'service' },
-      position: { x: 400, y: 150 },
-    },
-    {
-      id: '4',
-      type: 'default',
-      data: { label: 'src/utils/helpers.js', type: 'function' },
-      position: { x: 250, y: 250 },
-    },
-    {
-      id: '5',
-      type: 'default',
-      data: { label: 'src/components/Layout.jsx', type: 'component' },
-      position: { x: 100, y: 350 },
-    },
-    {
-      id: '6',
-      type: 'default',
-      data: { label: 'src/services/auth.js', type: 'service' },
-      position: { x: 400, y: 350 },
-    },
-  ], []);
+  useEffect(() => {
+    async function fetchGraphData() {
+      if (!currentRepo?.id) {
+        setLoading(false);
+        return;
+      }
 
-  const mockEdges = useMemo(() => [
-    { id: 'e1-2', source: '1', target: '2', label: 'imports' },
-    { id: 'e1-3', source: '1', target: '3', label: 'imports' },
-    { id: 'e2-4', source: '2', target: '4', label: 'uses' },
-    { id: 'e2-5', source: '2', target: '5', label: 'renders' },
-    { id: 'e3-6', source: '3', target: '6', label: 'depends on' },
-    { id: 'e4-6', source: '4', target: '6', label: 'calls' },
-  ], []);
+      try {
+        setLoading(true);
+        setError(null);
+        const result = await apiClient.getRepositoryGraph(currentRepo.id, 'dependency');
+        setGraphData(result);
+      } catch (err) {
+        console.error('Failed to fetch repository graph:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchGraphData();
+  }, [currentRepo?.id]);
+
+  // Transform API data to graph format
+  const { nodes, edges } = useMemo(() => {
+    if (!graphData?.nodes || !graphData?.edges) {
+      return { nodes: [], edges: [] };
+    }
+
+    const transformedNodes = graphData.nodes.map((node, index) => ({
+      id: node.id || `node-${index}`,
+      type: 'default',
+      data: {
+        label: node.name || node.label || node.id,
+        type: node.type || 'file'
+      },
+      position: node.position || { x: Math.random() * 500, y: Math.random() * 500 },
+    }));
+
+    const transformedEdges = graphData.edges.map((edge, index) => ({
+      id: edge.id || `edge-${index}`,
+      source: edge.source || edge.from,
+      target: edge.target || edge.to,
+      label: edge.label || edge.type || 'depends on',
+    }));
+
+    return { nodes: transformedNodes, edges: transformedEdges };
+  }, [graphData]);
 
   const handleNodeClick = useCallback((node) => {
     setSelectedNode(node);
@@ -83,13 +92,45 @@ const RepositoryGraphContent = () => {
   };
 
   const stats = useMemo(() => ({
-    totalNodes: mockNodes.length,
-    totalEdges: mockEdges.length,
-    files: mockNodes.filter(n => n.data.type === 'file').length,
-    components: mockNodes.filter(n => n.data.type === 'component').length,
-    services: mockNodes.filter(n => n.data.type === 'service').length,
-    functions: mockNodes.filter(n => n.data.type === 'function').length,
-  }), [mockNodes, mockEdges]);
+    totalNodes: nodes.length,
+    totalEdges: edges.length,
+    files: nodes.filter(n => n.data.type === 'file').length,
+    components: nodes.filter(n => n.data.type === 'component').length,
+    services: nodes.filter(n => n.data.type === 'service').length,
+    functions: nodes.filter(n => n.data.type === 'function').length,
+  }), [nodes, edges]);
+
+  if (loading) {
+    return (
+      <div className="repository-graph-content">
+        <LoadingState message="Loading repository graph..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="repository-graph-content">
+        <ErrorState message={error} />
+      </div>
+    );
+  }
+
+  if (!currentRepo) {
+    return (
+      <div className="repository-graph-content">
+        <EmptyState message="No repository selected. Please analyze a repository first." />
+      </div>
+    );
+  }
+
+  if (!nodes.length) {
+    return (
+      <div className="repository-graph-content">
+        <EmptyState message="No graph data available for this repository." />
+      </div>
+    );
+  }
 
   return (
     <div className="repository-graph-content">
@@ -185,8 +226,8 @@ const RepositoryGraphContent = () => {
           </div>
 
           <GraphVisualization
-            initialNodes={mockNodes}
-            initialEdges={mockEdges}
+            initialNodes={nodes}
+            initialEdges={edges}
             graphType="dependency"
             onNodeClick={handleNodeClick}
             height="600px"

@@ -1,10 +1,15 @@
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { apiClient } from '@/lib/api';
+import useRepoStore from '@/store/useRepoStore';
 import GraphVisualization from '@/src/components/features/GraphVisualization';
 import Card from '@/src/components/ui/Card';
 import Button from '@/src/components/ui/Button';
 import Badge from '@/src/components/ui/Badge';
+import LoadingState from '@/src/components/ui/LoadingState';
+import ErrorState from '@/src/components/ui/ErrorState';
+import EmptyState from '@/src/components/ui/EmptyState';
 import './ArchitectureContent.css';
 
 // Simple icon components to replace lucide-react
@@ -19,10 +24,89 @@ const IconBox = () => <span>◻</span>;
  * Displays the system architecture visualization
  */
 const ArchitectureContent = () => {
+  const currentRepo = useRepoStore((state) => state.currentRepo);
+  const [architectureData, setArchitectureData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
   const [viewMode, setViewMode] = useState('full'); // full, frontend, backend, infrastructure
 
-  // Mock architecture data - will be replaced with real API data
+  useEffect(() => {
+    async function fetchArchitecture() {
+      if (!currentRepo?.id) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        const result = await apiClient.getArchitecture(currentRepo.id);
+        setArchitectureData(result);
+      } catch (err) {
+        console.error('Failed to fetch architecture:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchArchitecture();
+  }, [currentRepo?.id]);
+
+  // Transform API data to graph format
+  const { nodes, edges } = useMemo(() => {
+    if (!architectureData?.layers) {
+      return { nodes: [], edges: [] };
+    }
+
+    const transformedNodes = [];
+    const transformedEdges = [];
+    let yOffset = 50;
+
+    // Convert layers object to array before using
+    const layersArray = Object.entries(architectureData.layers || {}).map(([name, components]) => ({
+      name,
+      components: components || []
+    }));
+
+    // Process each layer
+    layersArray.forEach((layer, layerIndex) => {
+      const layerComponents = layer.components || [];
+      layerComponents.forEach((component, compIndex) => {
+        transformedNodes.push({
+          id: component.id || `${layer.name}-${compIndex}`,
+          type: 'default',
+          data: {
+            label: component.name || component.label,
+            type: component.type || 'component',
+            layer: layer.name || 'unknown'
+          },
+          position: {
+            x: 100 + (compIndex * 150),
+            y: yOffset
+          }
+        });
+      });
+      yOffset += 150;
+    });
+
+    // Process relationships
+    if (architectureData.relationships) {
+      architectureData.relationships.forEach((rel, index) => {
+        transformedEdges.push({
+          id: rel.id || `edge-${index}`,
+          source: rel.source || rel.from,
+          target: rel.target || rel.to,
+          label: rel.label || rel.type || 'connects'
+        });
+      });
+    }
+
+    return { nodes: transformedNodes, edges: transformedEdges };
+  }, [architectureData]);
+
+  // Mock architecture data - fallback for development
   const mockNodes = useMemo(() => [
     // Frontend Layer
     {
@@ -114,12 +198,44 @@ const ArchitectureContent = () => {
   }, []);
 
   const stats = useMemo(() => ({
-    totalComponents: mockNodes.length,
-    frontend: mockNodes.filter(n => n.data.layer === 'frontend').length,
-    backend: mockNodes.filter(n => n.data.layer === 'backend').length,
-    data: mockNodes.filter(n => n.data.layer === 'data').length,
-    connections: mockEdges.length,
-  }), [mockNodes, mockEdges]);
+    totalComponents: nodes.length,
+    frontend: nodes.filter(n => n.data.layer === 'frontend').length,
+    backend: nodes.filter(n => n.data.layer === 'backend').length,
+    data: nodes.filter(n => n.data.layer === 'data').length,
+    connections: edges.length,
+  }), [nodes, edges]);
+
+  if (loading) {
+    return (
+      <div className="architecture-content">
+        <LoadingState message="Loading architecture..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="architecture-content">
+        <ErrorState message={error} />
+      </div>
+    );
+  }
+
+  if (!currentRepo) {
+    return (
+      <div className="architecture-content">
+        <EmptyState message="No repository selected. Please analyze a repository first." />
+      </div>
+    );
+  }
+
+  if (!nodes.length) {
+    return (
+      <div className="architecture-content">
+        <EmptyState message="No architecture data available for this repository." />
+      </div>
+    );
+  }
 
   const getLayerIcon = (layer) => {
     switch (layer) {
@@ -237,8 +353,8 @@ const ArchitectureContent = () => {
         {/* Architecture Visualization */}
         <Card className="arch-card">
           <GraphVisualization
-            initialNodes={mockNodes}
-            initialEdges={mockEdges}
+            initialNodes={nodes}
+            initialEdges={edges}
             graphType="architecture"
             onNodeClick={handleNodeClick}
             height="700px"

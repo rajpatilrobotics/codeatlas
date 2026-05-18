@@ -18,6 +18,8 @@ import {
   getDependencyChain
 } from './relationshipExtractor.js';
 
+import logger from '../../utils/logger.js';
+
 /**
  * Main extraction service
  * Orchestrates entity and relationship extraction
@@ -31,6 +33,10 @@ class ExtractionService {
    */
   async extract(parseResults, onProgress = null) {
     try {
+      logger.info('[ExtractionService] Starting extraction process', {
+        parseResultsCount: parseResults?.length || 0
+      });
+
       // Step 1: Extract entities
       if (onProgress) {
         onProgress({
@@ -43,6 +49,18 @@ class ExtractionService {
 
       const entities = extractEntities(parseResults);
       const { entityMap } = normalizeEntities(entities);
+
+      logger.debug('[ExtractionService] Entities extracted and normalized', {
+        entityStructure: {
+          files: entities.files?.length || 0,
+          functions: entities.functions?.length || 0,
+          classes: entities.classes?.length || 0,
+          variables: entities.variables?.length || 0,
+          imports: entities.imports?.length || 0,
+          exports: entities.exports?.length || 0
+        },
+        entityMapSize: entityMap.size
+      });
 
       if (onProgress) {
         onProgress({
@@ -99,9 +117,36 @@ class ExtractionService {
       const entityStats = getEntityStatistics(entities);
       const relationshipStats = getRelationshipStatistics(relationships);
 
-      return {
+      // CRITICAL: Flatten entities for database persistence
+      // The entities object has structure: { files: [], functions: [], classes: [], ... }
+      // But we need a flat array for the database
+      const flatEntities = [
+        ...entities.files,
+        ...entities.functions,
+        ...entities.classes,
+        ...entities.variables,
+        ...entities.imports,
+        ...entities.exports
+      ];
+
+      logger.info('[ExtractionService] Extraction complete - preparing result', {
+        entitiesStructure: {
+          files: entities.files?.length || 0,
+          functions: entities.functions?.length || 0,
+          classes: entities.classes?.length || 0,
+          variables: entities.variables?.length || 0,
+          imports: entities.imports?.length || 0,
+          exports: entities.exports?.length || 0
+        },
+        flatEntitiesCount: flatEntities.length,
+        relationshipsCount: relationships.length,
+        circularDependenciesCount: circularDeps.length
+      });
+
+      const result = {
         success: true,
-        entities,
+        entities: flatEntities, // Flat array for database
+        entitiesGrouped: entities, // Grouped structure for analysis
         entityMap,
         relationships,
         statistics: {
@@ -115,7 +160,22 @@ class ExtractionService {
           importedEntities: getImportedEntities(entities)
         }
       };
+
+      logger.info('[ExtractionService] Result prepared successfully', {
+        flatEntitiesForDB: result.entities.length,
+        relationshipsForDB: result.relationships.length,
+        hasGroupedEntities: !!result.entitiesGrouped,
+        hasEntityMap: !!result.entityMap
+      });
+
+      return result;
     } catch (error) {
+      logger.error('[ExtractionService] Extraction failed', {
+        error: error.message,
+        stack: error.stack,
+        parseResultsCount: parseResults?.length || 0
+      });
+
       return {
         success: false,
         error: {
