@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { apiClient } from '@/lib/api';
-import useRepoStore from '@/store/useRepoStore';
+import { useActiveRepo } from '@/hooks/useActiveRepo';
 import GraphVisualization from '@/src/components/features/GraphVisualization';
 import Card from '@/src/components/ui/Card';
 import Button from '@/src/components/ui/Button';
@@ -24,7 +24,7 @@ const IconGitCommit = () => <span>⚡</span>;
  * Displays code activity and complexity heatmap visualization
  */
 const HeatmapContent = () => {
-  const currentRepo = useRepoStore((state) => state.currentRepo);
+  const { repoId, loading: repoLoading } = useActiveRepo();
   const [heatmapData, setHeatmapData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -34,7 +34,8 @@ const HeatmapContent = () => {
 
   useEffect(() => {
     async function fetchHeatmap() {
-      if (!currentRepo?.id) {
+      if (repoLoading) return;
+      if (!repoId) {
         setLoading(false);
         return;
       }
@@ -42,7 +43,7 @@ const HeatmapContent = () => {
       try {
         setLoading(true);
         setError(null);
-        const result = await apiClient.getComplexityHeatmap(currentRepo.id);
+        const result = await apiClient.getComplexityHeatmap(repoId);
         setHeatmapData(result);
       } catch (err) {
         console.error('Failed to fetch heatmap:', err);
@@ -53,7 +54,7 @@ const HeatmapContent = () => {
     }
 
     fetchHeatmap();
-  }, [currentRepo?.id]);
+  }, [repoId, repoLoading]);
 
   // Transform API data to graph format
   const { nodes, edges } = useMemo(() => {
@@ -245,7 +246,7 @@ const HeatmapContent = () => {
     };
   }, [nodes, metricType]);
 
-  if (loading) {
+  if (repoLoading || loading) {
     return (
       <div className="heatmap-content">
         <LoadingState message="Loading heatmap..." />
@@ -261,7 +262,7 @@ const HeatmapContent = () => {
     );
   }
 
-  if (!currentRepo) {
+  if (!repoId) {
     return (
       <div className="heatmap-content">
         <EmptyState message="No repository selected. Please analyze a repository first." />

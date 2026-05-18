@@ -1,29 +1,24 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
+import { useEffect, useState } from 'react'
 import { apiClient } from '@/lib/api'
-import useRepoStore from '@/store/useRepoStore'
+import { useActiveRepo } from '@/hooks/useActiveRepo'
 import LoadingState from '@/src/components/ui/LoadingState'
 import ErrorState from '@/src/components/ui/ErrorState'
 
-/**
- * Dashboard - Repository Mission Control
- * Main intelligence hub for CodeAtlas
- */
-
 function DashboardContent() {
-  const searchParams = useSearchParams()
-  const currentRepo = useRepoStore((state) => state.currentRepo)
-  const setCurrentRepo = useRepoStore((state) => state.setCurrentRepo)
+  const { repoId, currentRepo, loading: repoLoading, hasRepo, error: repoError } = useActiveRepo()
   const [summary, setSummary] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Get repoId from URL params or localStorage
-  const repoIdFromUrl = searchParams.get('repoId')
-  const repoIdFromStorage = typeof window !== 'undefined' ? localStorage.getItem('currentRepoId') : null
-  const repoId = repoIdFromUrl || repoIdFromStorage || currentRepo?.id
+  const summaryHref = repoId ? `/dashboard/summary?repoId=${encodeURIComponent(repoId)}` : '/dashboard/summary'
+  const architectureHref = repoId ? `/dashboard/architecture?repoId=${encodeURIComponent(repoId)}` : '/dashboard/architecture'
+  const graphHref = repoId ? `/dashboard/repository-graph?repoId=${encodeURIComponent(repoId)}` : '/dashboard/repository-graph'
+  const blastHref = repoId ? `/dashboard/blast-radius?repoId=${encodeURIComponent(repoId)}` : '/dashboard/blast-radius'
+  const securityHref = repoId ? `/dashboard/security?repoId=${encodeURIComponent(repoId)}` : '/dashboard/security'
+  const chatHref = repoId ? `/dashboard/chat?repoId=${encodeURIComponent(repoId)}` : '/dashboard/chat'
 
   useEffect(() => {
     async function fetchSummary() {
@@ -35,18 +30,6 @@ function DashboardContent() {
       try {
         setLoading(true)
         setError(null)
-        
-        // Fetch repository details and set in store if not already set
-        if (!currentRepo || currentRepo.id !== repoId) {
-          const repoDetails = await apiClient.getRepositoryStatus(repoId)
-          setCurrentRepo({
-            id: repoId,
-            name: repoDetails.name,
-            url: repoDetails.url,
-            status: repoDetails.status
-          })
-        }
-        
         const result = await apiClient.getRepositorySummary(repoId)
         setSummary(result)
       } catch (err) {
@@ -57,10 +40,12 @@ function DashboardContent() {
       }
     }
 
-    fetchSummary()
-  }, [repoId, currentRepo, setCurrentRepo])
+    if (!repoLoading) {
+      fetchSummary()
+    }
+  }, [repoId, repoLoading])
 
-  if (loading) {
+  if (repoLoading || loading) {
     return (
       <div className="p-8">
         <LoadingState message="Loading dashboard..." />
@@ -68,18 +53,17 @@ function DashboardContent() {
     )
   }
 
-  if (error) {
+  if (error || repoError) {
     return (
       <div className="p-8">
-        <ErrorState message={error} />
+        <ErrorState message={error || repoError} />
       </div>
     )
   }
 
-  if (!currentRepo) {
+  if (!hasRepo || !repoId) {
     return (
       <div className="p-8">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-semibold mb-2" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
             Dashboard
@@ -88,23 +72,25 @@ function DashboardContent() {
             Repository intelligence and mission control
           </p>
         </div>
-
-        {/* Empty State */}
-        <div className="mb-6 p-6 rounded-lg text-center" style={{
-          backgroundColor: '#111111',
-          border: '1px solid rgba(255, 255, 255, 0.06)'
-        }}>
+        <div
+          className="mb-6 p-6 rounded-lg text-center"
+          style={{ backgroundColor: '#111111', border: '1px solid rgba(255, 255, 255, 0.06)' }}
+        >
           <div className="text-lg mb-2" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
             No Repository Selected
           </div>
           <div className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.65)' }}>
-            Please analyze a repository from the landing page to view the dashboard.
+            <a href="/" className="text-cyan-400 underline">
+              Analyze a repository
+            </a>{' '}
+            from the landing page to get started.
           </div>
         </div>
       </div>
     )
   }
 
+  const displayRepo = currentRepo?.name ? currentRepo : summary?.repository || { id: repoId }
   const stats =
     summary?.stats ||
     (summary?.statistics
@@ -115,227 +101,160 @@ function DashboardContent() {
           totalDependencies: summary.statistics.relationships,
         }
       : {})
-  const repoName = currentRepo.name || currentRepo.url?.split('/').pop() || 'Unknown'
+  const repoName = displayRepo.name || displayRepo.url?.split('/').pop() || 'Repository'
   const lastAnalyzed = summary?.repository?.analyzedAt
     ? new Date(summary.repository.analyzedAt).toLocaleDateString()
     : '—'
 
   return (
     <div className="p-8">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-semibold mb-2" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
           Dashboard
         </h1>
         <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.65)' }}>
-          Repository intelligence and mission control
+          {summary?.repository?.url || displayRepo.url || 'Repository intelligence'}
         </p>
       </div>
 
-      {/* Repository Overview Card */}
-      <div className="mb-6 p-6 rounded-lg" style={{
-        backgroundColor: '#111111',
-        border: '1px solid rgba(255, 255, 255, 0.06)'
-      }}>
+      <div
+        className="mb-6 p-6 rounded-lg"
+        style={{ backgroundColor: '#111111', border: '1px solid rgba(255, 255, 255, 0.06)' }}
+      >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
             Repository Overview
           </h2>
-          <span className="text-xs px-2 py-1 rounded" style={{
-            backgroundColor: 'rgba(0, 229, 255, 0.1)',
-            color: 'rgba(0, 229, 255, 0.8)'
-          }}>
-            {currentRepo.status || 'Ready'}
+          <span
+            className="text-xs px-2 py-1 rounded"
+            style={{ backgroundColor: 'rgba(0, 229, 255, 0.1)', color: 'rgba(0, 229, 255, 0.8)' }}
+          >
+            {displayRepo.status || summary?.repository?.status || 'Ready'}
           </span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <div className="text-xs mb-1" style={{ color: 'rgba(255, 255, 255, 0.45)' }}>Repository</div>
-            <div className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>{repoName}</div>
+            <div className="text-xs mb-1" style={{ color: 'rgba(255, 255, 255, 0.45)' }}>
+              Repository
+            </div>
+            <div className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
+              {repoName}
+            </div>
           </div>
           <div>
-            <div className="text-xs mb-1" style={{ color: 'rgba(255, 255, 255, 0.45)' }}>Last Analyzed</div>
-            <div className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>{lastAnalyzed}</div>
+            <div className="text-xs mb-1" style={{ color: 'rgba(255, 255, 255, 0.45)' }}>
+              Last Analyzed
+            </div>
+            <div className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
+              {lastAnalyzed}
+            </div>
           </div>
           <div>
-            <div className="text-xs mb-1" style={{ color: 'rgba(255, 255, 255, 0.45)' }}>Status</div>
+            <div className="text-xs mb-1" style={{ color: 'rgba(255, 255, 255, 0.45)' }}>
+              Status
+            </div>
             <div className="text-sm" style={{ color: 'rgba(0, 229, 255, 0.8)' }}>
-              {currentRepo.status === 'completed' ? 'Analysis Complete' : 'Processing'}
+              {(displayRepo.status || summary?.repository?.status) === 'completed'
+                ? 'Analysis Complete'
+                : 'Processing'}
             </div>
           </div>
         </div>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="p-4 rounded-lg" style={{
-          backgroundColor: '#111111',
-          border: '1px solid rgba(255, 255, 255, 0.06)'
-        }}>
-          <div className="text-xs mb-2" style={{ color: 'rgba(255, 255, 255, 0.45)' }}>Total Files</div>
-          <div className="text-2xl font-semibold" style={{ color: 'rgba(0, 229, 255, 0.8)' }}>
-            {stats.totalFiles || 0}
+        {[
+          ['Total Files', stats.totalFiles || 0],
+          ['Dependencies', stats.totalDependencies || 0],
+          ['Entities', stats.totalEntities || 0],
+          ['Relationships', stats.totalRelationships || 0],
+        ].map(([label, value]) => (
+          <div
+            key={label}
+            className="p-4 rounded-lg"
+            style={{ backgroundColor: '#111111', border: '1px solid rgba(255, 255, 255, 0.06)' }}
+          >
+            <div className="text-xs mb-2" style={{ color: 'rgba(255, 255, 255, 0.45)' }}>
+              {label}
+            </div>
+            <div className="text-2xl font-semibold" style={{ color: 'rgba(0, 229, 255, 0.8)' }}>
+              {value}
+            </div>
           </div>
-        </div>
-        <div className="p-4 rounded-lg" style={{
-          backgroundColor: '#111111',
-          border: '1px solid rgba(255, 255, 255, 0.06)'
-        }}>
-          <div className="text-xs mb-2" style={{ color: 'rgba(255, 255, 255, 0.45)' }}>Dependencies</div>
-          <div className="text-2xl font-semibold" style={{ color: 'rgba(0, 229, 255, 0.8)' }}>
-            {stats.totalDependencies || 0}
-          </div>
-        </div>
-        <div className="p-4 rounded-lg" style={{
-          backgroundColor: '#111111',
-          border: '1px solid rgba(255, 255, 255, 0.06)'
-        }}>
-          <div className="text-xs mb-2" style={{ color: 'rgba(255, 255, 255, 0.45)' }}>Entities</div>
-          <div className="text-2xl font-semibold" style={{ color: 'rgba(100, 150, 200, 0.7)' }}>
-            {stats.totalEntities || 0}
-          </div>
-        </div>
-        <div className="p-4 rounded-lg" style={{
-          backgroundColor: '#111111',
-          border: '1px solid rgba(255, 255, 255, 0.06)'
-        }}>
-          <div className="text-xs mb-2" style={{ color: 'rgba(255, 255, 255, 0.45)' }}>Relationships</div>
-          <div className="text-2xl font-semibold" style={{ color: 'rgba(255, 193, 7, 0.8)' }}>
-            {stats.totalRelationships || 0}
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Quick Navigation */}
+      {summary?.summary && (
+        <div
+          className="mb-8 p-6 rounded-lg"
+          style={{ backgroundColor: '#111111', border: '1px solid rgba(255, 255, 255, 0.06)' }}
+        >
+          <h2 className="text-lg font-semibold mb-3" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
+            Analysis Summary
+          </h2>
+          <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.65)' }}>
+            {summary.summary}
+          </p>
+        </div>
+      )}
+
       <div className="mb-8">
         <h2 className="text-lg font-semibold mb-4" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
           Quick Navigation
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <a
-            href="/dashboard/summary"
-            className="p-4 rounded-lg transition-colors"
-            style={{
-              backgroundColor: '#111111',
-              border: '1px solid rgba(255, 255, 255, 0.06)'
-            }}
-          >
-            <div className="text-sm font-medium mb-1" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
-              Summary
-            </div>
-            <div className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.45)' }}>
-              Repository overview and insights
-            </div>
-          </a>
-          <a
-            href="/dashboard/architecture"
-            className="p-4 rounded-lg transition-colors"
-            style={{
-              backgroundColor: '#111111',
-              border: '1px solid rgba(255, 255, 255, 0.06)'
-            }}
-          >
-            <div className="text-sm font-medium mb-1" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
-              Architecture
-            </div>
-            <div className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.45)' }}>
-              System architecture visualization
-            </div>
-          </a>
-          <a
-            href="/dashboard/repository-graph"
-            className="p-4 rounded-lg transition-colors"
-            style={{
-              backgroundColor: '#111111',
-              border: '1px solid rgba(255, 255, 255, 0.06)'
-            }}
-          >
-            <div className="text-sm font-medium mb-1" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
-              Repository Graph
-            </div>
-            <div className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.45)' }}>
-              Dependency graph analysis
-            </div>
-          </a>
-          <a
-            href="/dashboard/blast-radius"
-            className="p-4 rounded-lg transition-colors"
-            style={{
-              backgroundColor: '#111111',
-              border: '1px solid rgba(255, 255, 255, 0.06)'
-            }}
-          >
-            <div className="text-sm font-medium mb-1" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
-              Blast Radius
-            </div>
-            <div className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.45)' }}>
-              Impact analysis for changes
-            </div>
-          </a>
-          <a
-            href="/dashboard/security"
-            className="p-4 rounded-lg transition-colors"
-            style={{
-              backgroundColor: '#111111',
-              border: '1px solid rgba(255, 255, 255, 0.06)'
-            }}
-          >
-            <div className="text-sm font-medium mb-1" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
-              Security Scanner
-            </div>
-            <div className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.45)' }}>
-              Security vulnerabilities scan
-            </div>
-          </a>
-          <a
-            href="/dashboard/chat"
-            className="p-4 rounded-lg transition-colors"
-            style={{
-              backgroundColor: '#111111',
-              border: '1px solid rgba(255, 255, 255, 0.06)'
-            }}
-          >
-            <div className="text-sm font-medium mb-1" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
-              AI Chat
-            </div>
-            <div className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.45)' }}>
-              Ask questions about your code
-            </div>
-          </a>
+          {[
+            [summaryHref, 'Summary', 'Repository overview and insights'],
+            [architectureHref, 'Architecture', 'System architecture visualization'],
+            [graphHref, 'Repository Graph', 'Dependency graph analysis'],
+            [blastHref, 'Blast Radius', 'Impact analysis for changes'],
+            [securityHref, 'Security Scanner', 'Security vulnerabilities scan'],
+            [chatHref, 'AI Chat', 'Ask questions about your code'],
+          ].map(([href, title, desc]) => (
+            <a
+              key={href}
+              href={href}
+              className="p-4 rounded-lg transition-colors"
+              style={{ backgroundColor: '#111111', border: '1px solid rgba(255, 255, 255, 0.06)' }}
+            >
+              <div className="text-sm font-medium mb-1" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
+                {title}
+              </div>
+              <div className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.45)' }}>
+                {desc}
+              </div>
+            </a>
+          ))}
         </div>
       </div>
 
-      {/* AI Recommendations */}
       <div>
         <h2 className="text-lg font-semibold mb-4" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
           AI Recommendations
         </h2>
-        <div className="p-6 rounded-lg" style={{
-          backgroundColor: '#111111',
-          border: '1px solid rgba(255, 255, 255, 0.06)'
-        }}>
-          {summary?.insights && summary.insights.length > 0 ? (
+        <div
+          className="p-6 rounded-lg"
+          style={{ backgroundColor: '#111111', border: '1px solid rgba(255, 255, 255, 0.06)' }}
+        >
+          {summary?.insights?.length > 0 ? (
             <div className="space-y-4">
               {summary.insights.map((insight, index) => (
                 <div key={index} className="pb-4 border-b border-gray-800 last:border-0">
                   <div className="text-sm mb-2" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
-                    {insight.title || insight}
+                    {insight.title}
                   </div>
-                  {insight.description && (
-                    <div className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.65)' }}>
-                      {insight.description}
-                    </div>
-                  )}
+                  <div className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.65)' }}>
+                    {insight.description}
+                  </div>
                 </div>
               ))}
             </div>
           ) : (
             <div className="text-center py-8">
               <div className="text-sm mb-2" style={{ color: 'rgba(255, 255, 255, 0.65)' }}>
-                No AI insights available yet
-              </div>
-              <div className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.45)' }}>
-                AI-powered insights will appear here after analysis completes
+                {stats.totalFiles === 0
+                  ? 'No analysis data yet — re-run analyze from the home page.'
+                  : 'Insights loading… refresh if this persists.'}
               </div>
             </div>
           )}
@@ -347,14 +266,14 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={
-      <div className="p-8">
-        <LoadingState message="Loading dashboard..." />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="p-8">
+          <LoadingState message="Loading dashboard..." />
+        </div>
+      }
+    >
       <DashboardContent />
     </Suspense>
   )
 }
-
-// Made with Bob

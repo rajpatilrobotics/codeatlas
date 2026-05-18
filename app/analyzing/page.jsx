@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { apiClient } from '@/lib/api'
+import useRepoStore from '@/store/useRepoStore'
 
 const PENDING_REPO_KEY = 'codeatlas_pendingRepo'
 
@@ -41,6 +42,7 @@ function AnalyzingContent() {
   const [currentStep, setCurrentStep] = useState(0)
   const [error, setError] = useState(null)
   const startedRef = useRef(false)
+  const setCurrentRepo = useRepoStore((state) => state.setCurrentRepo)
 
   // Wait a tick so useSearchParams / URL are stable (avoids instant bounce to "/")
   useEffect(() => {
@@ -67,9 +69,33 @@ function AnalyzingContent() {
 
     let pollInterval
 
+    function goToDashboard(repositoryId, statusPayload = {}) {
+      try {
+        localStorage.setItem('currentRepoId', repositoryId)
+      } catch {
+        /* ignore */
+      }
+      setCurrentRepo({
+        id: repositoryId,
+        name: statusPayload.name,
+        owner: statusPayload.owner,
+        url: statusPayload.url || resolvedRepoUrl,
+        status: statusPayload.status || 'completed',
+      })
+      router.push(`/dashboard?repoId=${repositoryId}`)
+    }
+
     async function startAnalysis() {
       try {
         const response = await apiClient.analyzeRepository(resolvedRepoUrl)
+
+        if (response.status === 'completed' && (response.progress ?? 0) >= 100) {
+          const status = await apiClient.getRepositoryStatus(response.repositoryId)
+          setProgress(100)
+          setCurrentStep(STEPS.length - 1)
+          window.setTimeout(() => goToDashboard(response.repositoryId, status), 800)
+          return
+        }
 
         pollInterval = window.setInterval(async () => {
           try {
@@ -90,14 +116,7 @@ function AnalyzingContent() {
             if (status.status === 'completed' || currentProgress >= 100) {
               window.clearInterval(pollInterval)
               pollInterval = undefined
-              try {
-                localStorage.setItem('currentRepoId', response.repositoryId)
-              } catch {
-                /* ignore */
-              }
-              window.setTimeout(() => {
-                router.push(`/dashboard?repoId=${response.repositoryId}`)
-              }, 1000)
+              window.setTimeout(() => goToDashboard(response.repositoryId, status), 800)
             }
           } catch (err) {
             console.error('Error polling status:', err)
@@ -114,7 +133,7 @@ function AnalyzingContent() {
     return () => {
       if (pollInterval) window.clearInterval(pollInterval)
     }
-  }, [resolvedRepoUrl, router])
+  }, [resolvedRepoUrl, router, setCurrentRepo])
 
   if (resolvedRepoUrl === undefined) {
     return (

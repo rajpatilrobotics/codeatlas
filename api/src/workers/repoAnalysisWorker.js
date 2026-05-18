@@ -1,5 +1,5 @@
 import { Worker } from 'bullmq';
-import Redis from 'ioredis';
+import { createRedisConnection } from '../config/redis.js';
 import crypto from 'crypto';
 import logger from '../utils/logger.js';
 
@@ -29,21 +29,7 @@ logger.info('✅ WORKER MODULE: All imports complete, creating worker...');
  * Master orchestration worker that coordinates the entire analysis pipeline
  */
 
-const redisConnection = process.env.UPSTASH_REDIS_URL
-  ? new Redis(process.env.UPSTASH_REDIS_URL, {
-      maxRetriesPerRequest: null,
-      enableReadyCheck: false,
-      tls: {
-        rejectUnauthorized: false
-      }
-    })
-  : new Redis({
-      host: process.env.REDIS_HOST || 'localhost',
-      port: process.env.REDIS_PORT || 6379,
-      password: process.env.REDIS_PASSWORD,
-      maxRetriesPerRequest: null,
-      enableReadyCheck: false
-    });
+const redisConnection = createRedisConnection();
 
 const worker = new Worker(
   'repo-analysis',
@@ -421,8 +407,9 @@ const worker = new Worker(
             logger.info('Entities saved successfully', { count: entitiesSaved });
           }
 
-          if (result.relationships?.length > 0 && entitiesForDb.length > 0) {
-            const entityIds = new Set(entitiesForDb.map((e) => e.id));
+          if (result.relationships?.length > 0) {
+            const persistedEntities = await db.getEntitiesByRepository(repositoryId);
+            const entityIds = new Set(persistedEntities.map((e) => e.id));
             const relationshipsForDb = [];
 
             result.relationships.forEach((rel, index) => {
@@ -444,12 +431,19 @@ const worker = new Worker(
             });
 
             if (relationshipsForDb.length > 0) {
-              relationshipsSaved = await db.createRelationships(relationshipsForDb);
-              logger.info('Relationships saved successfully', {
-                saved: relationshipsSaved,
-                total: result.relationships.length,
-                skipped: result.relationships.length - relationshipsForDb.length,
-              });
+              try {
+                relationshipsSaved = await db.createRelationships(relationshipsForDb);
+                logger.info('Relationships saved successfully', {
+                  saved: relationshipsSaved,
+                  total: result.relationships.length,
+                  skipped: result.relationships.length - relationshipsForDb.length,
+                });
+              } catch (relError) {
+                logger.warn('Relationship batch save failed — continuing with files/entities', {
+                  error: relError.message,
+                  attempted: relationshipsForDb.length,
+                });
+              }
             }
           }
 

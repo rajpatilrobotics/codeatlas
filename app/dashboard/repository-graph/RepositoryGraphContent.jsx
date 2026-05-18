@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { apiClient } from '@/lib/api';
-import useRepoStore from '@/store/useRepoStore';
+import { useActiveRepo } from '@/hooks/useActiveRepo';
 import GraphVisualization from '@/src/components/features/GraphVisualization';
 import Card from '@/src/components/ui/Card';
 import Button from '@/src/components/ui/Button';
@@ -25,7 +25,7 @@ const IconMaximize = () => <span>⛶</span>;
  * Displays the dependency graph of the repository
  */
 const RepositoryGraphContent = () => {
-  const currentRepo = useRepoStore((state) => state.currentRepo);
+  const { repoId, loading: repoLoading } = useActiveRepo();
   const [graphData, setGraphData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -35,7 +35,8 @@ const RepositoryGraphContent = () => {
 
   useEffect(() => {
     async function fetchGraphData() {
-      if (!currentRepo?.id) {
+      if (repoLoading) return;
+      if (!repoId) {
         setLoading(false);
         return;
       }
@@ -43,7 +44,7 @@ const RepositoryGraphContent = () => {
       try {
         setLoading(true);
         setError(null);
-        const result = await apiClient.getRepositoryGraph(currentRepo.id, 'dependency');
+        const result = await apiClient.getRepositoryGraph(repoId, 'dependency');
         setGraphData(result);
       } catch (err) {
         console.error('Failed to fetch repository graph:', err);
@@ -54,25 +55,32 @@ const RepositoryGraphContent = () => {
     }
 
     fetchGraphData();
-  }, [currentRepo?.id]);
+  }, [repoId, repoLoading]);
 
-  // Transform API data to graph format
+  // Transform API data to graph format (API nests under graph: { nodes, edges })
   const { nodes, edges } = useMemo(() => {
-    if (!graphData?.nodes || !graphData?.edges) {
+    const rawNodes = graphData?.graph?.nodes || graphData?.nodes || [];
+    const rawEdges = graphData?.graph?.edges || graphData?.edges || [];
+
+    if (!rawNodes.length) {
       return { nodes: [], edges: [] };
     }
 
-    const transformedNodes = graphData.nodes.map((node, index) => ({
+    const transformedNodes = rawNodes.map((node, index) => ({
       id: node.id || `node-${index}`,
       type: 'default',
       data: {
-        label: node.name || node.label || node.id,
-        type: node.type || 'file'
+        label: node.data?.label || node.name || node.label || node.id,
+        type: node.data?.type || node.type || 'file',
+        path: node.data?.path,
       },
-      position: node.position || { x: Math.random() * 500, y: Math.random() * 500 },
+      position: node.position || {
+        x: 80 + (index % 10) * 140,
+        y: 60 + Math.floor(index / 10) * 100,
+      },
     }));
 
-    const transformedEdges = graphData.edges.map((edge, index) => ({
+    const transformedEdges = rawEdges.map((edge, index) => ({
       id: edge.id || `edge-${index}`,
       source: edge.source || edge.from,
       target: edge.target || edge.to,
@@ -100,7 +108,7 @@ const RepositoryGraphContent = () => {
     functions: nodes.filter(n => n.data.type === 'function').length,
   }), [nodes, edges]);
 
-  if (loading) {
+  if (repoLoading || loading) {
     return (
       <div className="repository-graph-content">
         <LoadingState message="Loading repository graph..." />
@@ -116,7 +124,7 @@ const RepositoryGraphContent = () => {
     );
   }
 
-  if (!currentRepo) {
+  if (!repoId) {
     return (
       <div className="repository-graph-content">
         <EmptyState message="No repository selected. Please analyze a repository first." />

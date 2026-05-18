@@ -14,8 +14,17 @@ const rootDir = path.join(apiDir, '..');
 
 dotenv.config({ path: path.join(rootDir, '.env') });
 dotenv.config({ path: path.join(rootDir, '.env.local') });
-dotenv.config({ path: path.join(apiDir, '.env') });
+// api/.env must override root (e.g. PORT=3001 vs Next PORT=3000)
+dotenv.config({ path: path.join(apiDir, '.env'), override: true });
 
 if (!process.env.HUGGINGFACE_API_KEY && process.env.HUGGINGFACE_API_TOKEN) {
   process.env.HUGGINGFACE_API_KEY = process.env.HUGGINGFACE_API_TOKEN;
+}
+
+// Root .env PORT=3000 is for Next.js; API always uses 3001 unless API_PORT is set
+const apiPort = process.env.API_PORT || process.env.PORT;
+if (!apiPort || apiPort === '3000') {
+  process.env.PORT = '3001';
+} else {
+  process.env.PORT = apiPort;
 }

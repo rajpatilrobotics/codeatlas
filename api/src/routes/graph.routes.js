@@ -11,6 +11,7 @@ const router = express.Router();
 router.get('/heatmap/:repositoryId', graphController.getGraphHeatmap);
 router.get('/blast-radius/:repositoryId', graphController.getBlastRadius);
 router.get('/architecture/:repositoryId', graphController.getArchitectureLayers);
+router.get('/entities/:repositoryId', graphController.listGraphEntities);
 router.get('/dependencies/:repositoryId/:entityId', graphController.getEntityDependencies);
 router.get('/circular/:repositoryId', graphController.getCircularDependencies);
 

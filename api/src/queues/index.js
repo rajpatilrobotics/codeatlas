@@ -1,23 +1,7 @@
 import { Queue } from 'bullmq';
-import Redis from 'ioredis';
+import { createRedisConnection } from '../config/redis.js';
 
-// Redis connection configuration
-// Use UPSTASH_REDIS_URL if available, otherwise fall back to individual params
-const redisConnection = process.env.UPSTASH_REDIS_URL
-  ? new Redis(process.env.UPSTASH_REDIS_URL, {
-      maxRetriesPerRequest: null,
-      enableReadyCheck: false,
-      tls: {
-        rejectUnauthorized: false
-      }
-    })
-  : new Redis({
-      host: process.env.REDIS_HOST || 'localhost',
-      port: process.env.REDIS_PORT || 6379,
-      password: process.env.REDIS_PASSWORD,
-      maxRetriesPerRequest: null,
-      enableReadyCheck: false
-    });
+const redisConnection = createRedisConnection();
 
 // Create queues
 const repoAnalysisQueue = new Queue('repo-analysis', {

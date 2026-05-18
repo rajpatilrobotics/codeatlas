@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { apiClient } from '@/lib/api';
-import useRepoStore from '@/store/useRepoStore';
+import { useActiveRepo } from '@/hooks/useActiveRepo';
 import GraphVisualization from '@/src/components/features/GraphVisualization';
 import Card from '@/src/components/ui/Card';
 import Button from '@/src/components/ui/Button';
@@ -24,17 +24,45 @@ const IconTarget = () => <span>🎯</span>;
  * Displays impact analysis and blast radius visualization
  */
 const BlastRadiusContent = () => {
-  const currentRepo = useRepoStore((state) => state.currentRepo);
+  const { repoId, loading: repoLoading } = useActiveRepo();
   const [blastRadiusData, setBlastRadiusData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
   const [targetEntityId, setTargetEntityId] = useState('');
-  const [targetFile, setTargetFile] = useState('');
+  const [entityOptions, setEntityOptions] = useState([]);
   const [riskFilter, setRiskFilter] = useState('all');
 
+  useEffect(() => {
+    if (!repoId || repoLoading) return;
+
+    let cancelled = false;
+
+    ;(async () => {
+      try {
+        const { entities } = await apiClient.listGraphEntities(repoId);
+        if (cancelled) return;
+        const list = entities || [];
+        setEntityOptions(list);
+        if (list.length && !targetEntityId) {
+          const preferred =
+            list.find((e) => e.type === 'function') ||
+            list.find((e) => e.type === 'class') ||
+            list[0];
+          if (preferred?.id) setTargetEntityId(preferred.id);
+        }
+      } catch (err) {
+        console.error('Failed to load entities:', err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [repoId, repoLoading]);
+
   const handleAnalyze = useCallback(async () => {
-    if (!currentRepo?.id || !targetEntityId) {
+    if (!repoId || !targetEntityId) {
       setError('Please enter an entity ID to analyze');
       return;
     }
@@ -42,7 +70,7 @@ const BlastRadiusContent = () => {
     try {
       setLoading(true);
       setError(null);
-      const result = await apiClient.getBlastRadius(currentRepo.id, targetEntityId);
+      const result = await apiClient.getBlastRadius(repoId, targetEntityId);
       setBlastRadiusData(result);
     } catch (err) {
       console.error('Failed to fetch blast radius:', err);
@@ -50,23 +78,29 @@ const BlastRadiusContent = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentRepo?.id, targetEntityId]);
+  }, [repoId, targetEntityId]);
+
+  useEffect(() => {
+    if (!repoId || !targetEntityId || repoLoading) return;
+    handleAnalyze();
+  }, [repoId, targetEntityId, repoLoading, handleAnalyze]);
 
   // Transform API data to graph format
   const { nodes, edges } = useMemo(() => {
-    if (!blastRadiusData?.impactedNodes) {
+    const rawNodes = blastRadiusData?.impactedNodes || [];
+    if (!rawNodes.length) {
       return { nodes: [], edges: [] };
     }
 
-    const transformedNodes = blastRadiusData.impactedNodes.map((node, index) => ({
+    const transformedNodes = rawNodes.map((node, index) => ({
       id: node.id || `node-${index}`,
       type: 'default',
       data: {
-        label: node.name || node.label || node.id,
-        type: node.type || 'file',
-        risk: node.riskLevel || node.impact || 'low'
+        label: node.data?.label || node.name || node.label || node.id,
+        type: node.data?.type || node.type || 'entity',
+        risk: node.data?.risk || node.riskLevel || node.risk || 'low',
       },
-      position: node.position || { x: Math.random() * 500, y: Math.random() * 500 }
+      position: node.position || { x: 200 + (index % 6) * 120, y: 100 + Math.floor(index / 6) * 90 },
     }));
 
     const transformedEdges = (blastRadiusData.relationships || []).map((edge, index) => ({
@@ -74,7 +108,7 @@ const BlastRadiusContent = () => {
       source: edge.source || edge.from,
       target: edge.target || edge.to,
       label: edge.label || edge.type || 'affects',
-      animated: edge.direct || false
+      animated: edge.animated ?? true,
     }));
 
     return { nodes: transformedNodes, edges: transformedEdges };
@@ -163,11 +197,22 @@ const BlastRadiusContent = () => {
       high: riskCounts.high || 0,
       medium: riskCounts.medium || 0,
       low: riskCounts.low || 0,
-      impactScore: blastRadiusData?.impactScore || 0,
+      impactScore:
+        blastRadiusData?.impactScore ??
+        blastRadiusData?.blastRadius?.impactScore ??
+        0,
     };
   }, [nodes, blastRadiusData]);
 
-  if (!currentRepo) {
+  if (repoLoading) {
+    return (
+      <div className="blast-radius-content">
+        <LoadingState message="Loading repository..." />
+      </div>
+    );
+  }
+
+  if (!repoId) {
     return (
       <div className="blast-radius-content">
         <EmptyState message="No repository selected. Please analyze a repository first." />
@@ -216,15 +261,21 @@ const BlastRadiusContent = () => {
       <Card className="target-selector">
         <div className="target-label">
           <IconTarget />
-          <span>Target Entity ID:</span>
+          <span>Target entity:</span>
         </div>
-        <input
-          type="text"
+        <select
           value={targetEntityId}
           onChange={(e) => setTargetEntityId(e.target.value)}
           className="target-input"
-          placeholder="Enter entity ID to analyze..."
-        />
+          style={{ minWidth: '280px' }}
+        >
+          <option value="">Select a function or class…</option>
+          {entityOptions.map((e) => (
+            <option key={e.id} value={e.id}>
+              {e.name} ({e.type})
+            </option>
+          ))}
+        </select>
         <Button
           variant="primary"
           size="sm"

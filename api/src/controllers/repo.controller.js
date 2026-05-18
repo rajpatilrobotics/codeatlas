@@ -38,23 +38,26 @@ export async function analyzeRepository(req, res) {
         });
       }
 
-      // If completed but has zero data, force re-analyze
-      if (repository.status === 'completed' && repository.fileCount === 0) {
-        logger.info('[RepoController] Force re-analyzing repository with zero data', {
-          repositoryId: repository.id,
-          url: repository.url
-        });
-        await db.clearRepositoryAnalysisData(repository.id);
-        await db.updateRepositoryStatus(repository.id, 'pending', 0);
-      }
-      // If completed with data, return existing data
-      else if (repository.status === 'completed') {
-        return res.json({
-          repositoryId: repository.id,
-          status: repository.status,
-          progress: 100,
-          message: 'Repository already analyzed',
-        });
+      // If completed but has zero / stale data, force re-analyze
+      if (repository.status === 'completed') {
+        const stats = await db.getRepositoryStats(repository.id);
+        const hasData = stats.fileCount > 0 || stats.entityCount > 0;
+
+        if (!hasData) {
+          logger.info('[RepoController] Force re-analyzing repository with empty analysis data', {
+            repositoryId: repository.id,
+            url: repository.url,
+          });
+          await db.clearRepositoryAnalysisData(repository.id);
+          await db.updateRepositoryStatus(repository.id, 'pending', 0);
+        } else {
+          return res.json({
+            repositoryId: repository.id,
+            status: repository.status,
+            progress: 100,
+            message: 'Repository already analyzed',
+          });
+        }
       }
 
       // If failed or pending, reset and re-analyze
@@ -220,6 +223,85 @@ export async function getRepositorySummary(req, res) {
       totalDependencies: statistics.relationships,
     };
 
+    const files = await db.getFilesByRepository(repositoryId);
+    const entities = await db.getEntitiesByRepository(repositoryId);
+
+    const languageCounts = {};
+    for (const file of files) {
+      const lang = file.language || 'unknown';
+      languageCounts[lang] = (languageCounts[lang] || 0) + 1;
+    }
+    const techStack = Object.entries(languageCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, fileCount]) => ({ name, fileCount }));
+
+    const entityBreakdown = {};
+    for (const entity of entities) {
+      entityBreakdown[entity.type] = (entityBreakdown[entity.type] || 0) + 1;
+    }
+
+    const topFiles = files.slice(0, 10).map((f) => f.path);
+    const repoLabel = `${repository.owner}/${repository.name}`;
+
+    let summaryText;
+    if (statistics.files === 0) {
+      summaryText = `${repoLabel} has not been fully indexed yet. Run analysis again from the home page with the GitHub URL: ${repository.url}`;
+    } else {
+      const primaryLang = repository.language || techStack[0]?.name || 'multi-language';
+      const breakdown = Object.entries(entityBreakdown)
+        .map(([type, count]) => `${count} ${type}s`)
+        .slice(0, 6)
+        .join(', ');
+      summaryText = `${repoLabel} is a ${primaryLang} project with ${statistics.files} indexed files and ${statistics.entities} code entities (${breakdown || 'see graph views'}). The dependency graph contains ${statistics.relationships} relationships. Use Repository Graph and Chat to explore further.`;
+    }
+
+    const quickStart =
+      statistics.files === 0
+        ? `1. Open the CodeAtlas home page\n2. Paste: ${repository.url}\n3. Wait for analysis to complete\n4. Return to Dashboard and Summary`
+        : [
+            '1. Repository Graph — explore file and module dependencies',
+            '2. Architecture — see layered structure',
+            '3. Chat — ask questions about this codebase',
+            '4. Heatmap — find complex or hot files',
+            '',
+            topFiles.length ? 'Notable files:' : '',
+            ...topFiles.map((p) => `- ${p}`),
+          ]
+            .filter(Boolean)
+            .join('\n');
+
+    const insights = [];
+    if (statistics.files > 0) {
+      insights.push({
+        title: 'Repository indexed',
+        description: `${statistics.files} files, ${statistics.entities} code entities, and ${statistics.relationships} relationships are ready.`,
+      });
+      if (techStack.length) {
+        insights.push({
+          title: 'Languages detected',
+          description: techStack.map((t) => `${t.name} (${t.fileCount} files)`).join(', '),
+        });
+      }
+    }
+    if (repository.status === 'analyzing') {
+      insights.push({
+        title: 'Analysis in progress',
+        description: 'Refresh in a few seconds for updated metrics.',
+      });
+    }
+    if (repository.status === 'failed') {
+      insights.push({
+        title: 'Last analysis failed',
+        description: 'Run analyze again from the home page.',
+      });
+    }
+    if (statistics.files === 0 && repository.status === 'completed') {
+      insights.push({
+        title: 'Empty index',
+        description: 'Analysis finished but no files were stored. Try a larger public repo (e.g. expressjs/express) or re-run analyze.',
+      });
+    }
+
     const response = {
       repository: {
         id: repository.id,
@@ -233,6 +315,14 @@ export async function getRepositorySummary(req, res) {
       },
       statistics,
       stats,
+      insights,
+      summary: summaryText,
+      description: summaryText,
+      techStack,
+      entityBreakdown,
+      topFiles,
+      quickStart,
+      setupInstructions: quickStart,
     };
 
     logger.info('[RepoController] Sending summary response', {

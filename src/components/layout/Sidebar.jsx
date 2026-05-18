@@ -9,14 +9,32 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Suspense } from 'react';
+import { useActiveRepo } from '@/hooks/useActiveRepo';
 import './Sidebar.css';
 
-const Sidebar = () => {
+function SidebarLink({ path, label, icon, badge, isActive, repoId }) {
+  const href = repoId
+    ? `${path}${path.includes('?') ? '&' : '?'}repoId=${encodeURIComponent(repoId)}`
+    : path;
+  return (
+    <Link
+      href={href}
+      className={`sidebar-item ${isActive ? 'sidebar-item-active' : ''}`}
+    >
+      <span className="sidebar-item-icon">{icon}</span>
+      <span className="sidebar-item-label">{label}</span>
+      {badge && <span className="sidebar-item-badge">{badge}</span>}
+    </Link>
+  );
+}
+
+function SidebarInner() {
   const pathname = usePathname();
+  const { repoId } = useActiveRepo();
 
   const isActive = (path) => pathname === path;
 
-  // Navigation structure - CodeAtlas V2 Final Structure
   const navigation = [
     {
       id: 'overview',
@@ -65,7 +83,6 @@ const Sidebar = () => {
 
   return (
     <aside className="sidebar">
-      {/* Logo */}
       <div className="sidebar-header">
         <Link href="/" className="sidebar-logo">
           <div className="sidebar-logo-icon">CA</div>
@@ -73,63 +90,61 @@ const Sidebar = () => {
         </Link>
       </div>
 
-      {/* Navigation - Flat Structure */}
       <nav className="sidebar-nav">
         {navigation.map((section) => (
           <div key={section.id} className="sidebar-section">
-            {/* Section Label (not clickable) */}
             <div className="sidebar-section-header">
               <span className="sidebar-section-label">{section.label}</span>
             </div>
 
-            {/* Always visible items */}
             <div className="sidebar-section-items">
               {section.items.map((item) => (
-                <Link
+                <SidebarLink
                   key={item.path}
-                  href={item.path}
-                  className={`sidebar-item ${isActive(item.path) ? 'sidebar-item-active' : ''}`}
-                >
-                  <span className="sidebar-item-icon">{item.icon}</span>
-                  <span className="sidebar-item-label">{item.label}</span>
-                  {item.badge && (
-                    <span className="sidebar-item-badge">{item.badge}</span>
-                  )}
-                </Link>
+                  path={item.path}
+                  label={item.label}
+                  icon={item.icon}
+                  badge={item.badge}
+                  isActive={isActive(item.path)}
+                  repoId={repoId}
+                />
               ))}
             </div>
           </div>
         ))}
       </nav>
 
-      {/* Footer */}
       <div className="sidebar-footer">
-        <button className="sidebar-footer-item">
+        <Link href="/" className="sidebar-footer-item">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path 
-              d="M8 2V14M2 8H14" 
-              stroke="currentColor" 
-              strokeWidth="1.5" 
+            <path
+              d="M8 2V14M2 8H14"
+              stroke="currentColor"
+              strokeWidth="1.5"
               strokeLinecap="round"
             />
           </svg>
           <span>New Analysis</span>
-        </button>
-        
+        </Link>
+
         <div className="sidebar-footer-divider" />
-        
-        <button className="sidebar-footer-item">
+
+        <Link href="/dashboard" className="sidebar-footer-item">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" />
             <path d="M8 5V8L10 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
           <span>Recent</span>
-        </button>
+        </Link>
       </div>
     </aside>
   );
-};
+}
+
+const Sidebar = () => (
+  <Suspense fallback={null}>
+    <SidebarInner />
+  </Suspense>
+);
 
 export default Sidebar;
-
-// Made with Bob

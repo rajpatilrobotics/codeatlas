@@ -37,41 +37,25 @@ export async function getRepositoryGraph(req, res) {
       relationshipCount: repository._count?.relationships || 0
     });
 
-    // Get entities and relationships
+    const files = await db.getFilesByRepository(repositoryId);
     const entities = await db.getEntitiesByRepository(repositoryId);
     const relationships = await db.getRelationshipsByRepository(repositoryId);
 
     logger.info('[GraphController] Data retrieved from database', {
       repositoryId,
+      filesCount: files.length,
       entitiesCount: entities.length,
       relationshipsCount: relationships.length,
-      sampleEntities: entities.slice(0, 3).map(e => ({ id: e.id, name: e.name, type: e.type })),
-      sampleRelationships: relationships.slice(0, 3).map(r => ({ id: r.id, type: r.type, source: r.sourceId, target: r.targetId }))
     });
 
-    // Check for empty data
-    if (entities.length === 0) {
-      logger.warn('[GraphController] No entities found for repository', { repositoryId });
-    }
-    if (relationships.length === 0) {
-      logger.warn('[GraphController] No relationships found for repository', { repositoryId });
-    }
-
-    // Build graph
-    const graph = graphService.buildGraph(relationships);
-
-    logger.debug('[GraphController] Graph built', {
-      repositoryId,
-      graphNodeCount: graph.nodes?.size || 0,
-      graphEdgeCount: graph.edges?.length || 0
-    });
-
-    // Generate visualization based on type
     let visualization;
     if (type === 'architecture') {
-      visualization = graphService.generateArchitectureVisualization(entities, relationships);
+      visualization = graphService.generateArchitectureVisualization({ files }, relationships);
     } else {
-      visualization = graphService.generateDependencyVisualization(entities, relationships);
+      visualization = graphService.buildFileGraph(files, entities, relationships, {
+        maxNodes: 150,
+        maxEdges: 500,
+      });
     }
 
     logger.info('[GraphController] Visualization generated', {
@@ -134,25 +118,37 @@ export async function getBlastRadius(req, res) {
       return res.status(404).json({ error: 'Repository not found' });
     }
 
-    // Get entities and relationships
     const entities = await db.getEntitiesByRepository(repositoryId);
     const relationships = await db.getRelationshipsByRepository(repositoryId);
 
-    // Build graph
     const graph = graphService.buildGraph(relationships);
+    const entityMap = new Map(
+      entities.map((e) => [e.id, { name: e.name, type: e.type, fileId: e.fileId }])
+    );
 
-    // Get blast radius (correct method name)
     const blastRadius = graphService.getBlastRadius(graph, entityId);
+    const impactScore = graphService.getImpactScore(graph, entityId);
+    const visualization = graphService.generateBlastRadiusVisualization(
+      graph,
+      entityId,
+      entityMap
+    );
+
+    const riskLevel =
+      impactScore >= 70 ? 'critical' : impactScore >= 45 ? 'high' : impactScore >= 20 ? 'medium' : 'low';
 
     res.json({
       repositoryId,
       entityId,
+      impactScore,
+      impactedNodes: visualization.nodes,
+      relationships: visualization.edges,
       blastRadius: {
-        impactScore: blastRadius.impactScore,
-        riskLevel: blastRadius.riskLevel,
-        affectedEntities: blastRadius.affectedEntities,
-        criticalPaths: blastRadius.criticalPaths,
-        recommendations: blastRadius.recommendations,
+        impactScore,
+        riskLevel,
+        totalAffected: blastRadius.totalAffected,
+        affectedEntities: blastRadius.affectedNodes,
+        riskLevels: blastRadius.riskLevels,
       },
     });
   } catch (error) {
@@ -178,25 +174,98 @@ export async function getArchitectureLayers(req, res) {
       return res.status(404).json({ error: 'Repository not found' });
     }
 
-    // Get entities and files
+    const files = await db.getFilesByRepository(repositoryId);
     const entities = await db.getEntitiesByRepository(repositoryId);
     const relationships = await db.getRelationshipsByRepository(repositoryId);
-    const files = await db.getFilesByRepository(repositoryId);
 
-    // Build graph
-    const graph = graphService.buildGraph(relationships);
+    const visualization = graphService.generateArchitectureVisualization(
+      { files },
+      relationships
+    );
+    const fileGraph = graphService.buildFileGraph(files, entities, relationships, {
+      maxNodes: 150,
+      maxEdges: 500,
+    });
 
-    // Generate architecture layers (correct method name)
-    const layers = graphService.generateArchitectureLayers(graph, { files });
+    const enrichedLayers = {};
+    for (const [layerName, fileIds] of Object.entries(visualization.layers || {})) {
+      enrichedLayers[layerName] = (fileIds || []).map((id) => {
+        const f = files.find((x) => x.id === id);
+        return {
+          id,
+          name: f?.path?.split('/').pop() || id,
+          path: f?.path,
+          type: 'file',
+          layer: layerName,
+        };
+      });
+    }
 
     res.json({
       repositoryId,
-      layers,
+      layers: enrichedLayers,
+      graph: {
+        nodes: fileGraph.nodes.length ? fileGraph.nodes : visualization.nodes,
+        edges: fileGraph.edges,
+      },
+      statistics: {
+        totalComponents: files.length,
+        presentation: enrichedLayers.presentation?.length || 0,
+        business: enrichedLayers.business?.length || 0,
+        data: enrichedLayers.data?.length || 0,
+        utility: enrichedLayers.utility?.length || 0,
+        external: enrichedLayers.external?.length || 0,
+        connections: fileGraph.edges.length,
+      },
     });
   } catch (error) {
     console.error('Get architecture layers error:', error);
     res.status(500).json({
       error: 'Failed to get architecture layers',
+      message: error.message,
+    });
+  }
+}
+
+/**
+ * List entities for graph UIs (blast radius picker, etc.)
+ * GET /api/graph/entities/:repositoryId
+ */
+export async function listGraphEntities(req, res) {
+  try {
+    const { repositoryId } = req.params;
+    const { type, limit = 200 } = req.query;
+
+    const repository = await db.getRepository(repositoryId);
+    if (!repository) {
+      return res.status(404).json({ error: 'Repository not found' });
+    }
+
+    let entities = await db.getEntitiesByRepository(repositoryId);
+    if (type) {
+      entities = entities.filter((e) => e.type === type);
+    }
+
+    const preferTypes = new Set(['function', 'class', 'method', 'component']);
+    entities.sort((a, b) => {
+      const ap = preferTypes.has(a.type) ? 0 : 1;
+      const bp = preferTypes.has(b.type) ? 0 : 1;
+      return ap - bp || (a.name || '').localeCompare(b.name || '');
+    });
+
+    res.json({
+      repositoryId,
+      entities: entities.slice(0, parseInt(limit, 10)).map((e) => ({
+        id: e.id,
+        name: e.name,
+        type: e.type,
+        fileId: e.fileId,
+      })),
+    });
+  } catch (error) {
+    logger.error('[GraphController] List graph entities error', { error: error.message });
+    res.status(500).json({
+      error: 'Failed to list entities',
       message: error.message,
     });
   }

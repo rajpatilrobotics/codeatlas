@@ -399,6 +399,10 @@ class GraphService {
     return calculateImpactScore(graph, entityId);
   }
 
+  generateBlastRadiusVisualization(graph, entityId, entityMap = new Map()) {
+    return generateBlastRadiusVisualization(graph, entityId, entityMap);
+  }
+
   /**
    * Find critical paths
    * @param {Map} graph - Dependency graph
@@ -485,6 +489,61 @@ class GraphService {
       maxNodes,
       layout
     });
+  }
+
+  /**
+   * Build file-level graph nodes and edges from DB rows.
+   * Maps entity-to-entity relationships onto file-to-file edges.
+   */
+  buildFileGraph(files, entities, relationships, options = {}) {
+    const { maxNodes = 120, maxEdges = 400, layout = 'hierarchical' } = options;
+
+    const fileNodes = files.slice(0, maxNodes).map((file, index) => ({
+      id: file.id,
+      type: 'file',
+      data: {
+        label: file.path?.split('/').pop() || file.name || file.id,
+        path: file.path,
+        language: file.language,
+        type: 'file',
+      },
+      position: this.calculatePosition(index, Math.min(files.length, maxNodes), layout),
+    }));
+
+    const nodeIds = new Set(fileNodes.map((n) => n.id));
+    const entityToFile = new Map();
+    for (const e of entities) {
+      if (e.fileId) entityToFile.set(e.id, e.fileId);
+    }
+
+    const edgeKey = new Set();
+    const edges = [];
+    for (const rel of relationships || []) {
+      if (edges.length >= maxEdges) break;
+      const source = rel.sourceId || rel.source;
+      const target = rel.targetId || rel.target;
+      const fromFile = entityToFile.get(source);
+      const toFile = entityToFile.get(target);
+      if (!fromFile || !toFile || fromFile === toFile) continue;
+      if (!nodeIds.has(fromFile) || !nodeIds.has(toFile)) continue;
+      const key = `${fromFile}->${toFile}`;
+      if (edgeKey.has(key)) continue;
+      edgeKey.add(key);
+      edges.push({
+        id: rel.id || key,
+        source: fromFile,
+        target: toFile,
+        type: rel.type,
+        label: rel.type || 'depends',
+      });
+    }
+
+    logger.info('[GraphService] File graph built', {
+      nodeCount: fileNodes.length,
+      edgeCount: edges.length,
+    });
+
+    return { nodes: fileNodes, edges };
   }
 
   /**

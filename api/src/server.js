@@ -31,7 +31,7 @@ import logger from './utils/logger.js';
 import { initSentry, sentryErrorHandler } from './utils/sentry.js';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = Number(process.env.API_PORT || process.env.PORT || 3001);
 
 // Initialize Sentry (error tracking)
 initSentry(app);

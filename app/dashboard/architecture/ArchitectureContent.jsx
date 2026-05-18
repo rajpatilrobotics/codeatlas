@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { apiClient } from '@/lib/api';
-import useRepoStore from '@/store/useRepoStore';
+import { useActiveRepo } from '@/hooks/useActiveRepo';
 import GraphVisualization from '@/src/components/features/GraphVisualization';
 import Card from '@/src/components/ui/Card';
 import Button from '@/src/components/ui/Button';
@@ -24,7 +24,7 @@ const IconBox = () => <span>◻</span>;
  * Displays the system architecture visualization
  */
 const ArchitectureContent = () => {
-  const currentRepo = useRepoStore((state) => state.currentRepo);
+  const { repoId, currentRepo, loading: repoLoading } = useActiveRepo();
   const [architectureData, setArchitectureData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -33,7 +33,8 @@ const ArchitectureContent = () => {
 
   useEffect(() => {
     async function fetchArchitecture() {
-      if (!currentRepo?.id) {
+      if (repoLoading) return;
+      if (!repoId) {
         setLoading(false);
         return;
       }
@@ -41,7 +42,7 @@ const ArchitectureContent = () => {
       try {
         setLoading(true);
         setError(null);
-        const result = await apiClient.getArchitecture(currentRepo.id);
+        const result = await apiClient.getArchitecture(repoId);
         setArchitectureData(result);
       } catch (err) {
         console.error('Failed to fetch architecture:', err);
@@ -52,10 +53,48 @@ const ArchitectureContent = () => {
     }
 
     fetchArchitecture();
-  }, [currentRepo?.id]);
+  }, [repoId, repoLoading]);
+
+  const layerY = {
+    presentation: 80,
+    business: 240,
+    data: 400,
+    utility: 560,
+    external: 720,
+    frontend: 80,
+    backend: 240,
+  };
 
   // Transform API data to graph format
   const { nodes, edges } = useMemo(() => {
+    const rawNodes = architectureData?.graph?.nodes || [];
+    const rawEdges = architectureData?.graph?.edges || [];
+
+    if (rawNodes.length) {
+      return {
+        nodes: rawNodes.map((node, index) => ({
+          id: node.id || `node-${index}`,
+          type: 'default',
+          data: {
+            label: node.data?.label || node.name || node.id,
+            type: node.data?.type || node.type || 'file',
+            layer: node.data?.layer || node.layer || 'business',
+          },
+          position:
+            node.position || {
+              x: 80 + (index % 8) * 130,
+              y: layerY[node.data?.layer || node.layer] ?? 240,
+            },
+        })),
+        edges: rawEdges.map((edge, index) => ({
+          id: edge.id || `edge-${index}`,
+          source: edge.source || edge.from,
+          target: edge.target || edge.to,
+          label: edge.label || edge.type || 'connects',
+        })),
+      };
+    }
+
     if (!architectureData?.layers) {
       return { nodes: [], edges: [] };
     }
@@ -64,41 +103,39 @@ const ArchitectureContent = () => {
     const transformedEdges = [];
     let yOffset = 50;
 
-    // Convert layers object to array before using
     const layersArray = Object.entries(architectureData.layers || {}).map(([name, components]) => ({
       name,
-      components: components || []
+      components: components || [],
     }));
 
-    // Process each layer
-    layersArray.forEach((layer, layerIndex) => {
+    layersArray.forEach((layer) => {
       const layerComponents = layer.components || [];
       layerComponents.forEach((component, compIndex) => {
+        const isId = typeof component === 'string';
         transformedNodes.push({
-          id: component.id || `${layer.name}-${compIndex}`,
+          id: isId ? component : component.id || `${layer.name}-${compIndex}`,
           type: 'default',
           data: {
-            label: component.name || component.label,
-            type: component.type || 'component',
-            layer: layer.name || 'unknown'
+            label: isId ? component : component.name || component.label || component.id,
+            type: isId ? 'file' : component.type || 'file',
+            layer: layer.name,
           },
           position: {
-            x: 100 + (compIndex * 150),
-            y: yOffset
-          }
+            x: 100 + compIndex * 150,
+            y: layerY[layer.name] ?? yOffset,
+          },
         });
       });
       yOffset += 150;
     });
 
-    // Process relationships
     if (architectureData.relationships) {
       architectureData.relationships.forEach((rel, index) => {
         transformedEdges.push({
           id: rel.id || `edge-${index}`,
           source: rel.source || rel.from,
           target: rel.target || rel.to,
-          label: rel.label || rel.type || 'connects'
+          label: rel.label || rel.type || 'connects',
         });
       });
     }
@@ -197,15 +234,27 @@ const ArchitectureContent = () => {
     setSelectedNode(node);
   }, []);
 
-  const stats = useMemo(() => ({
-    totalComponents: nodes.length,
-    frontend: nodes.filter(n => n.data.layer === 'frontend').length,
-    backend: nodes.filter(n => n.data.layer === 'backend').length,
-    data: nodes.filter(n => n.data.layer === 'data').length,
-    connections: edges.length,
-  }), [nodes, edges]);
+  const stats = useMemo(() => {
+    const s = architectureData?.statistics;
+    if (s) {
+      return {
+        totalComponents: s.totalComponents ?? nodes.length,
+        frontend: s.presentation ?? nodes.filter((n) => n.data.layer === 'presentation').length,
+        backend: s.business ?? nodes.filter((n) => n.data.layer === 'business').length,
+        data: s.data ?? nodes.filter((n) => n.data.layer === 'data').length,
+        connections: s.connections ?? edges.length,
+      };
+    }
+    return {
+      totalComponents: nodes.length,
+      frontend: nodes.filter((n) => ['frontend', 'presentation'].includes(n.data.layer)).length,
+      backend: nodes.filter((n) => ['backend', 'business'].includes(n.data.layer)).length,
+      data: nodes.filter((n) => n.data.layer === 'data').length,
+      connections: edges.length,
+    };
+  }, [architectureData, nodes, edges]);
 
-  if (loading) {
+  if (repoLoading || loading) {
     return (
       <div className="architecture-content">
         <LoadingState message="Loading architecture..." />
@@ -221,7 +270,7 @@ const ArchitectureContent = () => {
     );
   }
 
-  if (!currentRepo) {
+  if (!repoId) {
     return (
       <div className="architecture-content">
         <EmptyState message="No repository selected. Please analyze a repository first." />
