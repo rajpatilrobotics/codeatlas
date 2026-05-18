@@ -192,9 +192,9 @@ function DashboardContent() {
           <h2 className="text-lg font-semibold mb-3" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
             Analysis Summary
           </h2>
-          <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.65)' }}>
+          <div className="text-sm whitespace-pre-wrap" style={{ color: 'rgba(255, 255, 255, 0.65)' }}>
             {summary.summary}
-          </p>
+          </div>
         </div>
       )}
 

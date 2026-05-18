@@ -5,10 +5,12 @@
  */
 
 import DatabaseService from '../services/database/index.js';
+import AIService from '../services/ai/index.js';
 import { repoAnalysisQueue } from '../queues/index.js';
 import logger from '../utils/logger.js';
 
 const db = new DatabaseService();
+const aiService = new AIService();
 
 /**
  * Analyze repository
@@ -252,7 +254,22 @@ export async function getRepositorySummary(req, res) {
         .map(([type, count]) => `${count} ${type}s`)
         .slice(0, 6)
         .join(', ');
-      summaryText = `${repoLabel} is a ${primaryLang} project with ${statistics.files} indexed files and ${statistics.entities} code entities (${breakdown || 'see graph views'}). The dependency graph contains ${statistics.relationships} relationships. Use Repository Graph and Chat to explore further.`;
+      const baseSummary = `${repoLabel} is a ${primaryLang} project with ${statistics.files} indexed files and ${statistics.entities} code entities (${breakdown || 'see graph views'}). The dependency graph contains ${statistics.relationships} relationships. Use Repository Graph and Chat to explore further.`;
+
+      // Try to generate an AI summary if the repo has data
+      try {
+        logger.info('[RepoController] Generating AI summary for repository', { repositoryId });
+        // Give basic context to the prompt
+        const aiPrompt = `Generate a highly detailed architectural and onboarding summary for ${repoLabel}. It is a ${primaryLang} project. Include project purpose, architecture overview, and key features. Top files include: ${topFiles.join(', ')}`;
+        const aiResponse = await aiService.generateResponse(repositoryId, aiPrompt, {
+          taskType: 'architecture',
+          includeReasoning: false
+        });
+        summaryText = aiResponse.response || baseSummary;
+      } catch (aiErr) {
+        logger.warn('[RepoController] AI summary generation failed, falling back to base summary', { error: aiErr.message });
+        summaryText = baseSummary;
+      }
     }
 
     const quickStart =

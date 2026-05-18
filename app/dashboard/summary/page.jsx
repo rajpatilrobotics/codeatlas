@@ -192,7 +192,7 @@ function SummaryContent() {
           AI Generated Summary
         </h2>
         <div className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.65)' }}>
-          {aiSummary ? <p>{aiSummary}</p> : <p>Run analysis from the home page to generate a summary.</p>}
+          {aiSummary ? <div className="whitespace-pre-wrap">{aiSummary}</div> : <p>Run analysis from the home page to generate a summary.</p>}
         </div>
       </div>
 
