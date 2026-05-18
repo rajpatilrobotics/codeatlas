@@ -118,7 +118,7 @@ const MAX_FILE_SIZE = 1 * 1024 * 1024;
 /**
  * Maximum number of files to process per repository
  */
-const MAX_FILES_PER_REPO = 500;
+const MAX_FILES_PER_REPO = 250;
 
 /**
  * Lockfiles to skip

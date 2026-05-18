@@ -87,42 +87,28 @@ const worker = new Worker(
         await db.updateRepositoryStatus(repositoryId, 'analyzing', 40);
       }
 
-      // Stage 4: AST parsing with batch processing (60%)
-      await job.log('Stage 4: Parsing code in batches...');
+      // Stage 4: Parsing files (60%)
+      await job.log('Stage 4: Parsing code (lightweight)...');
       
-      const BATCH_SIZE = 20;
-      const allParseResults = [];
-      
-      for (let i = 0; i < ingestionResult.files.length; i += BATCH_SIZE) {
-        const batch = ingestionResult.files.slice(i, i + BATCH_SIZE);
-        const batchNum = Math.floor(i / BATCH_SIZE) + 1;
-        const totalBatches = Math.ceil(ingestionResult.files.length / BATCH_SIZE);
-        
-        await job.log(`Processing batch ${batchNum}/${totalBatches} (${batch.length} files)`);
-        
-        const batchResult = await parserService.parseFiles(
-          batch,
-          (progress) => {
-            job.log(`Parsing: ${progress.message}`);
-          }
-        );
-        
-        allParseResults.push(...batchResult.results);
-        
-        // Update progress within parsing stage (40% to 60%)
-        const parsingProgress = 40 + Math.floor((i / ingestionResult.files.length) * 20);
-        await job.updateProgress(parsingProgress);
-        if (repositoryId) {
-          await db.updateRepositoryStatus(repositoryId, 'analyzing', parsingProgress);
+      const batchResult = await parserService.parseFiles(
+        ingestionResult.files,
+        (progress) => {
+          job.log(`Parsing: ${progress.message}`);
         }
+      );
+
+      // Update progress after parsing stage (40% to 60%)
+      await job.updateProgress(60);
+      if (repositoryId) {
+        await db.updateRepositoryStatus(repositoryId, 'analyzing', 60);
       }
 
       const parseResult = {
-        results: allParseResults,
+        results: batchResult.results,
         statistics: {
-          totalFiles: allParseResults.length,
-          successful: allParseResults.filter(r => r.success).length,
-          failed: allParseResults.filter(r => !r.success).length
+          totalFiles: batchResult.results.length,
+          successful: batchResult.results.filter(r => r.success).length,
+          failed: batchResult.results.filter(r => !r.success).length
         }
       };
 
