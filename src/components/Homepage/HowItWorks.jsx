@@ -22,7 +22,7 @@ function HowItWorks() {
       number: '03',
       icon: '✨',
       title: 'Get Insights',
-      description: 'Get comprehensive analysis, security scans, interactive tools, and IBM Watsonx AI for code questions',
+      description: 'Get comprehensive analysis, security scans, interactive tools, and AI for code questions',
       time: 'Instantly',
       timeLabel: 'Ready'
     }

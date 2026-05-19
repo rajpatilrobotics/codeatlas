@@ -47,7 +47,7 @@ function HeroSection({ repoUrl, onUrlChange, onAnalyze, isAnalyzing }) {
         </h1>
         
         <p className="hero-subheading">
-          Whether you're joining a team or exploring a new repository, CodeAtlas turns confusion into clarity using IBM Bob and watsonx AI.
+          Whether you're joining a team or exploring a new repository, CodeAtlas turns confusion into clarity using IBM Bob and AI.
         </p>
 
         <div className="hero-info-section">
@@ -134,7 +134,7 @@ function HeroSection({ repoUrl, onUrlChange, onAnalyze, isAnalyzing }) {
           </div>
 
           <p className="hero-powered-by">
-            Powered by IBM Bob and IBM watsonx AI
+            Powered by IBM Bob and AI
           </p>
 
           <div className="hero-developer-credit">

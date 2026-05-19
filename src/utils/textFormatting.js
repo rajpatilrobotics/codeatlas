@@ -1,7 +1,7 @@
 // Text Formatting Utilities for Clean AI Output
-// Ensures all watsonx AI responses are free from markdown formatting
+// Ensures all AI responses are free from markdown formatting
 
-// Global formatting rules to be prepended to all watsonx prompts
+// Global formatting rules to be prepended to all AI prompts
 export const CLEAN_OUTPUT_RULES = `
 STRICT OUTPUT RULES:
 1. Do NOT use markdown formatting:

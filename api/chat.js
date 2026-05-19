@@ -1,7 +1,19 @@
 // Vercel Serverless Function for Chat
-// This handles chat interactions using Watsonx AI
+// This handles chat interactions using Groq/Gemini AI providers
 
 const fetch = require('node-fetch');
+
+// Import AI service (using dynamic import for ES modules)
+let aiService;
+
+async function getAIService() {
+  if (!aiService) {
+    // Import the AI service
+    const aiModule = await import('../../src/services/ai/aiService.js');
+    aiService = aiModule.default;
+  }
+  return aiService;
+}
 
 module.exports = async (req, res) => {
   // Enable CORS
@@ -24,6 +36,17 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Message is required' });
     }
 
+    // Check if AI providers are configured
+    const GROQ_API_KEY = process.env.GROQ_API_KEY;
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+    if (!GROQ_API_KEY && !GEMINI_API_KEY) {
+      console.error('AI providers not configured');
+      return res.status(500).json({ 
+        error: 'AI providers not configured on server. Please add GROQ_API_KEY or GEMINI_API_KEY to environment variables.' 
+      });
+    }
+
     console.log('Processing chat message...');
 
     // Construct the full prompt with context
@@ -32,45 +55,26 @@ module.exports = async (req, res) => {
       fullPrompt = `Context:\n${context}\n\nUser: ${message}\n\nAssistant:`;
     }
 
-    // Get the base URL for internal API call
-    const protocol = req.headers['x-forwarded-proto'] || 'https';
-    const host = req.headers['x-forwarded-host'] || req.headers.host;
-    const baseUrl = `${protocol}://${host}`;
+    // Get AI service
+    const service = await getAIService();
 
-    // Call the watsonx generate endpoint
-    const response = await fetch(`${baseUrl}/api/watsonx/generate`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        prompt: fullPrompt,
-        options: {
-          maxNewTokens: 500,
-          temperature: 0.7,
-          topP: 0.9,
-          repetitionPenalty: 1.1,
-        }
-      })
+    // Generate chat response using AI service
+    const messages = [
+      { role: 'user', content: fullPrompt }
+    ];
+
+    const response = await service.generateChat(messages, {
+      temperature: 0.7,
+      maxTokens: 500,
+      topP: 0.9,
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-      throw new Error(errorData.error || `Watsonx API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    if (data.success && data.text) {
-      console.log('✓ Chat response generated');
-      return res.status(200).json({
-        success: true,
-        response: data.text,
-        model: data.model,
-      });
-    }
-
-    throw new Error('Invalid response from Watsonx API');
+    console.log('✓ Chat response generated');
+    return res.status(200).json({
+      success: true,
+      response: response,
+      provider: process.env.DEFAULT_AI_PROVIDER || 'groq',
+    });
 
   } catch (error) {
     console.error('Chat error:', error);

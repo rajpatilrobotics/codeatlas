@@ -7,7 +7,7 @@ const MOCK_FILES = [
   'src/App.jsx',
   'src/services/githubService.js',
   'src/components/TabContent/Chat.jsx',
-  'api/watsonx/generate.js',
+  'api/watsonx/generate.js', // Now uses Groq/Gemini AI
 ];
 
 const MOCK_LOGS = [

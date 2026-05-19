@@ -258,7 +258,7 @@ function Documentation({ repoData, codeAnalysis }) {
           <h2 className="card-title">📚 Documentation</h2>
           <div className="card-content">
             <p className="text-secondary">
-              Documentation will be generated using watsonx AI once code analysis is complete.
+              Documentation will be generated using AI once code analysis is complete.
             </p>
           </div>
         </div>

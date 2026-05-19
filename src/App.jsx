@@ -47,14 +47,8 @@ import {
   normalizeRepoUrl,
 } from './utils/recentRepos';
 
-// Hardcoded Data Service (replaces Watsonx API)
-import {
-  getHardcodedAISummary,
-  getHardcodedQuickStart,
-  getHardcodedCommonIssues,
-  getHardcodedFirstContributions,
-  getHardcodedArchitectureAnalysis
-} from './services/hardcodedDataService';
+// AI Content Service - Generates real AI content based on repository context
+// Note: AI functions now called via API endpoints to access server-side environment variables
 
 // Code Analysis Service
 import { codeAnalysisService } from './services/codeAnalysisService';
@@ -94,7 +88,7 @@ function App() {
   const [lastAnalyzedRepoUrl, setLastAnalyzedRepoUrl] = useState('');
   const resultsRef = useRef(null);
 
-  // Helper function to prepare input for watsonx.ai
+  // Helper function to prepare input for AI
   const prepareAIInput = (repoData) => {
     const { repoInfo, readme } = repoData;
     
@@ -229,11 +223,20 @@ ${readmeSnippet}
         setSuccessMessage('');
       }, 5000);
       
-      // Step 2: Load hardcoded AI summary with simulated loading
+      // Step 2: Generate AI summary using real repository context
       setIsSummaryLoading(true);
       try {
-        const generatedSummary = await getHardcodedAISummary();
-        setAiSummary(generatedSummary);
+        const response = await fetch('/api/ai/summary', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ repoData: data })
+        });
+        const result = await response.json();
+        if (result.success) {
+          setAiSummary(result.summary);
+        } else {
+          throw new Error(result.error || 'Failed to generate AI summary');
+        }
       } catch (summaryErr) {
         console.error('AI Summary generation failed:', summaryErr);
         setSummaryError(summaryErr.message || 'Failed to generate AI summary');
@@ -241,44 +244,80 @@ ${readmeSnippet}
         setIsSummaryLoading(false);
       }
       
-      // Step 3: Load hardcoded Quick Start Guide with simulated loading
+      // Step 3: Generate Quick Start Guide using real repository context
       setIsQuickStartLoading(true);
       try {
-        const quickStart = await getHardcodedQuickStart();
-        setQuickStartGuide(quickStart);
+        const response = await fetch('/api/ai/quickstart', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ repoData: data })
+        });
+        const result = await response.json();
+        if (result.success) {
+          setQuickStartGuide(result.quickStart);
+        } else {
+          throw new Error(result.error || 'Failed to generate quick start guide');
+        }
       } catch (quickStartErr) {
         console.error('Quick Start generation failed:', quickStartErr);
       } finally {
         setIsQuickStartLoading(false);
       }
       
-      // Step 4: Load hardcoded Common Issues with simulated loading
+      // Step 4: Generate Common Issues using real repository context
       setIsIssuesLoading(true);
       try {
-        const issues = await getHardcodedCommonIssues();
-        setCommonIssues(issues);
+        const response = await fetch('/api/ai/common-issues', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ repoData: data })
+        });
+        const result = await response.json();
+        if (result.success) {
+          setCommonIssues(result.issues);
+        } else {
+          throw new Error(result.error || 'Failed to generate common issues');
+        }
       } catch (issuesErr) {
         console.error('Common Issues generation failed:', issuesErr);
       } finally {
         setIsIssuesLoading(false);
       }
       
-      // Step 5: Load hardcoded First Contributions with simulated loading
+      // Step 5: Generate First Contributions using real repository context
       setIsContributionsLoading(true);
       try {
-        const suggestions = await getHardcodedFirstContributions();
-        setFirstContributions(suggestions);
+        const response = await fetch('/api/ai/contributions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ repoData: data, codeAnalysis })
+        });
+        const result = await response.json();
+        if (result.success) {
+          setFirstContributions(result.contributions);
+        } else {
+          throw new Error(result.error || 'Failed to generate contribution opportunities');
+        }
       } catch (contributionsErr) {
         console.error('First Contributions generation failed:', contributionsErr);
       } finally {
         setIsContributionsLoading(false);
       }
       
-      // Step 6: Load hardcoded Architecture Analysis with simulated loading
+      // Step 6: Generate Architecture Analysis using real repository context
       setIsArchitectureLoading(true);
       try {
-        const architectureResponse = await getHardcodedArchitectureAnalysis();
-        setArchitectureAnalysis(architectureResponse);
+        const response = await fetch('/api/ai/architecture', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ repoData: data, codeAnalysis })
+        });
+        const result = await response.json();
+        if (result.success) {
+          setArchitectureAnalysis(result.architecture);
+        } else {
+          throw new Error(result.error || 'Failed to generate architecture analysis');
+        }
         
         // Step 6b: Perform detailed architecture analysis
         const detailedAnalysis = await analyzeArchitecture(data);

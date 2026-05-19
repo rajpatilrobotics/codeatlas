@@ -9,7 +9,7 @@ function Footer() {
           <span className="footer-brand-name">CodeAtlas</span>
         </div>
         <p className="footer-text">
-          Built using <span className="footer-highlight">IBM Bob</span> and <span className="footer-highlight">IBM watsonx AI</span>
+          Built using <span className="footer-highlight">IBM Bob</span> and <span className="footer-highlight">Groq/Gemini AI</span>
         </p>
         <p className="footer-subtext">
           Intelligent code analysis powered by enterprise AI

@@ -5,12 +5,17 @@ function FeaturesGrid() {
     {
       icon: '🤖',
       title: 'AI Code Analysis',
-      description: 'Understand architecture, tech stack, and structure — powered by watsonx'
+      description: 'Understand architecture, tech stack, and structure — powered by AI'
     },
     {
       icon: '💬',
-      title: 'AI Chat with Codebase',
-      description: 'Ask questions and get instant, context-aware answers about any repository'
+      title: 'AI Chat Assistant',
+      description: 'Ask questions about code, get explanations, and receive guidance from AI'
+    },
+    {
+      icon: '📝',
+      title: 'Auto Documentation',
+      description: 'Generate comprehensive documentation using AI'
     },
     {
       icon: '📊',

@@ -1,49 +1,172 @@
-import React, { useMemo } from 'react';
-import ReactFlow, { Background, Controls, MiniMap } from 'reactflow';
+import React, { useMemo, useState, useCallback } from 'react';
+import ReactFlow, { Background, Controls, MiniMap, useNodesState, useEdgesState } from 'reactflow';
 import 'reactflow/dist/style.css';
 import Card from '../ui/Card';
-import ComingSoon from '../ui/ComingSoon';
+import { buildSimplifiedGraph, calculateGraphStats } from '../../utils/repository/buildGraphData.js';
 
-const MOCK_NODES = [
-  { id: '1', position: { x: 250, y: 0 }, data: { label: 'API Gateway' }, style: { background: '#111', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 8, padding: 10 } },
-  { id: '2', position: { x: 100, y: 120 }, data: { label: 'Auth Service' }, style: { background: '#111', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 8, padding: 10 } },
-  { id: '3', position: { x: 400, y: 120 }, data: { label: 'User Service' }, style: { background: '#111', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 8, padding: 10 } },
-  { id: '4', position: { x: 250, y: 240 }, data: { label: 'Database' }, style: { background: '#111', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 8, padding: 10 } },
-  { id: '5', position: { x: 100, y: 360 }, data: { label: 'Cache' }, style: { background: '#111', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 8, padding: 10 } },
-];
+function RepositoryGraph({ repoData, onOpenArchitecture }) {
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [selectedNode, setSelectedNode] = useState(null);
+  const [graphStats, setGraphStats] = useState(null);
 
-const MOCK_EDGES = [
-  { id: 'e1-2', source: '1', target: '2', animated: true, style: { stroke: '#888888' } },
-  { id: 'e1-3', source: '1', target: '3', animated: true, style: { stroke: '#888888' } },
-  { id: 'e2-4', source: '2', target: '4' },
-  { id: 'e3-4', source: '3', target: '4' },
-  { id: 'e4-5', source: '4', target: '5' },
-];
+  // Build graph data from repository
+  useMemo(() => {
+    if (!repoData || !repoData.fileStructure) {
+      return;
+    }
 
-function RepositoryGraph({ onOpenArchitecture }) {
-  const nodes = useMemo(() => MOCK_NODES, []);
-  const edges = useMemo(() => MOCK_EDGES, []);
+    try {
+      const graphData = buildSimplifiedGraph(repoData.fileStructure, 50);
+      const stats = calculateGraphStats(graphData.nodes, graphData.edges);
 
-  return (
-    <ComingSoon>
+      // Style nodes based on type
+      const styledNodes = graphData.nodes.map(node => ({
+        ...node,
+        style: {
+          background: '#111',
+          border: '1px solid rgba(255,255,255,0.1)',
+          color: '#fff',
+          borderRadius: 8,
+          padding: 10,
+          ...(node.data.type === 'component' && { borderColor: '#4CAF50', borderWidth: 2 }),
+          ...(node.data.type === 'page' && { borderColor: '#2196F3', borderWidth: 2 }),
+          ...(node.data.type === 'service' && { borderColor: '#FF9800', borderWidth: 2 }),
+        }
+      }));
+
+      setNodes(styledNodes);
+      setEdges(graphData.edges);
+      setGraphStats(stats);
+    } catch (error) {
+      console.error('Error building graph:', error);
+    }
+  }, [repoData]);
+
+  // Handle node click
+  const onNodeClick = useCallback((event, node) => {
+    setSelectedNode(node);
+  }, []);
+
+  // Handle node selection for dependency highlighting
+  const onNodeMouseEnter = useCallback((event, node) => {
+    // Highlight connected nodes
+    const connectedEdges = edges.filter(edge => edge.source === node.id || edge.target === node.id);
+    const connectedNodeIds = new Set([node.id]);
+    
+    connectedEdges.forEach(edge => {
+      connectedNodeIds.add(edge.source);
+      connectedNodeIds.add(edge.target);
+    });
+
+    setNodes(currentNodes =>
+      currentNodes.map(n => ({
+        ...n,
+        style: {
+          ...n.style,
+          opacity: connectedNodeIds.has(n.id) ? 1 : 0.3,
+          ...(n.id === node.id && { borderColor: '#fff', borderWidth: 3 })
+        }
+      }))
+    );
+
+    setEdges(currentEdges =>
+      currentEdges.map(e => ({
+        ...e,
+        style: {
+          ...e.style,
+          opacity: connectedEdges.has(e.source) && connectedNodeIds.has(e.target) ? 1 : 0.2,
+          ...(e.source === node.id || e.target === node.id) && { stroke: '#fff', strokeWidth: 2 }
+        }
+      }))
+    );
+  }, [edges, setNodes, setEdges]);
+
+  const onNodeMouseLeave = useCallback(() => {
+    // Reset highlighting
+    setNodes(currentNodes =>
+      currentNodes.map(n => ({
+        ...n,
+        style: {
+          ...n.style,
+          opacity: 1,
+          borderColor: n.data.type === 'component' ? '#4CAF50' :
+                      n.data.type === 'page' ? '#2196F3' :
+                      n.data.type === 'service' ? '#FF9800' :
+                      'rgba(255,255,255,0.1)',
+          borderWidth: n.data.type === 'component' || n.data.type === 'page' || n.data.type === 'service' ? 2 : 1
+        }
+      }))
+    );
+
+    setEdges(currentEdges =>
+      currentEdges.map(e => ({
+        ...e,
+        style: {
+          ...e.style,
+          opacity: 1,
+          stroke: '#888888',
+          strokeWidth: 1
+        }
+      }))
+    );
+  }, [setNodes, setEdges]);
+
+  if (!repoData) {
+    return (
       <Card title="Repository Dependency Graph">
         <p className="ca-page-desc">
-          Sample visualization of module relationships. Full graph integration coming soon.
+          Please analyze a repository first to view its dependency graph.
         </p>
-        <div className="ca-graph-container" style={{ height: 420 }}>
-          <ReactFlow nodes={nodes} edges={edges} fitView proOptions={{ hideAttribution: true }}>
-            <Background color="#333" gap={16} />
-            <Controls />
-            <MiniMap nodeColor="#888888" maskColor="rgba(0,0,0,0.8)" />
-          </ReactFlow>
-        </div>
-        {onOpenArchitecture && (
-          <button type="button" className="ca-cta-link" onClick={onOpenArchitecture}>
-            View full Architecture diagrams →
-          </button>
-        )}
       </Card>
-    </ComingSoon>
+    );
+  }
+
+  return (
+    <Card title="Repository Dependency Graph">
+      {graphStats && (
+        <div className="graph-stats" style={{ marginBottom: '16px', padding: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+          <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+            <div><strong>Files:</strong> {graphStats.nodeCount}</div>
+            <div><strong>Components:</strong> {graphStats.componentCount}</div>
+            <div><strong>Services:</strong> {graphStats.serviceCount}</div>
+            <div><strong>Pages:</strong> {graphStats.pageCount}</div>
+          </div>
+        </div>
+      )}
+      
+      <div className="ca-graph-container" style={{ height: 500 }}>
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onNodeClick={onNodeClick}
+          onNodeMouseEnter={onNodeMouseEnter}
+          onNodeMouseLeave={onNodeMouseLeave}
+          fitView
+          proOptions={{ hideAttribution: true }}
+        >
+          <Background color="#333" gap={16} />
+          <Controls />
+          <MiniMap nodeColor="#888888" maskColor="rgba(0,0,0,0.8)" />
+        </ReactFlow>
+      </div>
+
+      {selectedNode && (
+        <div className="node-details" style={{ marginTop: '16px', padding: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+          <div><strong>File:</strong> {selectedNode.data.label}</div>
+          <div><strong>Path:</strong> {selectedNode.data.path}</div>
+          <div><strong>Type:</strong> {selectedNode.data.type}</div>
+        </div>
+      )}
+
+      {onOpenArchitecture && (
+        <button type="button" className="ca-cta-link" onClick={onOpenArchitecture}>
+          View full Architecture diagrams →
+        </button>
+      )}
+    </Card>
   );
 }
 

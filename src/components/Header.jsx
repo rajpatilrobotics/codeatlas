@@ -41,7 +41,7 @@ function Header({ onLogoClick }) {
         
         <div className="header-right">
           <p className="header-attribution">
-            Built using <span className="attribution-highlight">IBM Bob</span> and <span className="attribution-highlight">IBM watsonx AI</span>
+            Built using <span className="attribution-highlight">IBM Bob</span> and <span className="attribution-highlight">Groq/Gemini AI</span>
           </p>
           <p className="header-subtext">
             Intelligent code analysis powered by enterprise AI

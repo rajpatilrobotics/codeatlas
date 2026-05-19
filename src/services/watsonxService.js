@@ -1,6 +1,8 @@
-// IBM watsonx.ai API Service - Production Ready
-// All API calls now go through backend to keep API keys secure
-// NO direct Watsonx API calls, NO exposed credentials
+// AI Service - Unified AI Provider Layer
+// Uses Groq/Gemini providers with fallback support
+// All API calls go through backend to keep API keys secure
+
+import { generateText as aiGenerateText, generateChat as aiGenerateChat } from './ai/aiService.js';
 
 /**
  * Get API base URL (works in both dev and production)
@@ -16,18 +18,13 @@ const getApiBaseUrl = () => {
 const API_BASE = getApiBaseUrl();
 
 /**
- * Generate text using IBM watsonx.ai Granite model via backend API
- * Calls the backend Express server which handles authentication and API calls
+ * Generate text using AI providers via backend API
  * 
  * @param {string} prompt - The text prompt to send to the model
  * @param {Object} options - Optional generation parameters
- * @param {string} options.decodingMethod - Decoding method (default: 'greedy')
- * @param {number} options.maxNewTokens - Maximum tokens to generate (default: 200)
- * @param {number} options.minNewTokens - Minimum tokens to generate (default: 1)
  * @param {number} options.temperature - Sampling temperature (default: 0.7)
- * @param {number} options.topP - Top-p sampling (default: 1)
- * @param {number} options.topK - Top-k sampling (default: 50)
- * @param {number} options.repetitionPenalty - Repetition penalty (default: 1.0)
+ * @param {number} options.maxTokens - Maximum tokens to generate (default: 200)
+ * @param {number} options.topP - Top-p sampling (default: 0.9)
  * @returns {Promise<string>} Generated text response
  * @throws {Error} If text generation fails
  */
@@ -36,7 +33,7 @@ export async function generateText(prompt, options = {}) {
     throw new Error('Prompt must be a non-empty string');
   }
 
-  console.log('Sending request to backend Watsonx API...');
+  console.log('Sending request to backend AI API...');
 
   try {
     const response = await fetch(`${API_BASE}/api/watsonx/generate`, {
@@ -46,7 +43,11 @@ export async function generateText(prompt, options = {}) {
       },
       body: JSON.stringify({
         prompt,
-        options,
+        options: {
+          temperature: options.temperature || 0.7,
+          maxNewTokens: options.maxTokens || 200,
+          topP: options.topP || 0.9,
+        },
       }),
     });
 
@@ -54,7 +55,7 @@ export async function generateText(prompt, options = {}) {
       const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
       
       if (response.status === 401) {
-        throw new Error('Authentication failed. Please check Watsonx API credentials.');
+        throw new Error('Authentication failed. Please check AI API credentials.');
       } else if (response.status === 500) {
         throw new Error(errorData.error || 'Server configuration error. Please contact support.');
       }
@@ -114,7 +115,7 @@ export async function sendChatMessage(message, context = '') {
       const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
       
       if (response.status === 401) {
-        throw new Error('Authentication failed. Please check Watsonx API credentials.');
+        throw new Error('Authentication failed. Please check AI API credentials.');
       } else if (response.status === 500) {
         throw new Error(errorData.error || 'Server error. Please try again.');
       }

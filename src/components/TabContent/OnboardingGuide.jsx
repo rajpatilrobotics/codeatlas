@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { getHardcodedOnboardingGuide } from '../../services/hardcodedDataService';
 
 function OnboardingGuide({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
   const [loading, setLoading] = useState(false);
@@ -18,7 +17,7 @@ function OnboardingGuide({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
   // Check for cached data on mount
   useEffect(() => {
     const cachedData = localStorage.getItem('onboarding_guide_cache');
-    if (cachedData) {
+    if (cachedData && cachedData !== 'undefined' && cachedData !== 'null') {
       try {
         const parsed = JSON.parse(cachedData);
         setOnboardingData(parsed);
@@ -26,6 +25,9 @@ function OnboardingGuide({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
         console.error('Failed to parse cached data:', err);
         localStorage.removeItem('onboarding_guide_cache');
       }
+    } else if (cachedData) {
+      // Clear invalid cache
+      localStorage.removeItem('onboarding_guide_cache');
     }
   }, []);
 
@@ -34,17 +36,28 @@ function OnboardingGuide({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
     setError(null);
 
     try {
-      // Load comprehensive onboarding guide
-      const guideData = await getHardcodedOnboardingGuide();
+      // Generate onboarding guide using API endpoint
+      const response = await fetch('/api/ai/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repoData })
+      });
+      const result = await response.json();
       
-      // Cache the response
-      localStorage.setItem('onboarding_guide_cache', JSON.stringify(guideData));
-      
-      setOnboardingData(guideData);
-      setLoading(false);
+      if (result.success) {
+        const guideData = result.onboarding;
+        
+        // Cache the response
+        localStorage.setItem('onboarding_guide_cache', JSON.stringify(guideData));
+        
+        setOnboardingData(guideData);
+      } else {
+        throw new Error(result.error || 'Failed to generate onboarding guide');
+      }
     } catch (err) {
-      console.error('Error loading onboarding guide:', err);
-      setError(err.message || 'Failed to load onboarding guide');
+      console.error('Error generating onboarding guide:', err);
+      setError(err.message || 'Failed to generate onboarding guide');
+    } finally {
       setLoading(false);
     }
   };

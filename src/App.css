@@ -1752,7 +1752,7 @@
   font-weight: 500;
 }
 
-.watsonx-highlight {
+.ai-highlight {
   background: var(--gradient-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { getHardcodedSecurityData } from '../../services/hardcodedDataService';
 
 function SecurityScanner({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
   const [securityData, setSecurityData] = useState(null);
@@ -39,13 +38,24 @@ function SecurityScanner({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
     setError(null);
 
     try {
-      // Load hardcoded security data with simulated loading
-      const parsedData = await getHardcodedSecurityData();
+      // Generate security analysis using API endpoint
+      const response = await fetch('/api/ai/security', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repoData, codeAnalysis })
+      });
+      const result = await response.json();
       
-      // Cache the result
-      sessionStorage.setItem('securityScanCache', JSON.stringify(parsedData));
-      setCachedData(parsedData);
-      setSecurityData(parsedData);
+      if (result.success) {
+        const parsedData = result.security;
+        
+        // Cache the result
+        sessionStorage.setItem('securityScanCache', JSON.stringify(parsedData));
+        setCachedData(parsedData);
+        setSecurityData(parsedData);
+      } else {
+        throw new Error(result.error || 'Failed to perform security scan');
+      }
       
     } catch (err) {
       console.error('Security scan failed:', err);

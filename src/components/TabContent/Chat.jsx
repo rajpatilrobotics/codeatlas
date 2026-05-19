@@ -568,7 +568,7 @@ RESPONSE FORMAT:
       // PHASE 2: Build structured prompt
       const prompt = buildStructuredPrompt(currentInput, intent, dynamicContext, messages);
       
-      // Call watsonx.ai
+      // Call AI service
       const response = await generateText(prompt, {
         maxNewTokens: 350,
         temperature: 0.7,
@@ -648,7 +648,7 @@ RESPONSE FORMAT:
         <div className="chat-header-section">
           <h2 className="card-title">💬 Chat with AI Assistant</h2>
           <p className="chat-powered-by">
-            Powered by <span className="watsonx-highlight">watsonx AI</span>
+            Powered by <span className="ai-highlight">Groq/Gemini AI</span>
           </p>
         </div>
         <div className="chat-container">
@@ -701,7 +701,7 @@ RESPONSE FORMAT:
                   </div>
                   <div className="message-content">
                     <div className="typing-indicator">
-                      <span className="typing-text">Analyzing with watsonx AI</span>
+                      <span className="typing-text">Analyzing with AI</span>
                       <span className="typing-dot"></span>
                       <span className="typing-dot"></span>
                       <span className="typing-dot"></span>
