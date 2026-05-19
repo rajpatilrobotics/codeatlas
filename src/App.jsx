@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
+import './styles/tokens.css';
+import './styles/layout.css';
+import './styles/components.css';
+import './styles/command-center.css';
 import './App.css';
 import './components/Homepage/Homepage.css';
-import Header from './components/Header';
-import InputSection from './components/InputSection';
 import LoadingSpinner from './components/LoadingSpinner';
-import TabNavigation from './components/TabNavigation';
-import DownloadPDFButton from './components/DownloadPDFButton';
 import ScrollToTopButton from './components/ScrollToTopButton';
 import Footer from './components/Footer';
+import AppShell from './components/layout/AppShell';
+import PageHeader from './components/layout/PageHeader';
+import LandingHeader from './components/layout/LandingHeader';
 import { jsPDF } from 'jspdf';
 import { toPng } from 'html-to-image';
 
@@ -24,6 +27,15 @@ import OnboardingGuide from './components/TabContent/OnboardingGuide';
 import Documentation from './components/TabContent/Documentation';
 import SecurityScanner from './components/TabContent/SecurityScanner';
 import Chat from './components/TabContent/Chat';
+
+// Dashboard & future feature pages
+import Dashboard from './components/pages/Dashboard';
+import Planner from './components/pages/Planner';
+import RepositoryGraph from './components/pages/RepositoryGraph';
+import BlastRadius from './components/pages/BlastRadius';
+import DebugNavigator from './components/pages/DebugNavigator';
+import Heatmap from './components/pages/Heatmap';
+import SavedWorkspaces from './components/pages/SavedWorkspaces';
 
 // GitHub Service
 import { analyzeRepository, analyzeArchitecture, parseGitHubUrl } from './services/githubService';
@@ -48,7 +60,7 @@ function App() {
   const [previousUrl, setPreviousUrl] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
-  const [activeTab, setActiveTab] = useState('summary');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [repoSize, setRepoSize] = useState(0);
   const [repoData, setRepoData] = useState(null);
   const [error, setError] = useState(null);
@@ -72,15 +84,6 @@ function App() {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [pdfProgress, setPdfProgress] = useState('');
   const resultsRef = useRef(null);
-
-  const tabs = [
-    { id: 'summary', label: 'Summary' },
-    { id: 'architecture', label: 'Architecture' },
-    { id: 'onboarding', label: 'Onboarding Guide' },
-    { id: 'documentation', label: 'Documentation' },
-    { id: 'security', label: 'Security Scanner' },
-    { id: 'chat', label: 'Chat' }
-  ];
 
   // Helper function to prepare input for watsonx.ai
   const prepareAIInput = (repoData) => {
@@ -135,7 +138,7 @@ ${readmeSnippet}
   useEffect(() => {
     if (repoUrl !== previousUrl && previousUrl !== '') {
       setAnalysisComplete(false);
-      setActiveTab('summary');
+      setActiveTab('dashboard');
       setError(null);
       setSuccessMessage('');
       setAiSummary('');
@@ -186,7 +189,7 @@ ${readmeSnippet}
       setRepoSize(data.fileTree.length);
       setSuccessMessage('Repository analyzed successfully! ✓');
       setAnalysisComplete(true);
-      setActiveTab('summary');
+      setActiveTab('dashboard');
       
       // Auto-hide success message after 5 seconds
       setTimeout(() => {
@@ -245,7 +248,7 @@ ${readmeSnippet}
         setArchitectureAnalysis(architectureResponse);
         
         // Step 6b: Perform detailed architecture analysis
-        const detailedAnalysis = analyzeArchitecture(data.fileTree, data.importantFiles);
+        const detailedAnalysis = await analyzeArchitecture(data);
         setDetailedArchitecture(detailedAnalysis);
         console.log('Detailed Architecture Analysis:', detailedAnalysis);
         
@@ -1040,6 +1043,15 @@ ${readmeSnippet}
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'dashboard':
+        return (
+          <Dashboard
+            repoData={repoData}
+            repoSize={repoSize}
+            codeAnalysis={codeAnalysis}
+            onNavigate={setActiveTab}
+          />
+        );
       case 'summary':
         return (
           <Summary
@@ -1102,6 +1114,20 @@ ${readmeSnippet}
             isCodeAnalysisLoading={isCodeAnalysisLoading}
           />
         );
+      case 'repository-graph':
+        return (
+          <RepositoryGraph onOpenArchitecture={() => setActiveTab('architecture')} />
+        );
+      case 'blast-radius':
+        return <BlastRadius />;
+      case 'planner':
+        return <Planner />;
+      case 'debug-navigator':
+        return <DebugNavigator />;
+      case 'heatmap':
+        return <Heatmap />;
+      case 'saved-workspaces':
+        return <SavedWorkspaces />;
       default:
         return (
           <Summary
@@ -1129,20 +1155,24 @@ ${readmeSnippet}
     setCodeAnalysis(null);
     setError(null);
     setSuccessMessage('');
-    setActiveTab('summary');
+    setActiveTab('dashboard');
     
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const repoLabel =
+    repoData?.repoInfo?.name ||
+    repoUrl?.replace(/^https?:\/\/github\.com\//, '').replace(/\/$/, '') ||
+    '';
+
   return (
     <div className="app">
-      <Header onLogoClick={handleNewAnalysis} />
-      
-      <main className="main-content">
-        <div className="single-column">
-          {!analysisComplete && !isAnalyzing && (
-            <>
+      {!analysisComplete && !isAnalyzing ? (
+        <div className="landing-layout">
+          <LandingHeader onLogoClick={handleNewAnalysis} />
+          <main className="main-content">
+            <div className="single-column">
               <HeroSection
                 repoUrl={repoUrl}
                 onUrlChange={setRepoUrl}
@@ -1152,9 +1182,23 @@ ${readmeSnippet}
               <ImpactComparison />
               <HowItWorks />
               <CTASection />
-            </>
-          )}
-
+            </div>
+          </main>
+          <Footer />
+        </div>
+      ) : (
+        <AppShell
+          activeTab={activeTab}
+          onNavigate={setActiveTab}
+          onLogoClick={handleNewAnalysis}
+          repoLabel={repoLabel}
+          onNewAnalysis={handleNewAnalysis}
+          onDownloadPDF={handleDownloadPDF}
+          isGeneratingPDF={isGeneratingPDF}
+          pdfProgress={pdfProgress}
+          repoData={repoData}
+          codeAnalysis={codeAnalysis}
+        >
           {/* Success Message Banner */}
           {successMessage && (
             <div className="message-banner success-banner">
@@ -1180,16 +1224,7 @@ ${readmeSnippet}
 
           {analysisComplete && (
             <div ref={resultsRef} className="results-section">
-              <TabNavigation
-                tabs={tabs}
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-                onDownloadPDF={handleDownloadPDF}
-                isGeneratingPDF={isGeneratingPDF}
-                pdfProgress={pdfProgress}
-                onNewAnalysis={handleNewAnalysis}
-              />
-
+              <PageHeader tabId={activeTab} />
               <div className="tab-content-wrapper">
                 {renderTabContent()}
               </div>
@@ -1217,10 +1252,9 @@ ${readmeSnippet}
               </div>
             </div>
           )}
-        </div>
-      </main>
+        </AppShell>
+      )}
 
-      <Footer />
       <ScrollToTopButton />
     </div>
   );

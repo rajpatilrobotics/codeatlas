@@ -1,5 +1,9 @@
 {
   "version": 2,
+  "devCommand": "npm run dev",
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "framework": "create-react-app",
   "github": {
     "silent": false
   },

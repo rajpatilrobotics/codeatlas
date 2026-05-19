@@ -34,17 +34,27 @@ AI-powered platform for analyzing GitHub repositories and generating comprehensi
 
 ## Environment Variables
 
-Required environment variables (see `.env.example`):
-- `REACT_APP_WATSONX_API_KEY`
-- `REACT_APP_WATSONX_PROJECT_ID`
-- `REACT_APP_WATSONX_REGION_URL`
-- `REACT_APP_WATSONX_MODEL_ID`
-- `REACT_APP_GITHUB_TOKEN`
+Required in `.env` at the project root (see `.env.example`):
+- `GITHUB_TOKEN` — GitHub personal access token (used by `/api/github/analyze`)
+- `WATSONX_API_KEY`, `WATSONX_PROJECT_ID`, `WATSONX_REGION_URL`, `WATSONX_MODEL_ID` — for Chat (Watsonx)
 
 ## Getting Started
 
 ```bash
 npm install
+```
+
+**Local development (UI + API routes):**
+
+```bash
+vercel dev
+```
+
+Then open `http://localhost:3000`. Use `vercel dev` instead of `npm start` alone so `/api/github/analyze` works.
+
+**UI only (Analyze will not work):**
+
+```bash
 npm start
 ```
 

@@ -75,10 +75,22 @@ export async function analyzeRepository(repoUrl) {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-      
+      const contentType = response.headers.get('content-type') || '';
+      const errorData = contentType.includes('application/json')
+        ? await response.json().catch(() => ({ error: 'Unknown error' }))
+        : { error: 'Unknown error' };
+
+      if (response.status === 404 && !contentType.includes('application/json')) {
+        throw new Error(
+          'Analysis API not available. Run "vercel dev" from the project root (not "npm start" alone).'
+        );
+      }
+
       if (response.status === 404) {
-        throw new Error('Repository not found or is private. Please check the URL and ensure the repository is public.');
+        throw new Error(
+          errorData.error ||
+            'Repository not found or is private. Please check the URL and ensure the repository is public.'
+        );
       } else if (response.status === 403) {
         throw new Error(errorData.error || 'GitHub API rate limit exceeded. Please try again later.');
       } else if (response.status === 500) {
@@ -171,9 +183,9 @@ function detectFrameworks(fileTree) {
     'FastAPI': [/main\.py/, /fastapi/i],
   };
 
-  for (const [framework, patterns] of Object.entries(patterns)) {
-    const hasIndicators = patterns.some(pattern => 
-      fileTree.some(file => pattern.test(file))
+  for (const [framework, frameworkPatterns] of Object.entries(patterns)) {
+    const hasIndicators = frameworkPatterns.some((pattern) =>
+      fileTree.some((file) => pattern.test(file))
     );
     if (hasIndicators) {
       frameworks.push(framework);
