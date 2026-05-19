@@ -1,17 +1,7 @@
 import React from 'react';
 import { NAV_SECTIONS } from '../../config/navigation';
 
-function Sidebar({
-  activeTab,
-  onNavigate,
-  onLogoClick,
-  onNewAnalysis,
-  onDownloadPDF,
-  isGeneratingPDF,
-  pdfProgress,
-  isOpen,
-  onClose,
-}) {
+function Sidebar({ activeTab, onNavigate, onLogoClick, isOpen, onClose }) {
   return (
     <>
       <div
@@ -55,24 +45,6 @@ function Sidebar({
             </div>
           ))}
         </nav>
-
-        <div className="sidebar-footer">
-          {onNewAnalysis && (
-            <button type="button" className="sidebar-action-btn" onClick={onNewAnalysis}>
-              New Analysis
-            </button>
-          )}
-          {onDownloadPDF && (
-            <button
-              type="button"
-              className="sidebar-action-btn primary"
-              onClick={onDownloadPDF}
-              disabled={isGeneratingPDF}
-            >
-              {isGeneratingPDF ? pdfProgress || 'Generating...' : 'Download PDF'}
-            </button>
-          )}
-        </div>
       </aside>
     </>
   );

@@ -9,6 +9,13 @@ function AppShell({
   onNavigate,
   onLogoClick,
   repoLabel,
+  repoUrl,
+  recentRepos,
+  isAnalyzing,
+  lastAnalyzedRepoUrl,
+  onSelectRecentRepo,
+  onAnalyze,
+  onClearRecentRepos,
   onNewAnalysis,
   onDownloadPDF,
   isGeneratingPDF,
@@ -41,18 +48,25 @@ function AppShell({
         activeTab={activeTab}
         onNavigate={onNavigate}
         onLogoClick={onLogoClick}
-        onNewAnalysis={onNewAnalysis}
-        onDownloadPDF={onDownloadPDF}
-        isGeneratingPDF={isGeneratingPDF}
-        pdfProgress={pdfProgress}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
       <div className="app-shell-main">
         <TopBar
           repoLabel={repoLabel}
+          repoUrl={repoUrl}
+          recentRepos={recentRepos}
+          isAnalyzing={isAnalyzing}
+          lastAnalyzedRepoUrl={lastAnalyzedRepoUrl}
           onMenuClick={() => setSidebarOpen(true)}
           onOpenCommandCenter={openCommandCenter}
+          onNewAnalysis={onNewAnalysis}
+          onDownloadPDF={onDownloadPDF}
+          onSelectRecentRepo={onSelectRecentRepo}
+          onAnalyze={onAnalyze}
+          onClearRecentRepos={onClearRecentRepos}
+          isGeneratingPDF={isGeneratingPDF}
+          pdfProgress={pdfProgress}
         />
         <main className="app-shell-content">
           <div className="app-shell-content-inner">{children}</div>

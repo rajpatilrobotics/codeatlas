@@ -13,8 +13,8 @@ const MOCK_NODES = [
 ];
 
 const MOCK_EDGES = [
-  { id: 'e1-2', source: '1', target: '2', animated: true, style: { stroke: '#00d1ff' } },
-  { id: 'e1-3', source: '1', target: '3', animated: true, style: { stroke: '#00d1ff' } },
+  { id: 'e1-2', source: '1', target: '2', animated: true, style: { stroke: '#888888' } },
+  { id: 'e1-3', source: '1', target: '3', animated: true, style: { stroke: '#888888' } },
   { id: 'e2-4', source: '2', target: '4' },
   { id: 'e3-4', source: '3', target: '4' },
   { id: 'e4-5', source: '4', target: '5' },
@@ -34,7 +34,7 @@ function RepositoryGraph({ onOpenArchitecture }) {
           <ReactFlow nodes={nodes} edges={edges} fitView proOptions={{ hideAttribution: true }}>
             <Background color="#333" gap={16} />
             <Controls />
-            <MiniMap nodeColor="#00d1ff" maskColor="rgba(0,0,0,0.8)" />
+            <MiniMap nodeColor="#888888" maskColor="rgba(0,0,0,0.8)" />
           </ReactFlow>
         </div>
         {onOpenArchitecture && (

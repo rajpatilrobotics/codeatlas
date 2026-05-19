@@ -1,7 +1,29 @@
 import React from 'react';
-import { Search, Menu, ChevronDown } from 'lucide-react';
+import { Search, Menu } from 'lucide-react';
+import RepoSwitcher from './RepoSwitcher';
+import { urlsMatch } from '../../utils/recentRepos';
 
-function TopBar({ repoLabel, onMenuClick, onOpenCommandCenter }) {
+function TopBar({
+  repoLabel,
+  repoUrl,
+  recentRepos,
+  isAnalyzing,
+  lastAnalyzedRepoUrl,
+  onMenuClick,
+  onOpenCommandCenter,
+  onNewAnalysis,
+  onDownloadPDF,
+  onSelectRecentRepo,
+  onAnalyze,
+  onClearRecentRepos,
+  isGeneratingPDF,
+  pdfProgress,
+}) {
+  const showAnalyze =
+    Boolean(repoUrl?.trim()) &&
+    Boolean(lastAnalyzedRepoUrl) &&
+    !urlsMatch(repoUrl, lastAnalyzedRepoUrl);
+
   return (
     <header className="topbar">
       <div className="topbar-left">
@@ -23,10 +45,45 @@ function TopBar({ repoLabel, onMenuClick, onOpenCommandCenter }) {
           <span className="topbar-search-placeholder">Search</span>
           <span className="topbar-search-kbd">⌘K</span>
         </button>
-        {repoLabel && (
-          <div className="topbar-repo" title={repoLabel}>
-            <span>{repoLabel}</span>
-            <ChevronDown size={14} />
+
+        <div className="topbar-actions">
+          {onNewAnalysis && (
+            <button type="button" className="topbar-action-btn" onClick={onNewAnalysis}>
+              New Analysis
+            </button>
+          )}
+          {onDownloadPDF && (
+            <button
+              type="button"
+              className="topbar-action-btn topbar-action-btn-primary"
+              onClick={onDownloadPDF}
+              disabled={isGeneratingPDF}
+            >
+              {isGeneratingPDF ? pdfProgress || 'Generating...' : 'Download PDF'}
+            </button>
+          )}
+        </div>
+
+        {(repoLabel || repoUrl) && (
+          <div className="topbar-repo-group">
+            <RepoSwitcher
+              repoLabel={repoLabel}
+              repoUrl={repoUrl}
+              recentRepos={recentRepos}
+              isAnalyzing={isAnalyzing}
+              onSelectRepo={onSelectRecentRepo}
+              onClearHistory={onClearRecentRepos}
+            />
+            {showAnalyze && onAnalyze && (
+              <button
+                type="button"
+                className="topbar-action-btn topbar-action-btn-primary topbar-analyze-btn"
+                onClick={onAnalyze}
+                disabled={isAnalyzing}
+              >
+                {isAnalyzing ? 'Analyzing...' : 'Analyze'}
+              </button>
+            )}
           </div>
         )}
       </div>

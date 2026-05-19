@@ -3,7 +3,7 @@
     <linearGradient id="dd-primary" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#A855F7" />
       <stop offset="50%" stop-color="#6366F1" />
-      <stop offset="100%" stop-color="#0EA5E9" />
+      <stop offset="100%" stop-color="#888888" />
     </linearGradient>
     <filter id="dd-glow" x="-20%" y="-20%" width="140%" height="140%">
       <feGaussianBlur stdDeviation="3" result="blur" />
@@ -21,7 +21,7 @@
   <path d="M 36,20 A 24,20 0 0,1 36,60" fill="none" stroke="url(#dd-primary)" stroke-width="14" stroke-linecap="round" />
   
   <!-- The Core (AI Node) -->
-  <circle cx="45" cy="40" r="4.5" fill="#22D3EE" filter="url(#dd-glow)" />
+  <circle cx="45" cy="40" r="4.5" fill="#FFFFFF" />
 </svg>
 
 <!-- Made with Bob -->

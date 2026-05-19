@@ -12,7 +12,7 @@ const MOCK_HEAT = [
 
 function heatColor(value) {
   const alpha = 0.15 + value * 0.85;
-  return `rgba(0, 209, 255, ${alpha})`;
+  return `rgba(255, 255, 255, ${alpha})`;
 }
 
 function Heatmap() {

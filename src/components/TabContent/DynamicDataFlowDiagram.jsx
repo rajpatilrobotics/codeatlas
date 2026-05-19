@@ -442,7 +442,7 @@ const FlowNode = ({ node }) => {
   const layerColors = {
     entry: '#3b82f6',    // Blue
     ui: '#8b5cf6',       // Purple
-    api: '#06b6d4',      // Cyan
+    api: '#888888',
     backend: '#10b981',  // Green
     data: '#f59e0b'      // Orange
   };
@@ -699,7 +699,7 @@ function DynamicDataFlowDiagram({ codeAnalysis }) {
                 const layerColors = {
                   entry: '#3b82f6',
                   ui: '#8b5cf6',
-                  api: '#06b6d4',
+                  api: '#888888',
                   backend: '#10b981',
                   data: '#f59e0b'
                 };

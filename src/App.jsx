@@ -4,6 +4,7 @@ import './styles/layout.css';
 import './styles/components.css';
 import './styles/command-center.css';
 import './App.css';
+import './styles/matte-overrides.css';
 import './components/Homepage/Homepage.css';
 import LoadingSpinner from './components/LoadingSpinner';
 import ScrollToTopButton from './components/ScrollToTopButton';
@@ -39,6 +40,12 @@ import SavedWorkspaces from './components/pages/SavedWorkspaces';
 
 // GitHub Service
 import { analyzeRepository, analyzeArchitecture, parseGitHubUrl } from './services/githubService';
+import {
+  getRecentRepos,
+  addRecentRepo,
+  clearRecentRepos,
+  normalizeRepoUrl,
+} from './utils/recentRepos';
 
 // Hardcoded Data Service (replaces Watsonx API)
 import {
@@ -83,6 +90,8 @@ function App() {
   const [codeAnalysisError, setCodeAnalysisError] = useState(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [pdfProgress, setPdfProgress] = useState('');
+  const [recentRepos, setRecentRepos] = useState(() => getRecentRepos());
+  const [lastAnalyzedRepoUrl, setLastAnalyzedRepoUrl] = useState('');
   const resultsRef = useRef(null);
 
   // Helper function to prepare input for watsonx.ai
@@ -134,6 +143,19 @@ ${readmeSnippet}
     `.trim();
   };
 
+  // Seed recent list for sessions started before this feature
+  useEffect(() => {
+    if (!analysisComplete || !repoUrl.trim()) return;
+    const normalized = normalizeRepoUrl(repoUrl);
+    if (!normalized) return;
+    if (!lastAnalyzedRepoUrl) {
+      setLastAnalyzedRepoUrl(normalized);
+    }
+    if (recentRepos.length === 0) {
+      setRecentRepos(addRecentRepo(normalized));
+    }
+  }, [analysisComplete, repoUrl, lastAnalyzedRepoUrl, recentRepos.length]);
+
   // Reset logic when URL changes
   useEffect(() => {
     if (repoUrl !== previousUrl && previousUrl !== '') {
@@ -164,8 +186,13 @@ ${readmeSnippet}
     }
   }, [analysisComplete]);
 
-  const handleAnalyze = async () => {
-    if (!repoUrl.trim()) return;
+  const handleAnalyze = async (urlOverride) => {
+    const targetUrl = (urlOverride ?? repoUrl).trim();
+    if (!targetUrl) return;
+
+    if (urlOverride) {
+      setRepoUrl(targetUrl);
+    }
     
     setIsAnalyzing(true);
     setAnalysisComplete(false);
@@ -177,7 +204,7 @@ ${readmeSnippet}
     
     try {
       // Step 1: Analyze repository using GitHub service
-      const data = await analyzeRepository(repoUrl);
+      const data = await analyzeRepository(targetUrl);
       
       if (data.error) {
         setError(data.error);
@@ -190,6 +217,12 @@ ${readmeSnippet}
       setSuccessMessage('Repository analyzed successfully! ✓');
       setAnalysisComplete(true);
       setActiveTab('dashboard');
+
+      const normalized = normalizeRepoUrl(targetUrl);
+      if (normalized) {
+        setLastAnalyzedRepoUrl(normalized);
+        setRecentRepos(addRecentRepo(normalized));
+      }
       
       // Auto-hide success message after 5 seconds
       setTimeout(() => {
@@ -266,7 +299,7 @@ ${readmeSnippet}
         console.log('🔬 Starting deep code analysis...');
         
         // Parse GitHub URL to get owner and repo
-        const parsed = parseGitHubUrl(repoUrl);
+        const parsed = parseGitHubUrl(targetUrl);
         if (!parsed) {
           throw new Error('Invalid GitHub URL');
         }
@@ -1161,7 +1194,18 @@ ${readmeSnippet}
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleSelectRecentRepo = (url) => {
+    if (isAnalyzing) return;
+    handleAnalyze(url);
+  };
+
+  const handleClearRecentRepos = () => {
+    clearRecentRepos();
+    setRecentRepos([]);
+  };
+
   const repoLabel =
+    repoData?.repoInfo?.full_name ||
     repoData?.repoInfo?.name ||
     repoUrl?.replace(/^https?:\/\/github\.com\//, '').replace(/\/$/, '') ||
     '';
@@ -1192,6 +1236,13 @@ ${readmeSnippet}
           onNavigate={setActiveTab}
           onLogoClick={handleNewAnalysis}
           repoLabel={repoLabel}
+          repoUrl={repoUrl}
+          recentRepos={recentRepos}
+          isAnalyzing={isAnalyzing}
+          lastAnalyzedRepoUrl={lastAnalyzedRepoUrl}
+          onSelectRecentRepo={handleSelectRecentRepo}
+          onAnalyze={() => handleAnalyze()}
+          onClearRecentRepos={handleClearRecentRepos}
           onNewAnalysis={handleNewAnalysis}
           onDownloadPDF={handleDownloadPDF}
           isGeneratingPDF={isGeneratingPDF}

@@ -1,66 +1,4 @@
-/* ===================================
-   CSS Variables (Design Tokens)
-   AI-Themed Dark Design System
-   =================================== */
-:root {
-  /* Background Colors */
-  --bg-primary: #0A0A0F;
-  --bg-secondary: #111827;
-  --bg-tertiary: #1a1f2e;
-  
-  /* Text Colors */
-  --text-primary: #E5E7EB;
-  --text-secondary: #9CA3AF;
-  --text-muted: #6B7280;
-  
-  /* Primary Gradient (Blue → Purple) */
-  --gradient-primary: linear-gradient(135deg, #4F8CFF 0%, #7A5CFF 100%);
-  --gradient-mesh: radial-gradient(at 0% 0%, rgba(79, 140, 255, 0.15) 0px, transparent 50%),
-                   radial-gradient(at 100% 0%, rgba(122, 92, 255, 0.15) 0px, transparent 50%),
-                   radial-gradient(at 100% 100%, rgba(79, 140, 255, 0.1) 0px, transparent 50%),
-                   radial-gradient(at 0% 100%, rgba(122, 92, 255, 0.1) 0px, transparent 50%);
-  
-  /* Accent Colors */
-  --accent-primary: #4F8CFF;
-  --accent-secondary: #7A5CFF;
-  --accent-hover: #6B7FFF;
-  --success: #3fb950;
-  --warning: #d29922;
-  --danger: #f85149;
-  
-  /* Glass Effects (Card Design) */
-  --glass-bg: rgba(255, 255, 255, 0.03);
-  --glass-bg-hover: rgba(255, 255, 255, 0.06);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-blur: blur(12px);
-  
-  /* Shadows & Glows */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.3);
-  --glow-primary: 0 0 20px rgba(79, 140, 255, 0.25);
-  --glow-secondary: 0 0 20px rgba(122, 92, 255, 0.25);
-  --glow-accent: 0 0 25px rgba(79, 140, 255, 0.3);
-  
-  /* Spacing System */
-  --spacing-xs: 8px;
-  --spacing-sm: 16px;
-  --spacing-md: 24px;
-  --spacing-lg: 40px;
-  --spacing-xl: 64px;
-  
-  /* Border Radius */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --radius-full: 999px;
-  
-  /* Transitions (Micro Interactions) */
-  --transition-fast: all 0.15s ease;
-  --transition-base: all 0.25s ease;
-  --transition-slow: all 0.4s ease;
-}
+/* Design tokens live in src/styles/tokens.css */
 
 /* ===================================
    Base Styles
@@ -69,8 +7,8 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--bg-primary);
-  background-image: var(--gradient-mesh);
+  background: var(--bg-canvas);
+  background-image: none;
   color: var(--text-primary);
   position: relative;
   overflow-x: hidden;
@@ -828,21 +766,20 @@
 }
 
 .content-card {
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   padding: var(--spacing-md);
   margin-bottom: var(--spacing-md);
-  box-shadow: var(--shadow-lg);
-  transition: var(--transition-base);
+  box-shadow: none;
+  transition: var(--transition-fast);
 }
 
 .content-card:hover {
-  background: var(--glass-bg-hover);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-  border-color: rgba(79, 140, 255, 0.2);
+  background: var(--bg-card-hover);
+  border-color: var(--border-strong);
+  transform: none;
+  box-shadow: none;
 }
 
 .card-title {

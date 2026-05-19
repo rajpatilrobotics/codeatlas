@@ -270,7 +270,7 @@ function DataFlowDiagram({ techStack, detailedArchitecture }) {
             <CleanLayerNode
               title="BACKEND / API"
               icon="⚙️"
-              color="#22d3ee"
+              color="#888888"
               data={{
                 subtitle: "Business Logic & API Endpoints",
                 technologies: techStack.backend,
@@ -406,8 +406,8 @@ function DataFlowDiagram({ techStack, detailedArchitecture }) {
         target: 'backend',
         label: 'API Calls',
         animated: true,
-        style: { stroke: '#22d3ee', strokeWidth: 2 },
-        labelStyle: { fill: '#22d3ee', fontWeight: 600, fontSize: 11 }
+        style: { stroke: '#888888', strokeWidth: 2 },
+        labelStyle: { fill: '#888888', fontWeight: 600, fontSize: 11 }
       });
     }
 
@@ -501,7 +501,7 @@ function DataFlowDiagram({ techStack, detailedArchitecture }) {
               if (node.id === 'client') return '#3b82f6';
               if (node.id === 'frontend') return '#a78bfa';
               if (node.id === 'auth') return '#10b981';
-              if (node.id === 'backend') return '#22d3ee';
+              if (node.id === 'backend') return '#888888';
               if (node.id === 'cache') return '#f59e0b';
               if (node.id === 'database') return '#ec4899';
               return '#64748b';
@@ -536,7 +536,7 @@ function DataFlowDiagram({ techStack, detailedArchitecture }) {
             <span style={{ color: '#d1d5db' }}>Authentication</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{ width: '12px', height: '12px', background: '#22d3ee', borderRadius: '2px' }}></div>
+            <div style={{ width: '12px', height: '12px', background: '#888888', borderRadius: '2px' }}></div>
             <span style={{ color: '#d1d5db' }}>Backend/API</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

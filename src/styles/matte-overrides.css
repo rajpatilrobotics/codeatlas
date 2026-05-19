@@ -1,0 +1,112 @@
+/* Matte overrides for legacy App.css / tab styles */
+
+.app {
+  background: var(--bg-canvas) !important;
+  background-image: none !important;
+}
+
+.content-card {
+  background: var(--bg-card) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid var(--border-default) !important;
+  box-shadow: none !important;
+  transition: var(--transition-fast) !important;
+}
+
+.content-card:hover {
+  background: var(--bg-card-hover) !important;
+  border-color: var(--border-strong) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.tab-button:hover,
+.download-pdf-btn-nav:hover,
+.new-analysis-btn:hover,
+.analyze-btn:hover,
+.cta-button:hover,
+.hero-cta:hover,
+.feature-card:hover,
+.capability-card:hover,
+.productivity-metric:hover,
+.comparison-card:hover,
+.step-card:hover,
+.testimonial-card:hover {
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.message-banner {
+  box-shadow: none !important;
+}
+
+/* Landing — matte pass */
+.landing-layout {
+  background: var(--bg-canvas) !important;
+}
+
+.hero-content::before {
+  display: none !important;
+}
+
+.hero-logo-icon,
+.hero-logo-horizontal {
+  filter: none !important;
+  animation: none !important;
+}
+
+.feature-card-glow,
+.capability-glow,
+.metric-glow,
+.hero-glow,
+.section-glow {
+  display: none !important;
+}
+
+.feature-card,
+.capability-card,
+.productivity-metric,
+.comparison-card,
+.step-card,
+.repo-input-container,
+.hero-badge {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.feature-card,
+.capability-card,
+.productivity-metric,
+.comparison-card,
+.step-card {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-default) !important;
+  box-shadow: none !important;
+}
+
+.feature-card:hover,
+.capability-card:hover,
+.productivity-metric:hover {
+  background: var(--bg-card-hover) !important;
+  border-color: var(--border-strong) !important;
+}
+
+.analyze-btn,
+.cta-primary,
+.hero-submit-btn {
+  box-shadow: none !important;
+}
+
+.analyze-btn:hover:not(:disabled),
+.cta-primary:hover,
+.hero-submit-btn:hover:not(:disabled) {
+  box-shadow: none !important;
+  transform: none !important;
+  filter: brightness(1.06);
+}
+
+.repo-input:focus {
+  box-shadow: none !important;
+  border-color: var(--border-strong) !important;
+}
