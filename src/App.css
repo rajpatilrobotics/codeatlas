@@ -77,17 +77,7 @@
 }
 
 .app::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image:
-    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.05) 1px, transparent 0);
-  background-size: 40px 40px;
-  pointer-events: none;
-  z-index: 0;
+  display: none;
 }
 
 .app > * {
@@ -102,7 +92,10 @@
   flex: 1;
   width: 100%;
   padding: 0;
-  padding-top: 170px; /* UPDATED: header (100px) + navbar (70px) = 170px total */
+}
+
+.landing-layout .main-content {
+  padding-top: 0;
 }
 
 /* Split-Screen Layout */

@@ -34,12 +34,12 @@ function HeroSection({ repoUrl, onUrlChange, onAnalyze, isAnalyzing }) {
   return (
     <section className="hero-section">
       <div className="hero-content">
-        <div className="hero-logo-container">
-          <img
-            src="/devdock-logo-horizontal.svg"
-            alt="DevDock"
-            className="hero-logo-horizontal"
-          />
+        <div className="hero-logo-container hero-codeatlas-brand">
+          <div className="sidebar-logo hero-brand-icon" aria-hidden="true" />
+          <div className="hero-brand-text">
+            <span className="hero-brand-name">CodeAtlas</span>
+            <span className="hero-brand-tagline">Understand Systems. Predict Impact.</span>
+          </div>
         </div>
         <h1 className="hero-subtitle">
           Understand Any Codebase
@@ -47,12 +47,12 @@ function HeroSection({ repoUrl, onUrlChange, onAnalyze, isAnalyzing }) {
         </h1>
         
         <p className="hero-subheading">
-          Whether you're a new developer joining a team or exploring a new repository, DevDock turns confusion into clarity in minutes using IBM Bob and watsonx AI.
+          Whether you're joining a team or exploring a new repository, CodeAtlas turns confusion into clarity using IBM Bob and watsonx AI.
         </p>
 
         <div className="hero-info-section">
           <p className="info-label">Manual onboarding takes days</p>
-          <p className="info-label">DevDock gets you productive in minutes</p>
+          <p className="info-label">CodeAtlas gets you productive in minutes</p>
         </div>
 
         <p className="hero-support-line">

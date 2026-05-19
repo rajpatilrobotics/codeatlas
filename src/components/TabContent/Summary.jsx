@@ -38,7 +38,7 @@ function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, sum
     <div className="tab-content summary-tab">
       {/* Repository Overview - Merged Section */}
       <div className="content-card">
-        <h2 className="card-title">📦 Repository Overview</h2>
+        <h2 className="card-title">Repository Overview</h2>
         <div className="card-content">
           <div className="repo-stats-grid">
             <div className="stat-row">
@@ -121,7 +121,7 @@ function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, sum
 
       {/* AI-Generated Summary */}
       <div className="content-card">
-        <h2 className="card-title">🤖 AI-Generated Summary</h2>
+        <h2 className="card-title">AI Generated Summary</h2>
         <div className="card-content">
           {isSummaryLoading && (
             <div className="loading-container">
@@ -152,10 +152,11 @@ function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, sum
         </div>
       </div>
 
+      <div className="ca-summary-grid-2">
       {/* Tech Stack Detection */}
       {techStack && Object.values(techStack).some(arr => Array.isArray(arr) && arr.length > 0) && (
         <div className="content-card">
-          <h2 className="card-title">🛠️ Tech Stack Detected</h2>
+          <h2 className="card-title">Tech Stack</h2>
           <div className="card-content">
             <div className="tech-stack-inline">
               {techStack.frontend.length > 0 && (
@@ -215,7 +216,7 @@ function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, sum
 
       {/* Quick Start Guide */}
       <div className="content-card">
-        <h2 className="card-title">🚀 Quick Start Guide</h2>
+        <h2 className="card-title">Quick Start Guide</h2>
         <div className="card-content">
           {isQuickStartLoading && (
             <div className="loading-container">
@@ -237,6 +238,7 @@ function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, sum
             <p className="placeholder-text">Quick start guide will appear here...</p>
           )}
         </div>
+      </div>
       </div>
 
       {/* Contributor Insights */}
@@ -522,10 +524,10 @@ function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, sum
 
       {/* Important Files Detected */}
       <div className="content-card">
-        <h2 className="card-title">🔍 Important Files Detected</h2>
+        <h2 className="card-title">Important Files</h2>
         <div className="card-content">
           {importantFiles && importantFiles.length > 0 ? (
-            <div className="files-list">
+            <div className="files-list ca-important-files">
               {importantFiles.map((file, index) => (
                 <div key={index} className="file-item">
                   <div className="file-header">

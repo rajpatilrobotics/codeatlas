@@ -4,12 +4,9 @@ function Footer() {
   return (
     <footer className="footer">
       <div className="footer-content">
-        <div className="footer-logo-section">
-          <img
-            src="/devdock-logo-horizontal.svg"
-            alt="DevDock Logo"
-            className="footer-logo"
-          />
+        <div className="footer-logo-section footer-codeatlas-brand">
+          <div className="sidebar-logo" style={{ width: 32, height: 32 }} aria-hidden="true" />
+          <span className="footer-brand-name">CodeAtlas</span>
         </div>
         <p className="footer-text">
           Built using <span className="footer-highlight">IBM Bob</span> and <span className="footer-highlight">IBM watsonx AI</span>

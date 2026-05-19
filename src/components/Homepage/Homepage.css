@@ -27,7 +27,7 @@
   transform: translate(-50%, -50%);
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, rgba(79, 140, 255, 0.15) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(0, 209, 255, 0.12) 0%, transparent 70%);
   filter: blur(60px);
   z-index: -1;
   pointer-events: none;
@@ -49,6 +49,35 @@
   justify-content: center;
   margin-bottom: 2rem;
   animation: fadeInUp 0.8s ease 0.1s both;
+}
+
+.hero-codeatlas-brand {
+  align-items: center;
+  gap: 16px;
+}
+
+.hero-brand-icon {
+  width: 56px;
+  height: 56px;
+}
+
+.hero-brand-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.hero-brand-name {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.hero-brand-tagline {
+  font-size: 13px;
+  color: #888;
 }
 
 .hero-logo-icon {
@@ -134,7 +163,7 @@
 }
 
 .hero-title-gradient {
-  background: linear-gradient(135deg, #4F8CFF 0%, #7A5CFF 100%);
+  background: linear-gradient(135deg, #00d1ff 0%, #7A5CFF 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -534,8 +563,8 @@
 .hero-cta-button {
   width: 100%;
   padding: 1.125rem 2rem;
-  background: linear-gradient(135deg, #4F8CFF 0%, #7A5CFF 100%);
-  color: white;
+  background: linear-gradient(135deg, #00d1ff 0%, #7A5CFF 100%);
+  color: #000;
   font-size: 1.05rem;
   font-weight: 700;
   border: none;
@@ -546,7 +575,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.65rem;
-  box-shadow: 0 6px 25px rgba(79, 140, 255, 0.4);
+  box-shadow: 0 6px 25px rgba(0, 209, 255, 0.25);
   position: relative;
   overflow: hidden;
 }
