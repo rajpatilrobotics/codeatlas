@@ -295,15 +295,17 @@ module.exports = async (req, res) => {
         .filter(item => item.type === 'blob')
         .map(item => item.path);
       
-      importantFiles = identifyImportantFiles(fileTree, 50); // Analyze up to 50 important files
+      importantFiles = identifyImportantFiles(fileTree, 20); // Top 20 most important files (faster)
       console.log(`✓ Identified ${importantFiles.length} important files for analysis`);
     }
 
-    // Fetch contents of important files with structured format
+    // Fetch contents of important files IN PARALLEL (massive speed improvement)
+    // Batch into chunks of 10 to avoid overwhelming GitHub API
+    const CONCURRENCY = 10;
     const fileContents = {};
     const importantFilesWithContent = [];
-    
-    for (const filePath of importantFiles) {
+
+    const fetchFile = async (filePath) => {
       try {
         const fileResponse = await fetch(
           `${GITHUB_API_BASE}/repos/${owner}/${repo}/contents/${filePath}`,
@@ -313,23 +315,25 @@ module.exports = async (req, res) => {
           const fileData = await fileResponse.json();
           if (fileData.content) {
             const content = Buffer.from(fileData.content, 'base64').toString('utf-8');
-            fileContents[filePath] = content;
-            
-            // Add structured file data for analysis
-            importantFilesWithContent.push({
-              path: filePath,
-              content: content,
-              size: fileData.size,
-              sha: fileData.sha
-            });
+            return { path: filePath, content, size: fileData.size, sha: fileData.sha };
           }
         }
+        return { path: filePath, error: 'File not found or empty' };
       } catch (e) {
         console.log(`Could not fetch ${filePath}`);
-        importantFilesWithContent.push({
-          path: filePath,
-          error: 'Could not fetch file content'
-        });
+        return { path: filePath, error: 'Could not fetch file content' };
+      }
+    };
+
+    // Run in parallel batches
+    for (let i = 0; i < importantFiles.length; i += CONCURRENCY) {
+      const batch = importantFiles.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(batch.map(fetchFile));
+      for (const result of results) {
+        importantFilesWithContent.push(result);
+        if (result.content) {
+          fileContents[result.path] = result.content;
+        }
       }
     }
 

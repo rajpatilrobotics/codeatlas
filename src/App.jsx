@@ -1251,6 +1251,24 @@ ${readmeSnippet}
 
   return (
     <div className="app">
+      {/* ── Full-screen analysis loading screen ── */}
+      {isAnalyzing && (
+        <LoadingSpinner
+          isVisible={isAnalyzing}
+          repoData={repoData}
+          isSummaryLoading={isSummaryLoading}
+          isQuickStartLoading={isQuickStartLoading}
+          isIssuesLoading={isIssuesLoading}
+          isContributionsLoading={isContributionsLoading}
+          isArchitectureLoading={isArchitectureLoading}
+          isCodeAnalysisLoading={isCodeAnalysisLoading}
+          codeAnalysis={codeAnalysis}
+          repoUrl={repoUrl}
+          isAnalyzing={isAnalyzing}
+        />
+      )}
+
+      {/* ── Landing page (no analysis yet) ── */}
       {!analysisComplete && !isAnalyzing ? (
         <div className="landing-layout">
           <LandingHeader onLogoClick={handleNewAnalysis} />
@@ -1269,7 +1287,7 @@ ${readmeSnippet}
           </main>
           <Footer />
         </div>
-      ) : (
+      ) : isAnalyzing ? null : (
         <AppShell
           activeTab={activeTab}
           onNavigate={setActiveTab}
@@ -1310,7 +1328,7 @@ ${readmeSnippet}
             </div>
           )}
 
-          <LoadingSpinner isVisible={isAnalyzing} />
+          {/* Loading spinner is now rendered as a full-screen overlay above — see top of return */}
 
           {analysisComplete && (
             <div ref={resultsRef} className="results-section">

@@ -15,6 +15,8 @@ import { Building2, Layers, Package, FolderTree, FileText, Cpu, Database, Shield
 import Card from '../ui/Card';
 import Badge from '../ui/Badge';
 import MetricCard from '../ui/MetricCard';
+import Pill from '../ui/Pill';
+
 
 // Architecture Analysis Display Component with Enhanced Typography
 function ArchitectureAnalysisDisplay({ analysis }) {
