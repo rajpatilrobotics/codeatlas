@@ -295,7 +295,7 @@ module.exports = async (req, res) => {
         .filter(item => item.type === 'blob')
         .map(item => item.path);
       
-      importantFiles = identifyImportantFiles(fileTree, 20); // Top 20 most important files (faster)
+      importantFiles = identifyImportantFiles(fileTree, 50); // Top 50 most important files
       console.log(`✓ Identified ${importantFiles.length} important files for analysis`);
     }
 

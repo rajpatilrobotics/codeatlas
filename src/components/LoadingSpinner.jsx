@@ -323,14 +323,11 @@ function LoadingSpinner({
         const ny = centerY + node.y;
         const stageStatus = node.isRoot ? 'completed' : getStatus(node.stage - 1);
 
-        let opacity = 0.2;
         let glowSize = 0;
 
         if (stageStatus === 'completed') {
-          opacity = 1.0;
           glowSize = 10;
         } else if (stageStatus === 'active') {
-          opacity = 1.0;
           glowSize = 15 + Math.sin(angle * 30) * 5; // pulsing glow
         }
 
@@ -380,6 +377,7 @@ function LoadingSpinner({
       window.removeEventListener('resize', resizeCanvas);
       cancelAnimationFrame(animationFrameId);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isVisible, repoData, isArchitectureLoading, isCodeAnalysisLoading, codeAnalysis, isSummaryLoading, isQuickStartLoading, isIssuesLoading, isContributionsLoading, repoUrl]);
 
   if (!isVisible) return null;
@@ -500,7 +498,7 @@ function LoadingSpinner({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '12px',
-                  opacity: step.status === 'pending' ? 0.4 : 1,
+                  opacity: step.status === 'pending' ? 0.85 : 1,
                   transition: 'all 0.3s ease'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

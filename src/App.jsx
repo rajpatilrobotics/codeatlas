@@ -180,202 +180,183 @@ ${readmeSnippet}
     }
   }, [analysisComplete]);
 
-  const handleAnalyze = async (urlOverride) => {
-    const targetUrl = (urlOverride ?? repoUrl).trim();
-    if (!targetUrl) return;
+const handleAnalyze = async (urlOverride) => {
+  const targetUrl = (urlOverride ?? repoUrl).trim();
+  if (!targetUrl) return;
 
-    if (urlOverride) {
-      setRepoUrl(targetUrl);
-    }
-    
-    setIsAnalyzing(true);
-    setAnalysisComplete(false);
-    setError(null);
-    setSuccessMessage('');
-    setAiSummary('');
-    setSummaryError(null);
-    setQuickStartGuide('');
-    
-    try {
-      // Step 1: Analyze repository using GitHub service
-      const data = await analyzeRepository(targetUrl);
-      
-      if (data.error) {
-        setError(data.error);
-        setIsAnalyzing(false);
-        return;
-      }
-      
-      setRepoData(data);
-      setRepoSize(data.fileTree.length);
-      setSuccessMessage('Repository analyzed successfully! ✓');
-      setAnalysisComplete(true);
-      setActiveTab('dashboard');
+  if (urlOverride) {
+    setRepoUrl(targetUrl);
+  }
 
-      const normalized = normalizeRepoUrl(targetUrl);
-      if (normalized) {
-        setLastAnalyzedRepoUrl(normalized);
-        setRecentRepos(addRecentRepo(normalized));
-      }
-      
-      // Auto-hide success message after 5 seconds
-      setTimeout(() => {
-        setSuccessMessage('');
-      }, 5000);
-      
-      // Step 2: Generate AI summary using real repository context
-      setIsSummaryLoading(true);
-      try {
-        const response = await fetch('/api/ai/summary', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ repoData: data })
-        });
-        const result = await response.json();
-        if (result.success) {
-          setAiSummary(result.summary);
-        } else {
-          throw new Error(result.error || 'Failed to generate AI summary');
-        }
-      } catch (summaryErr) {
-        console.error('AI Summary generation failed:', summaryErr);
-        setSummaryError(summaryErr.message || 'Failed to generate AI summary');
-      } finally {
-        setIsSummaryLoading(false);
-      }
-      
-      // Step 3: Generate Quick Start Guide using real repository context
-      setIsQuickStartLoading(true);
-      try {
-        const response = await fetch('/api/ai/quickstart', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ repoData: data })
-        });
-        const result = await response.json();
-        if (result.success) {
-          setQuickStartGuide(result.quickStart);
-        } else {
-          throw new Error(result.error || 'Failed to generate quick start guide');
-        }
-      } catch (quickStartErr) {
-        console.error('Quick Start generation failed:', quickStartErr);
-      } finally {
-        setIsQuickStartLoading(false);
-      }
-      
-      // Step 4: Generate Common Issues using real repository context
-      setIsIssuesLoading(true);
-      try {
-        const response = await fetch('/api/ai/common-issues', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ repoData: data })
-        });
-        const result = await response.json();
-        if (result.success) {
-          setCommonIssues(result.issues);
-        } else {
-          throw new Error(result.error || 'Failed to generate common issues');
-        }
-      } catch (issuesErr) {
-        console.error('Common Issues generation failed:', issuesErr);
-      } finally {
-        setIsIssuesLoading(false);
-      }
-      
-      // Step 5: Generate First Contributions using real repository context
-      setIsContributionsLoading(true);
-      try {
-        const response = await fetch('/api/ai/contributions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ repoData: data, codeAnalysis })
-        });
-        const result = await response.json();
-        if (result.success) {
-          setFirstContributions(result.contributions);
-        } else {
-          throw new Error(result.error || 'Failed to generate contribution opportunities');
-        }
-      } catch (contributionsErr) {
-        console.error('First Contributions generation failed:', contributionsErr);
-      } finally {
-        setIsContributionsLoading(false);
-      }
-      
-      // Step 6: Generate Architecture Analysis using real repository context
-      setIsArchitectureLoading(true);
-      try {
-        const response = await fetch('/api/ai/architecture', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ repoData: data, codeAnalysis })
-        });
-        const result = await response.json();
-        if (result.success) {
-          setArchitectureAnalysis(result.architecture);
-        } else {
-          throw new Error(result.error || 'Failed to generate architecture analysis');
-        }
-        
-        // Step 6b: Perform detailed architecture analysis
-        const detailedAnalysis = await analyzeArchitecture(data);
-        setDetailedArchitecture(detailedAnalysis);
-        console.log('Detailed Architecture Analysis:', detailedAnalysis);
-        
-      } catch (architectureErr) {
-        console.error('Architecture analysis generation failed:', architectureErr);
-        setArchitectureError(architectureErr.message || 'Failed to generate architecture analysis');
-      } finally {
-        setIsArchitectureLoading(false);
-      }
-      
-      // Step 7: Perform deep code analysis using pre-fetched file contents
-      setIsCodeAnalysisLoading(true);
-      setCodeAnalysisError(null);
-      try {
-        console.log('🔬 Starting deep code analysis...');
-        
-        // Parse GitHub URL to get owner and repo
-        const parsed = parseGitHubUrl(targetUrl);
-        if (!parsed) {
-          throw new Error('Invalid GitHub URL');
-        }
-        
-        const { owner, repo } = parsed;
-        
-        // Use pre-fetched file contents from backend (no token needed on client)
-        // The backend already fetched file contents securely
-        if (!data.importantFiles || data.importantFiles.length === 0) {
-          console.warn('⚠️ No files available for analysis');
-          setCodeAnalysisError('No files available for analysis');
-        } else {
-          // Analyze repository with code analysis service using pre-fetched content
-          const analysis = await codeAnalysisService.analyzeRepository(
-            owner,
-            repo,
-            data.importantFiles,
-            null // No token needed - using pre-fetched content
-          );
-          
-          setCodeAnalysis(analysis);
-          console.log('✅ Code analysis complete!', analysis.summary);
-        }
-        
-      } catch (codeErr) {
-        console.error('Code analysis failed:', codeErr);
-        setCodeAnalysisError(codeErr.message || 'Failed to perform code analysis');
-      } finally {
-        setIsCodeAnalysisLoading(false);
-      }
-      
-    } catch (err) {
-      setError(err.message || 'An unexpected error occurred');
-    } finally {
+  setIsAnalyzing(true);
+  setAnalysisComplete(false);
+  setError(null);
+  setSuccessMessage('');
+  setAiSummary('');
+  setSummaryError(null);
+  setQuickStartGuide('');
+  setCommonIssues('');
+  setFirstContributions([]);
+  setArchitectureAnalysis(null);
+  setArchitectureError(null);
+  setDetailedArchitecture(null);
+  setCodeAnalysis(null);
+  setCodeAnalysisError(null);
+  setIsSummaryLoading(false);
+  setIsQuickStartLoading(false);
+  setIsIssuesLoading(false);
+  setIsContributionsLoading(false);
+  setIsArchitectureLoading(false);
+  setIsCodeAnalysisLoading(false);
+
+  try {
+    // Step 1: Analyze repository (cloning & parsing)
+    const data = await analyzeRepository(targetUrl);
+    if (data.error) {
+      setError(data.error);
       setIsAnalyzing(false);
+      return;
     }
-  };
+
+    setRepoData(data);
+    setRepoSize(data.fileTree.length);
+    setSuccessMessage('Repository analyzed successfully! ✓');
+    setAnalysisComplete(true);
+    setActiveTab('dashboard');
+
+    const normalized = normalizeRepoUrl(targetUrl);
+    if (normalized) {
+      setLastAnalyzedRepoUrl(normalized);
+      setRecentRepos(addRecentRepo(normalized));
+    }
+
+    // Auto‑hide success message
+    setTimeout(() => setSuccessMessage(''), 5000);
+
+    // Step 2: Detect architecture
+    setIsArchitectureLoading(true);
+    try {
+      const detailed = await analyzeArchitecture(data);
+      setDetailedArchitecture(detailed);
+    } catch (archErr) {
+      console.error('Architecture detection failed:', archErr);
+      setArchitectureError(archErr.message || 'Failed to detect architecture');
+    } finally {
+      setIsArchitectureLoading(false);
+    }
+
+    // Step 3: Build dependency graph & run security analysis (deep code analysis)
+    setIsCodeAnalysisLoading(true);
+    setCodeAnalysisError(null);
+    let analysisResult = null; // expose to outer scope
+    try {
+      const parsed = parseGitHubUrl(targetUrl);
+      if (!parsed) throw new Error('Invalid GitHub URL');
+      const { owner, repo } = parsed;
+
+      analysisResult = await codeAnalysisService.analyzeRepository(
+        owner,
+        repo,
+        data.importantFiles,
+        null
+      );
+      setCodeAnalysis(analysisResult);
+    } catch (codeErr) {
+      console.error('Code analysis failed:', codeErr);
+      setCodeAnalysisError(codeErr.message || 'Failed to perform code analysis');
+    } finally {
+      setIsCodeAnalysisLoading(false);
+    }
+
+    // Step 4: Generate AI insights (summary, quick‑start, issues, contributions)
+    // Summary
+    setIsSummaryLoading(true);
+    try {
+      const response = await fetch('/api/ai/summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repoData: data })
+      });
+      const result = await response.json();
+      if (result.success) {
+        setAiSummary(result.summary);
+      } else {
+        throw new Error(result.error || 'Failed to generate AI summary');
+      }
+    } catch (summaryErr) {
+      console.error('AI Summary generation failed:', summaryErr);
+      setSummaryError(summaryErr.message || 'Failed to generate AI summary');
+    } finally {
+      setIsSummaryLoading(false);
+    }
+
+    // Quick Start
+    setIsQuickStartLoading(true);
+    try {
+      const response = await fetch('/api/ai/quickstart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repoData: data })
+      });
+      const result = await response.json();
+      if (result.success) {
+        setQuickStartGuide(result.quickStart);
+      } else {
+        throw new Error(result.error || 'Failed to generate quick start guide');
+      }
+    } catch (quickStartErr) {
+      console.error('Quick Start generation failed:', quickStartErr);
+    } finally {
+      setIsQuickStartLoading(false);
+    }
+
+    // Common Issues
+    setIsIssuesLoading(true);
+    try {
+      const response = await fetch('/api/ai/common-issues', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repoData: data })
+      });
+      const result = await response.json();
+      if (result.success) {
+        setCommonIssues(result.issues);
+      } else {
+        throw new Error(result.error || 'Failed to generate common issues');
+      }
+    } catch (issuesErr) {
+      console.error('Common Issues generation failed:', issuesErr);
+    } finally {
+      setIsIssuesLoading(false);
+    }
+
+    // First Contributions
+    setIsContributionsLoading(true);
+    try {
+      const response = await fetch('/api/ai/contributions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repoData: data, codeAnalysis: analysisResult })
+      });
+      const result = await response.json();
+      if (result.success) {
+        setFirstContributions(result.contributions);
+      } else {
+        throw new Error(result.error || 'Failed to generate contribution opportunities');
+      }
+    } catch (contributionsErr) {
+      console.error('First Contributions generation failed:', contributionsErr);
+    } finally {
+      setIsContributionsLoading(false);
+    }
+
+    // No additional architecture AI call to keep UI order intact
+  } catch (err) {
+    setError(err.message || 'An unexpected error occurred');
+  } finally {
+    setIsAnalyzing(false);
+  }
+};
 
   // Helper function to parse AI suggestions into structured format
   const parseSuggestions = (text) => {
