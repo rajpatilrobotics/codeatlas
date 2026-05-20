@@ -4,7 +4,7 @@
  * Replaces hardcoded mock data with dynamic AI responses
  */
 
-import { generateText, generateStructuredJSON } from './ai/aiService.js';
+import { generateText, generateStructuredJSON, isAIProviderFailure } from './ai/aiService.js';
 
 /**
  * Structured JSON schema for AI responses
@@ -22,6 +22,161 @@ const CONTENT_SCHEMA = {
   architectureSummary: "",
   recommendations: []
 };
+
+function getRepoName(repoData) {
+  return repoData?.repoInfo?.name || 'this repository';
+}
+
+function getRepoLanguage(repoData) {
+  return repoData?.repoInfo?.language || 'the primary language';
+}
+
+function getTechStackList(repoData) {
+  return Object.values(repoData?.techStack || {}).flat().filter(Boolean);
+}
+
+function getKeyFilePaths(repoData, limit = 6) {
+  return (repoData?.importantFiles || [])
+    .map(file => file?.path)
+    .filter(Boolean)
+    .slice(0, limit);
+}
+
+function normalizeSecurityIssues(codeAnalysis) {
+  const security = codeAnalysis?.security || {};
+
+  return ['critical', 'high', 'medium', 'low'].flatMap(severity =>
+    (security[severity] || []).map(issue => ({
+      severity: severity === 'critical' ? 'High' : severity.charAt(0).toUpperCase() + severity.slice(1),
+      title: issue.title || issue.type || 'Security issue detected',
+      description: issue.description || issue.message || 'Review this finding from static analysis.',
+      file: issue.file || issue.path || 'Unknown',
+      fix: issue.fix || issue.recommendation || 'Review the affected code and apply the recommended secure pattern.'
+    }))
+  );
+}
+
+function buildFallbackContributions(repoData, codeAnalysis) {
+  const keyFiles = getKeyFilePaths(repoData, 4);
+  const techStack = getTechStackList(repoData);
+  const firstFile = keyFiles[0] || 'README.md';
+  const testTarget = keyFiles.find(path => /\.(js|jsx|ts|tsx|py|java|go|rb)$/.test(path)) || firstFile;
+
+  return [
+    {
+      task: `Improve setup documentation for ${getRepoName(repoData)}`,
+      file: 'README.md',
+      difficulty: 'Easy',
+      impact: 'Helps new contributors install, configure, and run the project with fewer blockers.'
+    },
+    {
+      task: 'Add or expand tests around an important code path',
+      file: testTarget,
+      difficulty: 'Medium',
+      impact: 'Improves confidence when future contributors change core behavior.'
+    },
+    {
+      task: 'Document the repository structure and key entry points',
+      file: firstFile,
+      difficulty: 'Easy',
+      impact: `Makes the ${getRepoLanguage(repoData)} codebase easier to navigate.`
+    },
+    {
+      task: techStack.length > 0 ? `Review dependency usage for ${techStack.slice(0, 3).join(', ')}` : 'Review dependency usage and cleanup opportunities',
+      file: keyFiles[1] || firstFile,
+      difficulty: 'Medium',
+      impact: 'Reduces maintenance friction and highlights small cleanup opportunities for contributors.'
+    }
+  ].slice(0, codeAnalysis?.summary?.analyzedFiles ? 4 : 3);
+}
+
+function buildFallbackSecurityAnalysis(repoData, codeAnalysis) {
+  const issues = normalizeSecurityIssues(codeAnalysis).slice(0, 6);
+  const highIssueCount = issues.filter(issue => issue.severity === 'High').length;
+  const score = issues.length === 0 ? 82 : Math.max(45, 82 - highIssueCount * 15 - issues.length * 5);
+  const riskLevel = score < 60 ? 'High' : score < 80 ? 'Medium' : 'Low';
+
+  return {
+    overall_score: score,
+    risk_level: riskLevel,
+    passed_checks: [
+      'Repository metadata analyzed',
+      'Important files reviewed from static analysis',
+      codeAnalysis?.summary?.analyzedFiles
+        ? `${codeAnalysis.summary.analyzedFiles} files included in local code analysis`
+        : 'Static code context reviewed where available'
+    ],
+    issues,
+    recommendations: [
+      'Keep secrets out of source control and load credentials from server-side environment variables.',
+      'Validate user input at API boundaries before passing data to downstream services.',
+      'Review dependency updates regularly and prioritize security patches.',
+      'Add tests for authentication, authorization, and error-handling paths when present.'
+    ],
+    source: 'fallback',
+    warning: 'AI provider quota or rate limits prevented live security generation.'
+  };
+}
+
+function buildFallbackOnboardingGuide(repoData) {
+  const repoName = getRepoName(repoData);
+  const techStack = getTechStackList(repoData).slice(0, 5);
+  const scripts = Object.keys(repoData?.packageJson?.scripts || {});
+  const keyFiles = getKeyFilePaths(repoData, 5);
+
+  return {
+    steps: [
+      {
+        title: 'Project Overview & Goals',
+        description: `Start by reading the README and repository metadata to understand what ${repoName} does and who it serves.`,
+        actions: ['Read the README', 'Review the repository description', 'Identify the main user-facing workflows'],
+        icon: '🚀',
+        duration: '10 minutes',
+        difficulty: 'Beginner'
+      },
+      {
+        title: 'Environment Setup',
+        description: scripts.length > 0
+          ? `Install dependencies and use the available scripts: ${scripts.slice(0, 5).join(', ')}.`
+          : 'Install dependencies and check the README for the local development command.',
+        actions: ['Install dependencies', 'Check required environment variables', 'Run the local development command'],
+        icon: '🧰',
+        duration: '20 minutes',
+        difficulty: 'Beginner'
+      },
+      {
+        title: 'Codebase Orientation',
+        description: keyFiles.length > 0
+          ? `Use key files like ${keyFiles.join(', ')} as starting points for navigation.`
+          : 'Identify the main entry points, configuration files, and feature directories.',
+        actions: ['Open the main entry point', 'Trace one primary workflow', 'Map important folders to their responsibilities'],
+        icon: '🧭',
+        duration: '25 minutes',
+        difficulty: 'Beginner'
+      },
+      {
+        title: 'Development Workflow',
+        description: techStack.length > 0
+          ? `Follow the existing patterns for ${techStack.join(', ')} and keep changes scoped.`
+          : 'Follow the existing project conventions and keep changes scoped.',
+        actions: ['Run the app locally', 'Make a small local change', 'Run available checks before committing'],
+        icon: '✅',
+        duration: '30 minutes',
+        difficulty: 'Intermediate'
+      },
+      {
+        title: 'First Contribution',
+        description: 'Start with documentation, tests, or a small bug fix before touching broad architecture.',
+        actions: ['Pick one small task', 'Confirm the expected behavior', 'Open a focused pull request'],
+        icon: '🤝',
+        duration: '45 minutes',
+        difficulty: 'Intermediate'
+      }
+    ],
+    source: 'fallback',
+    warning: 'AI provider quota or rate limits prevented live onboarding generation.'
+  };
+}
 
 /**
  * Generate AI summary based on repository context
@@ -204,6 +359,10 @@ Focus on tasks suitable for new contributors:
     return contributions.contributions || [];
   } catch (error) {
     console.error('Error generating first contributions:', error);
+    if (isAIProviderFailure(error)) {
+      console.warn('Using fallback contribution opportunities because AI providers are unavailable or rate limited.');
+      return buildFallbackContributions(repoData, codeAnalysis);
+    }
     throw new Error('Failed to generate contribution opportunities. Please try again.');
   }
 }
@@ -308,6 +467,10 @@ Focus on:
     return security;
   } catch (error) {
     console.error('Error generating security analysis:', error);
+    if (isAIProviderFailure(error)) {
+      console.warn('Using fallback security analysis because AI providers are unavailable or rate limited.');
+      return buildFallbackSecurityAnalysis(repoData, codeAnalysis);
+    }
     throw new Error('Failed to generate security analysis. Please try again.');
   }
 }
@@ -368,6 +531,10 @@ Include steps for:
     return onboarding;
   } catch (error) {
     console.error('Error generating onboarding guide:', error);
+    if (isAIProviderFailure(error)) {
+      console.warn('Using fallback onboarding guide because AI providers are unavailable or rate limited.');
+      return buildFallbackOnboardingGuide(repoData);
+    }
     throw new Error('Failed to generate onboarding guide. Please try again.');
   }
 }

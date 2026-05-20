@@ -10,6 +10,28 @@ function SecurityScanner({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
   const [error, setError] = useState(null);
   const [cachedData, setCachedData] = useState(null);
 
+  const prepareCompactCodeAnalysis = (analysis) => {
+    if (!analysis) return null;
+
+    return {
+      summary: analysis.summary,
+      security: analysis.security,
+      definitions: {
+        functions: (analysis.definitions?.functions || []).slice(0, 25),
+        classes: (analysis.definitions?.classes || []).slice(0, 25),
+        exports: (analysis.definitions?.exports || []).slice(0, 25)
+      },
+      files: (analysis.files || []).slice(0, 25).map(file => ({
+        path: file.path,
+        size: file.size,
+        lines: file.lines,
+        patterns: file.patterns,
+        security: file.security,
+        definitions: file.definitions
+      }))
+    };
+  };
+
   // Load cached data on mount
   useEffect(() => {
     const cached = sessionStorage.getItem('securityScanCache');
@@ -46,7 +68,7 @@ function SecurityScanner({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
       const response = await fetch('/api/ai/security', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ repoData, codeAnalysis })
+        body: JSON.stringify({ repoData, codeAnalysis: prepareCompactCodeAnalysis(codeAnalysis) })
       });
       const result = await response.json();
       

@@ -14,6 +14,25 @@ const providers = {
 };
 
 /**
+ * Identify provider-side failures that should not break the app pipeline.
+ */
+export function isAIProviderFailure(error) {
+  const message = String(error?.message || error || '').toLowerCase();
+
+  return (
+    message.includes('429') ||
+    message.includes('503') ||
+    message.includes('quota') ||
+    message.includes('rate limit') ||
+    message.includes('fetch failed') ||
+    message.includes('invalid json response') ||
+    message.includes('no ai providers configured') ||
+    message.includes('not configured') ||
+    message.includes('all ai providers failed')
+  );
+}
+
+/**
  * Generate text using the best available provider
  */
 export async function generateText(prompt, options = {}) {

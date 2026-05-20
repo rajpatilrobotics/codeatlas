@@ -24,6 +24,7 @@ import CTASection from './components/Homepage/CTASection';
 // Tab Content Components
 import Summary from './components/TabContent/Summary';
 import Architecture from './components/TabContent/Architecture';
+import ArchitectureV2 from './components/TabContent/ArchitectureV2';
 import OnboardingGuide from './components/TabContent/OnboardingGuide';
 import Documentation from './components/TabContent/Documentation';
 import SecurityScanner from './components/TabContent/SecurityScanner';
@@ -135,6 +136,28 @@ Key Files: ${keyFileNames}
 README Snippet:
 ${readmeSnippet}
     `.trim();
+  };
+
+  const prepareCompactCodeAnalysis = (analysis) => {
+    if (!analysis) return null;
+
+    return {
+      summary: analysis.summary,
+      security: analysis.security,
+      definitions: {
+        functions: (analysis.definitions?.functions || []).slice(0, 25),
+        classes: (analysis.definitions?.classes || []).slice(0, 25),
+        exports: (analysis.definitions?.exports || []).slice(0, 25)
+      },
+      files: (analysis.files || []).slice(0, 25).map(file => ({
+        path: file.path,
+        size: file.size,
+        lines: file.lines,
+        patterns: file.patterns,
+        security: file.security,
+        definitions: file.definitions
+      }))
+    };
   };
 
   // Seed recent list for sessions started before this feature
@@ -336,7 +359,7 @@ const handleAnalyze = async (urlOverride) => {
       const response = await fetch('/api/ai/contributions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ repoData: data, codeAnalysis: analysisResult })
+        body: JSON.stringify({ repoData: data, codeAnalysis: prepareCompactCodeAnalysis(analysisResult) })
       });
       const result = await response.json();
       if (result.success) {
@@ -1136,6 +1159,18 @@ const handleAnalyze = async (urlOverride) => {
             isCodeAnalysisLoading={isCodeAnalysisLoading}
           />
         );
+      case 'architecture-v2':
+        return (
+          <ArchitectureV2
+            repoData={repoData}
+            architectureAnalysis={architectureAnalysis}
+            isArchitectureLoading={isArchitectureLoading}
+            architectureError={architectureError}
+            detailedArchitecture={detailedArchitecture}
+            codeAnalysis={codeAnalysis}
+            isCodeAnalysisLoading={isCodeAnalysisLoading}
+          />
+        );
       case 'onboarding':
         return (
           <OnboardingGuide
@@ -1352,4 +1387,3 @@ const handleAnalyze = async (urlOverride) => {
 export default App;
 
 // Made with Bob
-
