@@ -1,4 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Shield, AlertTriangle, CheckCircle, RefreshCw, Lock, FileText, XCircle, Info } from 'lucide-react';
+import Card from '../ui/Card';
+import Badge from '../ui/Badge';
+import MetricCard from '../ui/MetricCard';
 
 function SecurityScanner({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
   const [securityData, setSecurityData] = useState(null);
@@ -165,12 +169,12 @@ Total Files: ${fileTree?.length || 0}
   if (!repoData) {
     return (
       <div className="tab-content security-tab">
-        <div className="content-card">
-          <div className="empty-state-message">
-            <span className="empty-icon">🔒</span>
-            <p>Please analyze a repository first to view security insights.</p>
+        <Card title="Security Scanner" icon={Shield}>
+          <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+            <Shield size={48} style={{ color: 'var(--text-secondary)', marginBottom: '16px' }} />
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Please analyze a repository first to view security insights.</p>
           </div>
-        </div>
+        </Card>
       </div>
     );
   }
@@ -178,13 +182,21 @@ Total Files: ${fileTree?.length || 0}
   if (isScanning) {
     return (
       <div className="tab-content security-tab">
-        <div className="content-card">
-          <div className="scanning-state">
-            <div className="scanning-spinner"></div>
-            <h3>Scanning for vulnerabilities...</h3>
-            <p>Analyzing repository security...</p>
+        <Card title="Security Scanner" icon={Shield}>
+          <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+            <div style={{
+              width: '50px',
+              height: '50px',
+              border: '4px solid var(--border-color)',
+              borderTop: '4px solid #667eea',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto 20px'
+            }}></div>
+            <h3 style={{ color: 'var(--text-primary)', marginBottom: '8px', fontSize: '16px' }}>Scanning for vulnerabilities...</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Analyzing repository security...</p>
           </div>
-        </div>
+        </Card>
       </div>
     );
   }
@@ -192,16 +204,29 @@ Total Files: ${fileTree?.length || 0}
   if (error) {
     return (
       <div className="tab-content security-tab">
-        <div className="content-card">
-          <div className="error-state">
-            <span className="error-icon">⚠️</span>
-            <h3>Security Scan Failed</h3>
-            <p>{error}</p>
-            <button className="retry-button" onClick={performSecurityScan}>
+        <Card title="Security Scanner" icon={Shield}>
+          <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+            <XCircle size={48} style={{ color: '#ef4444', marginBottom: '16px' }} />
+            <h3 style={{ color: 'var(--text-primary)', marginBottom: '8px', fontSize: '16px' }}>Security Scan Failed</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '20px' }}>{error}</p>
+            <button
+              onClick={performSecurityScan}
+              style={{
+                padding: '10px 20px',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.3s'
+              }}
+            >
               Try Again
             </button>
           </div>
-        </div>
+        </Card>
       </div>
     );
   }
@@ -209,46 +234,74 @@ Total Files: ${fileTree?.length || 0}
   if (!securityData) {
     return (
       <div className="tab-content security-tab">
-        <div className="content-card">
-          <div className="empty-state-message">
-            <span className="empty-icon">🔒</span>
-            <p>Click "Scan Repository" to analyze security</p>
-            <button className="scan-button" onClick={performSecurityScan}>
+        <Card title="Security Scanner" icon={Shield}>
+          <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+            <Lock size={48} style={{ color: 'var(--text-secondary)', marginBottom: '16px' }} />
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '20px' }}>Click "Scan Repository" to analyze security</p>
+            <button
+              onClick={performSecurityScan}
+              style={{
+                padding: '12px 24px',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.3s'
+              }}
+            >
               Scan Repository
             </button>
           </div>
-        </div>
+        </Card>
       </div>
     );
   }
 
   return (
     <div className="tab-content security-tab fade-in">
-      {/* Header with Rescan Button */}
-      <div className="security-header">
-        <h2 className="section-title">🔒 Security Analysis</h2>
-        <button className="rescan-button" onClick={handleRescan} disabled={isScanning}>
-          <span className="rescan-icon">🔄</span>
-          Rescan Repository
-        </button>
-      </div>
-
       {/* Overall Score Section */}
-      <div className="content-card score-card fade-in">
-        <div className="score-container">
-          <div className="score-circle-wrapper">
-            <svg className="score-circle" viewBox="0 0 120 120">
+      <Card 
+        title="Security Score" 
+        icon={Shield}
+        headerAction={
+          <button 
+            onClick={handleRescan} 
+            disabled={isScanning}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 16px',
+              background: 'rgba(102, 126, 234, 0.1)',
+              color: '#667eea',
+              border: '1px solid rgba(102, 126, 234, 0.3)',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: isScanning ? 'not-allowed' : 'pointer',
+              transition: 'all 0.3s'
+            }}
+          >
+            <RefreshCw size={16} />
+            Rescan
+          </button>
+        }
+      >
+        <div style={{ display: 'flex', gap: 'var(--spacing-lg)', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', width: '120px', height: '120px', flexShrink: 0 }}>
+            <svg viewBox="0 0 120 120" style={{ width: '100%', height: '100%' }}>
               <circle
-                className="score-circle-bg"
                 cx="60"
                 cy="60"
                 r="54"
                 fill="none"
-                stroke="#e5e7eb"
+                stroke="rgba(255,255,255,0.1)"
                 strokeWidth="8"
               />
               <circle
-                className="score-circle-progress"
                 cx="60"
                 cy="60"
                 r="54"
@@ -264,68 +317,99 @@ Total Files: ${fileTree?.length || 0}
                 y="60"
                 textAnchor="middle"
                 dy="0.3em"
-                className="score-text"
                 fill={getRiskColor(securityData.risk_level)}
+                style={{ fontSize: '28px', fontWeight: 'bold' }}
               >
                 {securityData.overall_score}
               </text>
             </svg>
           </div>
-          <div className="score-details">
-            <div className="risk-badge" style={{ backgroundColor: getRiskColor(securityData.risk_level) }}>
+          <div style={{ flex: 1, minWidth: '200px' }}>
+            <Badge 
+              variant={securityData.risk_level === 'Low' ? 'success' : securityData.risk_level === 'Medium' ? 'warning' : 'danger'}
+              style={{ marginBottom: '12px' }}
+            >
               {securityData.risk_level} Risk
-            </div>
-            <h3 className="score-title">Security Score</h3>
-            <p className="score-description">
+            </Badge>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.6', margin: 0 }}>
               {securityData.overall_score >= 80 && 'Excellent security posture. Keep up the good work!'}
               {securityData.overall_score >= 60 && securityData.overall_score < 80 && 'Good security practices. Address findings to improve.'}
               {securityData.overall_score < 60 && 'Security needs attention. Review and fix critical issues.'}
             </p>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Issues Section */}
       {securityData.issues && securityData.issues.length > 0 && (
-        <div className="content-card issues-card fade-in">
-          <h3 className="card-title">⚠️ Security Issues ({securityData.issues.length})</h3>
-          <div className="issues-list">
+        <Card 
+          title={`Security Issues (${securityData.issues.length})`} 
+          icon={AlertTriangle}
+          headerAction={<Badge variant="danger">Found</Badge>}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
             {securityData.issues.map((issue, index) => (
-              <div key={index} className="issue-item fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
-                <div className="issue-header">
-                  <span
-                    className="severity-badge"
-                    style={{ backgroundColor: getSeverityColor(issue.severity) }}
+              <div 
+                key={index} 
+                style={{
+                  padding: '16px',
+                  background: 'rgba(255,255,255,0.03)',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255,255,255,0.08)'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                  <Badge 
+                    variant={issue.severity === 'High' ? 'danger' : issue.severity === 'Medium' ? 'warning' : 'info'}
                   >
                     {issue.severity}
-                  </span>
-                  <h4 className="issue-title">{issue.title}</h4>
+                  </Badge>
+                  <h4 style={{ color: 'var(--text-primary)', fontSize: '16px', fontWeight: '600', margin: 0 }}>
+                    {issue.title}
+                  </h4>
                 </div>
-                <p className="issue-description">{issue.description}</p>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.6', marginBottom: '8px' }}>
+                  {issue.description}
+                </p>
                 {issue.file && issue.file !== 'Unknown' && (
-                  <p className="issue-file">
-                    <span className="file-icon">📄</span>
-                    {issue.file}
-                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                    <FileText size={14} style={{ color: 'var(--text-secondary)' }} />
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{issue.file}</span>
+                  </div>
                 )}
-                <div className="issue-fix">
-                  <strong>Fix:</strong> {issue.fix}
+                <div style={{ 
+                  padding: '12px', 
+                  background: 'rgba(102, 126, 234, 0.1)', 
+                  borderRadius: '6px',
+                  borderLeft: '3px solid #667eea'
+                }}>
+                  <strong style={{ color: 'var(--text-primary)', fontSize: '13px' }}>Fix:</strong>{' '}
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{issue.fix}</span>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Real Code Analysis Vulnerabilities */}
       {codeAnalysis && codeAnalysis.security && (
-        <div className="content-card code-analysis-card fade-in">
-          <h3 className="card-title">🔬 Code Analysis - Detected Vulnerabilities</h3>
-          
+        <Card 
+          title="Code Analysis - Detected Vulnerabilities" 
+          icon={AlertTriangle}
+        >
           {isCodeAnalysisLoading && (
-            <div className="loading-container">
-              <div className="spinner"></div>
-              <p>Analyzing code for vulnerabilities...</p>
+            <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                border: '4px solid var(--border-color)',
+                borderTop: '4px solid #667eea',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+                margin: '0 auto 16px'
+              }}></div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Analyzing code for vulnerabilities...</p>
             </div>
           )}
           
@@ -333,28 +417,62 @@ Total Files: ${fileTree?.length || 0}
             <>
               {/* Critical Issues */}
               {codeAnalysis.security.critical && codeAnalysis.security.critical.length > 0 && (
-                <div className="vulnerability-section">
-                  <h4 className="vulnerability-section-title critical">
-                    🔴 Critical ({codeAnalysis.security.critical.length})
+                <div style={{ marginBottom: '20px' }}>
+                  <h4 style={{ 
+                    color: '#ef4444', 
+                    fontSize: '14px', 
+                    fontWeight: '600', 
+                    marginBottom: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <AlertTriangle size={16} />
+                    Critical ({codeAnalysis.security.critical.length})
                   </h4>
                   {codeAnalysis.security.critical.map((vuln, index) => (
-                    <div key={`critical-${index}`} className="vulnerability-item critical">
-                      <div className="vulnerability-header">
-                        <span className="vulnerability-type">{vuln.type}</span>
-                        <span className="vulnerability-file">📄 {vuln.file}</span>
+                    <div 
+                      key={`critical-${index}`} 
+                      style={{
+                        padding: '12px',
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        marginBottom: '8px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <Badge variant="danger">{vuln.type}</Badge>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+                          <FileText size={12} style={{ display: 'inline', marginRight: '4px' }} />
+                          {vuln.file}
+                        </span>
                       </div>
-                      <p className="vulnerability-message">{vuln.message}</p>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '4px' }}>{vuln.message}</p>
                       {vuln.line && (
-                        <p className="vulnerability-location">Line {vuln.line}</p>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>Line {vuln.line}</span>
                       )}
                       {vuln.code && (
-                        <pre className="vulnerability-code">
+                        <pre style={{ 
+                          background: 'rgba(0,0,0,0.3)', 
+                          padding: '8px', 
+                          borderRadius: '4px', 
+                          fontSize: '11px',
+                          marginTop: '8px',
+                          overflow: 'auto'
+                        }}>
                           <code>{vuln.code}</code>
                         </pre>
                       )}
                       {vuln.suggestion && (
-                        <div className="vulnerability-fix">
-                          <strong>💡 Fix:</strong> {vuln.suggestion}
+                        <div style={{ 
+                          marginTop: '8px', 
+                          padding: '8px', 
+                          background: 'rgba(102, 126, 234, 0.1)', 
+                          borderRadius: '4px',
+                          fontSize: '12px'
+                        }}>
+                          <strong style={{ color: 'var(--text-primary)' }}>💡 Fix:</strong> {vuln.suggestion}
                         </div>
                       )}
                     </div>
@@ -364,28 +482,62 @@ Total Files: ${fileTree?.length || 0}
 
               {/* High Issues */}
               {codeAnalysis.security.high && codeAnalysis.security.high.length > 0 && (
-                <div className="vulnerability-section">
-                  <h4 className="vulnerability-section-title high">
-                    🟠 High ({codeAnalysis.security.high.length})
+                <div style={{ marginBottom: '20px' }}>
+                  <h4 style={{ 
+                    color: '#f59e0b', 
+                    fontSize: '14px', 
+                    fontWeight: '600', 
+                    marginBottom: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <AlertTriangle size={16} />
+                    High ({codeAnalysis.security.high.length})
                   </h4>
                   {codeAnalysis.security.high.map((vuln, index) => (
-                    <div key={`high-${index}`} className="vulnerability-item high">
-                      <div className="vulnerability-header">
-                        <span className="vulnerability-type">{vuln.type}</span>
-                        <span className="vulnerability-file">📄 {vuln.file}</span>
+                    <div 
+                      key={`high-${index}`} 
+                      style={{
+                        padding: '12px',
+                        background: 'rgba(245, 158, 11, 0.1)',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(245, 158, 11, 0.3)',
+                        marginBottom: '8px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <Badge variant="warning">{vuln.type}</Badge>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+                          <FileText size={12} style={{ display: 'inline', marginRight: '4px' }} />
+                          {vuln.file}
+                        </span>
                       </div>
-                      <p className="vulnerability-message">{vuln.message}</p>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '4px' }}>{vuln.message}</p>
                       {vuln.line && (
-                        <p className="vulnerability-location">Line {vuln.line}</p>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>Line {vuln.line}</span>
                       )}
                       {vuln.code && (
-                        <pre className="vulnerability-code">
+                        <pre style={{ 
+                          background: 'rgba(0,0,0,0.3)', 
+                          padding: '8px', 
+                          borderRadius: '4px', 
+                          fontSize: '11px',
+                          marginTop: '8px',
+                          overflow: 'auto'
+                        }}>
                           <code>{vuln.code}</code>
                         </pre>
                       )}
                       {vuln.suggestion && (
-                        <div className="vulnerability-fix">
-                          <strong>💡 Fix:</strong> {vuln.suggestion}
+                        <div style={{ 
+                          marginTop: '8px', 
+                          padding: '8px', 
+                          background: 'rgba(102, 126, 234, 0.1)', 
+                          borderRadius: '4px',
+                          fontSize: '12px'
+                        }}>
+                          <strong style={{ color: 'var(--text-primary)' }}>💡 Fix:</strong> {vuln.suggestion}
                         </div>
                       )}
                     </div>
@@ -395,19 +547,40 @@ Total Files: ${fileTree?.length || 0}
 
               {/* Medium Issues */}
               {codeAnalysis.security.medium && codeAnalysis.security.medium.length > 0 && (
-                <div className="vulnerability-section">
-                  <h4 className="vulnerability-section-title medium">
-                    🟡 Medium ({codeAnalysis.security.medium.length})
+                <div style={{ marginBottom: '20px' }}>
+                  <h4 style={{ 
+                    color: '#f59e0b', 
+                    fontSize: '14px', 
+                    fontWeight: '600', 
+                    marginBottom: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <Info size={16} />
+                    Medium ({codeAnalysis.security.medium.length})
                   </h4>
                   {codeAnalysis.security.medium.map((vuln, index) => (
-                    <div key={`medium-${index}`} className="vulnerability-item medium">
-                      <div className="vulnerability-header">
-                        <span className="vulnerability-type">{vuln.type}</span>
-                        <span className="vulnerability-file">📄 {vuln.file}</span>
+                    <div 
+                      key={`medium-${index}`} 
+                      style={{
+                        padding: '12px',
+                        background: 'rgba(245, 158, 11, 0.08)',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(245, 158, 11, 0.2)',
+                        marginBottom: '8px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <Badge variant="warning">{vuln.type}</Badge>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+                          <FileText size={12} style={{ display: 'inline', marginRight: '4px' }} />
+                          {vuln.file}
+                        </span>
                       </div>
-                      <p className="vulnerability-message">{vuln.message}</p>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '4px' }}>{vuln.message}</p>
                       {vuln.line && (
-                        <p className="vulnerability-location">Line {vuln.line}</p>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>Line {vuln.line}</span>
                       )}
                     </div>
                   ))}
@@ -416,17 +589,38 @@ Total Files: ${fileTree?.length || 0}
 
               {/* Low Issues */}
               {codeAnalysis.security.low && codeAnalysis.security.low.length > 0 && (
-                <div className="vulnerability-section">
-                  <h4 className="vulnerability-section-title low">
-                    🔵 Low ({codeAnalysis.security.low.length})
+                <div style={{ marginBottom: '20px' }}>
+                  <h4 style={{ 
+                    color: '#3b82f6', 
+                    fontSize: '14px', 
+                    fontWeight: '600', 
+                    marginBottom: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <Info size={16} />
+                    Low ({codeAnalysis.security.low.length})
                   </h4>
                   {codeAnalysis.security.low.map((vuln, index) => (
-                    <div key={`low-${index}`} className="vulnerability-item low">
-                      <div className="vulnerability-header">
-                        <span className="vulnerability-type">{vuln.type}</span>
-                        <span className="vulnerability-file">📄 {vuln.file}</span>
+                    <div 
+                      key={`low-${index}`} 
+                      style={{
+                        padding: '12px',
+                        background: 'rgba(59, 130, 246, 0.08)',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(59, 130, 246, 0.2)',
+                        marginBottom: '8px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <Badge variant="info">{vuln.type}</Badge>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+                          <FileText size={12} style={{ display: 'inline', marginRight: '4px' }} />
+                          {vuln.file}
+                        </span>
                       </div>
-                      <p className="vulnerability-message">{vuln.message}</p>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{vuln.message}</p>
                     </div>
                   ))}
                 </div>
@@ -437,43 +631,80 @@ Total Files: ${fileTree?.length || 0}
                (!codeAnalysis.security.high || codeAnalysis.security.high.length === 0) &&
                (!codeAnalysis.security.medium || codeAnalysis.security.medium.length === 0) &&
                (!codeAnalysis.security.low || codeAnalysis.security.low.length === 0) && (
-                <div className="no-vulnerabilities">
-                  <span className="success-icon">✅</span>
-                  <p>No vulnerabilities detected in analyzed code!</p>
+                <div style={{ 
+                  textAlign: 'center', 
+                  padding: '40px 20px',
+                  background: 'rgba(16, 185, 129, 0.1)',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(16, 185, 129, 0.2)'
+                }}>
+                  <CheckCircle size={48} style={{ color: '#10b981', marginBottom: '12px' }} />
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: 0 }}>No vulnerabilities detected in analyzed code!</p>
                 </div>
               )}
             </>
           )}
-        </div>
+        </Card>
       )}
 
       {/* Passed Checks Section */}
       {securityData.passed_checks && securityData.passed_checks.length > 0 && (
-        <div className="content-card passed-checks-card fade-in">
-          <h3 className="card-title">✅ Passed Security Checks</h3>
-          <ul className="passed-checks-list">
+        <Card 
+          title="Passed Security Checks" 
+          icon={CheckCircle}
+          headerAction={<Badge variant="success">{securityData.passed_checks.length} Passed</Badge>}
+        >
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {securityData.passed_checks.map((check, index) => (
-              <li key={index} className="check-item fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
-                <span className="check-icon">✓</span>
-                <span className="check-text">{check}</span>
+              <li 
+                key={index} 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '10px',
+                  background: 'rgba(16, 185, 129, 0.08)',
+                  borderRadius: '6px',
+                  marginBottom: '8px',
+                  border: '1px solid rgba(16, 185, 129, 0.15)'
+                }}
+              >
+                <CheckCircle size={16} style={{ color: '#10b981', flexShrink: 0 }} />
+                <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>{check}</span>
               </li>
             ))}
           </ul>
-        </div>
+        </Card>
       )}
 
       {/* Recommendations Section */}
       {securityData.recommendations && securityData.recommendations.length > 0 && (
-        <div className="content-card recommendations-card fade-in">
-          <h3 className="card-title">💡 Recommendations</h3>
-          <ul className="recommendations-list">
+        <Card 
+          title="Recommendations" 
+          icon={Info}
+          headerAction={<Badge variant="info">{securityData.recommendations.length} Tips</Badge>}
+        >
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {securityData.recommendations.map((rec, index) => (
-              <li key={index} className="recommendation-item fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
-                {rec}
+              <li 
+                key={index} 
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  padding: '12px',
+                  background: 'rgba(102, 126, 234, 0.08)',
+                  borderRadius: '6px',
+                  marginBottom: '8px',
+                  border: '1px solid rgba(102, 126, 234, 0.15)'
+                }}
+              >
+                <Info size={16} style={{ color: '#667eea', flexShrink: 0, marginTop: '2px' }} />
+                <span style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.6' }}>{rec}</span>
               </li>
             ))}
           </ul>
-        </div>
+        </Card>
       )}
     </div>
   );

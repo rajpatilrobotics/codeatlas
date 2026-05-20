@@ -21,8 +21,7 @@ function TopBar({
 }) {
   const showAnalyze =
     Boolean(repoUrl?.trim()) &&
-    Boolean(lastAnalyzedRepoUrl) &&
-    !urlsMatch(repoUrl, lastAnalyzedRepoUrl);
+    (!lastAnalyzedRepoUrl || !urlsMatch(repoUrl, lastAnalyzedRepoUrl));
 
   return (
     <header className="topbar">

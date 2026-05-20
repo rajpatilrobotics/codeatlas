@@ -11,6 +11,10 @@ import { FunctionCallFlowDiagram, FileStructureDiagram } from './CodeAnalysisDia
 import DynamicDataFlowDiagram from './DynamicDataFlowDiagram';
 import { cleanMarkdown } from '../../utils/textFormatting';
 import DownloadDiagramButton from '../DownloadDiagramButton';
+import { Building2, Layers, Package, FolderTree, FileText, Cpu, Database, Shield, Globe, Zap, Code, GitBranch, Info } from 'lucide-react';
+import Card from '../ui/Card';
+import Badge from '../ui/Badge';
+import MetricCard from '../ui/MetricCard';
 
 // Architecture Analysis Display Component with Enhanced Typography
 function ArchitectureAnalysisDisplay({ analysis }) {
@@ -25,18 +29,18 @@ function ArchitectureAnalysisDisplay({ analysis }) {
     let currentContent = [];
 
     const sectionIcons = {
-      'component': '🧩',
-      'technology': '⚡',
-      'tech': '⚡',
-      'data flow': '🔄',
-      'flow': '🔄',
-      'dependencies': '📦',
-      'dependency': '📦',
-      'folder': '📁',
-      'structure': '📁',
-      'architecture': '🏗️',
-      'overview': '📋',
-      'summary': '📝'
+      'component': <Package size={20} />,
+      'technology': <Cpu size={20} />,
+      'tech': <Cpu size={20} />,
+      'data flow': <Layers size={20} />,
+      'flow': <Layers size={20} />,
+      'dependencies': <GitBranch size={20} />,
+      'dependency': <GitBranch size={20} />,
+      'folder': <FolderTree size={20} />,
+      'structure': <FolderTree size={20} />,
+      'architecture': <Building2 size={20} />,
+      'overview': <FileText size={20} />,
+      'summary': <FileText size={20} />
     };
 
     const getSectionIcon = (title) => {
@@ -44,7 +48,7 @@ function ArchitectureAnalysisDisplay({ analysis }) {
       for (const [key, icon] of Object.entries(sectionIcons)) {
         if (lowerTitle.includes(key)) return icon;
       }
-      return '📌';
+      return <FileText size={20} />;
     };
 
     lines.forEach((line, index) => {
@@ -76,7 +80,7 @@ function ArchitectureAnalysisDisplay({ analysis }) {
           sections.push({
             title: 'Overview',
             content: trimmedLine,
-            icon: '📋'
+            icon: <FileText size={20} />
           });
         }
       }
@@ -94,7 +98,7 @@ function ArchitectureAnalysisDisplay({ analysis }) {
     return sections.length > 0 ? sections : [{
       title: 'Architecture Analysis',
       content: text,
-      icon: '🏗️'
+      icon: <Building2 size={20} />
     }];
   };
 
@@ -158,66 +162,18 @@ function ArchitectureAnalysisDisplay({ analysis }) {
   return (
     <div style={{
       display: 'grid',
-      gap: '1.5rem',
-      marginTop: '1rem'
+      gap: 'var(--spacing-md)',
+      marginTop: 'var(--spacing-md)'
     }}>
       {sections.map((section, index) => (
-        <div key={index} style={{
-          background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)',
-          border: '1px solid rgba(102, 126, 234, 0.2)',
-          borderRadius: '16px',
-          padding: '24px',
-          transition: 'all 0.3s ease',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = 'rgba(102, 126, 234, 0.4)';
-          e.currentTarget.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.15)';
-          e.currentTarget.style.transform = 'translateY(-2px)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = 'rgba(102, 126, 234, 0.2)';
-          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
-          e.currentTarget.style.transform = 'translateY(0)';
-        }}>
-          {/* Section Header */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            marginBottom: '20px',
-            paddingBottom: '16px',
-            borderBottom: '2px solid rgba(102, 126, 234, 0.15)'
-          }}>
-            <span style={{
-              fontSize: '24px',
-              lineHeight: 1,
-              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
-            }}>
-              {section.icon}
-            </span>
-            <h3 style={{
-              margin: 0,
-              fontSize: '1.1rem',
-              fontWeight: '700',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              letterSpacing: '-0.02em'
-            }}>
-              {section.title}
-            </h3>
-          </div>
-
-          {/* Section Content */}
-          <div style={{
-            fontSize: '0.95rem',
-            color: 'var(--text-primary)'
-          }}>
-            {formatContent(section.content)}
-          </div>
-        </div>
+        <Card
+          key={index}
+          title={section.title}
+          icon={() => section.icon}
+          className="ca-card"
+        >
+          {formatContent(section.content)}
+        </Card>
       ))}
     </div>
   );
@@ -228,11 +184,11 @@ function UnifiedTechStackDiagram({ techStack }) {
   const createUnifiedNodes = () => {
     const nodes = [];
     const categories = [
-      { key: 'frontend', label: 'Frontend Technologies', icon: '🎨', color: '#61dafb', desc: 'UI & Client-Side' },
-      { key: 'backend', label: 'Backend Technologies', icon: '⚙️', color: '#68a063', desc: 'Server & Logic' },
-      { key: 'database', label: 'Database & Storage', icon: '💾', color: '#f29111', desc: 'Data Persistence' },
-      { key: 'testing', label: 'Testing & QA', icon: '🧪', color: '#c678dd', desc: 'Quality Assurance' },
-      { key: 'devops', label: 'DevOps & Tools', icon: '🚀', color: '#56b6c2', desc: 'CI/CD & Deployment' }
+      { key: 'frontend', label: 'Frontend Technologies', icon: <Code size={32} />, color: '#61dafb', desc: 'UI & Client-Side' },
+      { key: 'backend', label: 'Backend Technologies', icon: <Cpu size={32} />, color: '#68a063', desc: 'Server & Logic' },
+      { key: 'database', label: 'Database & Storage', icon: <Database size={32} />, color: '#f29111', desc: 'Data Persistence' },
+      { key: 'testing', label: 'Testing & QA', icon: <Shield size={32} />, color: '#c678dd', desc: 'Quality Assurance' },
+      { key: 'devops', label: 'DevOps & Tools', icon: <Zap size={32} />, color: '#56b6c2', desc: 'CI/CD & Deployment' }
     ];
 
     let yOffset = 50;
@@ -248,7 +204,7 @@ function UnifiedTechStackDiagram({ techStack }) {
           data: {
             label: (
               <div style={{ textAlign: 'center', padding: '20px' }}>
-                <div style={{ fontSize: '40px', marginBottom: '12px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>{cat.icon}</div>
+                <div style={{ marginBottom: '12px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))', display: 'flex', justifyContent: 'center' }}>{cat.icon}</div>
                 <div style={{ fontWeight: 'bold', fontSize: '18px', marginBottom: '6px', letterSpacing: '-0.02em' }}>{cat.label}</div>
                 <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '10px', color: '#a0aec0' }}>{cat.desc}</div>
                 <div style={{
@@ -394,47 +350,21 @@ function UnifiedTechStackDiagram({ techStack }) {
   const totalTechs = techStack ? Object.values(techStack).reduce((sum, arr) => sum + arr.length, 0) : 0;
 
   return (
-    <div className="content-card">
-      <h2 className="card-title">🏗️ Comprehensive Technology Stack & Architecture</h2>
-      <div className="card-content">
-        {/* Summary Stats */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-          gap: '12px',
-          marginBottom: '20px'
-        }}>
-          {Object.entries(techStack).map(([key, techs]) => techs.length > 0 && (
-            <div key={key} style={{
-              background: 'rgba(102, 126, 234, 0.08)',
-              border: '1px solid rgba(102, 126, 234, 0.2)',
-              borderRadius: '12px',
-              padding: '12px',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '24px', marginBottom: '4px', fontWeight: 'bold', color: '#667eea' }}>
-                {techs.length}
-              </div>
-              <div style={{ fontSize: '12px', textTransform: 'capitalize', color: 'var(--text-secondary)' }}>
-                {key}
-              </div>
-            </div>
-          ))}
-          <div style={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            borderRadius: '12px',
-            padding: '12px',
-            textAlign: 'center',
-            color: '#fff'
-          }}>
-            <div style={{ fontSize: '24px', marginBottom: '4px', fontWeight: 'bold' }}>
-              {totalTechs}
-            </div>
-            <div style={{ fontSize: '12px' }}>
-              Total Technologies
-            </div>
-          </div>
-        </div>
+    <Card title="Comprehensive Technology Stack & Architecture" icon={Building2}>
+      {/* Summary Stats */}
+      <div className="ca-metrics-grid">
+        {Object.entries(techStack).map(([key, techs]) => techs.length > 0 && (
+          <MetricCard
+            key={key}
+            label={key}
+            value={techs.length}
+          />
+        ))}
+        <MetricCard
+          label="Total Technologies"
+          value={totalTechs}
+        />
+      </div>
 
         {/* Interactive Diagram */}
         <div className="reactflow-wrapper" style={{
@@ -492,8 +422,7 @@ function UnifiedTechStackDiagram({ techStack }) {
             📊 <strong>Grid layout:</strong> 5 technologies per row
           </p>
         </div>
-      </div>
-    </div>
+    </Card>
   );
 }
 
@@ -502,11 +431,11 @@ function TechnologyFlowDiagram({ techStack, mainTechnologies }) {
   const createTechFlowNodes = () => {
     const nodes = [];
     const categories = [
-      { key: 'frontend', label: 'Frontend', icon: '🎨', color: '#61dafb', y: 50 },
-      { key: 'backend', label: 'Backend', icon: '⚙️', color: '#68a063', y: 250 },
-      { key: 'database', label: 'Database', icon: '💾', color: '#f29111', y: 450 },
-      { key: 'testing', label: 'Testing', icon: '🧪', color: '#c678dd', y: 650 },
-      { key: 'devops', label: 'DevOps', icon: '🚀', color: '#56b6c2', y: 850 }
+      { key: 'frontend', label: 'Frontend', icon: <Code size={28} />, color: '#61dafb', y: 50 },
+      { key: 'backend', label: 'Backend', icon: <Cpu size={28} />, color: '#68a063', y: 250 },
+      { key: 'database', label: 'Database', icon: <Database size={28} />, color: '#f29111', y: 450 },
+      { key: 'testing', label: 'Testing', icon: <Shield size={28} />, color: '#c678dd', y: 650 },
+      { key: 'devops', label: 'DevOps', icon: <Zap size={28} />, color: '#56b6c2', y: 850 }
     ];
 
     categories.forEach((cat) => {
@@ -520,7 +449,7 @@ function TechnologyFlowDiagram({ techStack, mainTechnologies }) {
           data: {
             label: (
               <div style={{ textAlign: 'center', padding: '14px' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>{cat.icon}</div>
+                <div style={{ marginBottom: '8px', display: 'flex', justifyContent: 'center' }}>{cat.icon}</div>
                 <div style={{ fontWeight: 'bold', fontSize: '15px', marginBottom: '4px' }}>{cat.label}</div>
                 <div style={{ fontSize: '11px', opacity: 0.7 }}>{allTechs.length} {allTechs.length === 1 ? 'Technology' : 'Technologies'}</div>
               </div>
@@ -618,9 +547,7 @@ function TechnologyFlowDiagram({ techStack, mainTechnologies }) {
   const [techEdges, , onTechEdgesChange] = useEdgesState(createTechFlowEdges());
 
   return (
-    <div className="content-card">
-      <h2 className="card-title">📊 Comprehensive Technology Flow</h2>
-      <div className="card-content">
+    <Card title="Comprehensive Technology Flow" icon={Layers}>
         <div className="reactflow-wrapper" style={{
           height: '800px',
           background: '#0f1419',
@@ -658,8 +585,7 @@ function TechnologyFlowDiagram({ techStack, mainTechnologies }) {
             🔵 <strong>Solid arrows:</strong> Category flow • <strong>⚪ Dashed lines:</strong> Related technologies
           </p>
         </div>
-      </div>
-    </div>
+    </Card>
   );
 }
 
@@ -668,11 +594,11 @@ function TechStackDiagram({ techStack }) {
   const createTechStackNodes = () => {
     const nodes = [];
     const categories = [
-      { key: 'frontend', label: 'Frontend Technologies', icon: '🎨', color: '#61dafb', desc: 'UI & Client-Side' },
-      { key: 'backend', label: 'Backend Technologies', icon: '⚙️', color: '#68a063', desc: 'Server & Logic' },
-      { key: 'database', label: 'Database & Storage', icon: '💾', color: '#f29111', desc: 'Data Persistence' },
-      { key: 'testing', label: 'Testing & QA', icon: '🧪', color: '#c678dd', desc: 'Quality Assurance' },
-      { key: 'devops', label: 'DevOps & Tools', icon: '🚀', color: '#56b6c2', desc: 'CI/CD & Deployment' }
+      { key: 'frontend', label: 'Frontend Technologies', icon: <Code size={32} />, color: '#61dafb', desc: 'UI & Client-Side' },
+      { key: 'backend', label: 'Backend Technologies', icon: <Cpu size={32} />, color: '#68a063', desc: 'Server & Logic' },
+      { key: 'database', label: 'Database & Storage', icon: <Database size={32} />, color: '#f29111', desc: 'Data Persistence' },
+      { key: 'testing', label: 'Testing & QA', icon: <Shield size={32} />, color: '#c678dd', desc: 'Quality Assurance' },
+      { key: 'devops', label: 'DevOps & Tools', icon: <Zap size={32} />, color: '#56b6c2', desc: 'CI/CD & Deployment' }
     ];
 
     let yOffset = 50;
@@ -689,7 +615,7 @@ function TechStackDiagram({ techStack }) {
           data: {
             label: (
               <div style={{ textAlign: 'center', padding: '16px' }}>
-                <div style={{ fontSize: '36px', marginBottom: '10px' }}>{cat.icon}</div>
+                <div style={{ marginBottom: '10px', display: 'flex', justifyContent: 'center' }}>{cat.icon}</div>
                 <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '6px' }}>{cat.label}</div>
                 <div style={{ fontSize: '11px', opacity: 0.8, marginBottom: '8px' }}>{cat.desc}</div>
                 <div style={{
@@ -827,9 +753,7 @@ function TechStackDiagram({ techStack }) {
   const totalTechs = techStack ? Object.values(techStack).reduce((sum, arr) => sum + arr.length, 0) : 0;
 
   return (
-    <div className="content-card">
-      <h2 className="card-title">🛠️ Comprehensive Technology Stack</h2>
-      <div className="card-content">
+    <Card title="Comprehensive Technology Stack" icon={Package}>
         <div style={{
           marginBottom: '1rem',
           padding: '14px 18px',
@@ -870,8 +794,7 @@ function TechStackDiagram({ techStack }) {
         <p style={{ marginTop: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
           💡 Each category connects to its technologies • Drag to explore • Zoom for details
         </p>
-      </div>
-    </div>
+    </Card>
   );
 }
 
@@ -1037,7 +960,7 @@ function DataFlowDiagram({ techStack, detailedArchitecture }) {
         label: (
           <CleanLayerNode
             title="CLIENT LAYER"
-            icon="🌐"
+            icon={<Globe size={24} />}
             color="#3b82f6"
             data={{
               subtitle: "User Interface & Interaction",
@@ -1049,7 +972,7 @@ function DataFlowDiagram({ techStack, detailedArchitecture }) {
                 'LOC': frontendFiles.reduce((sum, f) => sum + (f.loc || 0), 0)
               },
               topItems: components.slice(0, 5).map(c => c.name) || frontendFiles.slice(0, 5).map(f => f.path.split('/').pop()),
-              topItemsLabel: '🧩 Top Components',
+              topItemsLabel: 'Top Components',
               additionalInfo: `Pattern: ${detailedArchitecture?.patterns?.architecture || 'Component-Based'}`
             }}
           />
@@ -1070,7 +993,7 @@ function DataFlowDiagram({ techStack, detailedArchitecture }) {
           label: (
             <CleanLayerNode
               title="FRONTEND LAYER"
-              icon="🎨"
+              icon={<Code size={24} />}
               color="#a78bfa"
               data={{
                 subtitle: "UI Framework & State Management",
@@ -1085,7 +1008,7 @@ function DataFlowDiagram({ techStack, detailedArchitecture }) {
                   ...components.slice(0, 3).map(c => `${c.name} (${c.folder})`),
                   ...frontendFunctions.slice(0, 2).map(f => `${f.name}()`)
                 ],
-                topItemsLabel: '📦 Key Components & Functions'
+                topItemsLabel: 'Key Components & Functions'
               }}
             />
           )
@@ -1106,7 +1029,7 @@ function DataFlowDiagram({ techStack, detailedArchitecture }) {
           label: (
             <CleanLayerNode
               title="AUTH LAYER"
-              icon="🔐"
+              icon={<Shield size={24} />}
               color="#10b981"
               data={{
                 subtitle: "Security & Access Control",
@@ -1116,7 +1039,7 @@ function DataFlowDiagram({ techStack, detailedArchitecture }) {
                   'Guards': allFunctions.filter(f => f.name.includes('auth') || f.name.includes('guard')).length
                 },
                 topItems: techStack.authentication.slice(0, 4),
-                topItemsLabel: '🛡️ Auth Technologies',
+                topItemsLabel: 'Auth Technologies',
                 additionalInfo: 'Handles authentication, authorization, and session management'
               }}
             />
@@ -1143,7 +1066,7 @@ function DataFlowDiagram({ techStack, detailedArchitecture }) {
           label: (
             <CleanLayerNode
               title="BACKEND / API"
-              icon="⚙️"
+              icon={<Cpu size={24} />}
               color="#888888"
               data={{
                 subtitle: "Business Logic & API Endpoints",
@@ -1157,7 +1080,7 @@ function DataFlowDiagram({ techStack, detailedArchitecture }) {
                 topItems: [
                   ...apiEndpoints.slice(0, 4).map(ep => `${ep.method} ${ep.path}`)
                 ],
-                topItemsLabel: '🛣️ API Endpoints',
+                topItemsLabel: 'API Endpoints',
                 additionalInfo: `Ports: ${configuration.ports?.map(p => p.port).join(', ') || 'N/A'}`
               }}
             />
@@ -1179,7 +1102,7 @@ function DataFlowDiagram({ techStack, detailedArchitecture }) {
           label: (
             <CleanLayerNode
               title="CACHE LAYER"
-              icon="⚡"
+              icon={<Zap size={24} />}
               color="#f59e0b"
               data={{
                 subtitle: "Performance & Speed Optimization",
@@ -1188,7 +1111,7 @@ function DataFlowDiagram({ techStack, detailedArchitecture }) {
                   'Systems': techStack.cache.length
                 },
                 topItems: techStack.cache,
-                topItemsLabel: '💨 Cache Systems',
+                topItemsLabel: 'Cache Systems',
                 additionalInfo: 'Reduces database load and improves response times'
               }}
             />
@@ -1212,7 +1135,7 @@ function DataFlowDiagram({ techStack, detailedArchitecture }) {
           label: (
             <CleanLayerNode
               title="DATABASE LAYER"
-              icon="💾"
+              icon={<Database size={24} />}
               color="#ec4899"
               data={{
                 subtitle: "Data Persistence & Storage",
@@ -1223,7 +1146,7 @@ function DataFlowDiagram({ techStack, detailedArchitecture }) {
                   'Files': dbFiles.length
                 },
                 topItems: databaseModels.slice(0, 4).map(m => `${m.name} (${m.type})`),
-                topItemsLabel: '🗄️ Database Models',
+                topItemsLabel: 'Database Models',
                 additionalInfo: `Total Models: ${databaseModels.length} | ORM: ${techStack.orm?.join(', ') || 'None'}`
               }}
             />
@@ -1331,29 +1254,9 @@ function DataFlowDiagram({ techStack, detailedArchitecture }) {
   const edges = createEdges();
 
   return (
-    <div style={{ marginTop: '30px' }}>
-      <h3 style={{
-        fontSize: '20px',
-        fontWeight: 'bold',
-        marginBottom: '20px',
-        color: '#fff',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px'
-      }}>
-        <span style={{ fontSize: '24px' }}>🔄</span>
-        Data Flow Architecture
-        <span style={{
-          fontSize: '12px',
-          background: 'rgba(59, 130, 246, 0.2)',
-          padding: '4px 12px',
-          borderRadius: '6px',
-          fontWeight: 'normal',
-          color: '#60a5fa'
-        }}>
-          {nodes.length} Layers Detected
-        </span>
-      </h3>
+    <Card title="Data Flow Architecture" icon={Layers} headerAction={
+      <Badge variant="info">{nodes.length} Layers Detected</Badge>
+    }>
 
       <div style={{
         height: '1400px',
@@ -1423,10 +1326,154 @@ function DataFlowDiagram({ techStack, detailedArchitecture }) {
           </div>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
+
+// Modern Styled Architecture Diagram Component
+function ModernArchitectureDiagram({ techStack, detailedArchitecture }) {
+  const categories = [
+    { key: 'frontend', label: 'Frontend', icon: <Code size={24} />, color: '#667eea', desc: 'User Interface & Experience' },
+    { key: 'backend', label: 'Backend', icon: <Cpu size={24} />, color: '#10b981', desc: 'Server & API Logic' },
+    { key: 'database', label: 'Database', icon: <Database size={24} />, color: '#f59e0b', desc: 'Data Storage & Management' },
+    { key: 'testing', label: 'Testing', icon: <Shield size={24} />, color: '#ef4444', desc: 'Quality Assurance' },
+    { key: 'devops', label: 'DevOps', icon: <Zap size={24} />, color: '#8b5cf6', desc: 'Deployment & CI/CD' }
+  ];
+
+  const totalTechs = techStack ? Object.values(techStack).reduce((sum, arr) => sum + arr.length, 0) : 0;
+
+  return (
+    <Card 
+      title="Modern Architecture Overview" 
+      icon={Building2}
+      headerAction={<Badge variant="info">New Design</Badge>}
+    >
+      {/* Summary Metrics */}
+      <div className="ca-metrics-grid" style={{ marginBottom: '24px' }}>
+        {Object.entries(techStack || {}).map(([key, techs]) => techs.length > 0 && (
+          <MetricCard key={key} label={key} value={techs.length} />
+        ))}
+        <MetricCard label="Total Technologies" value={totalTechs} />
+      </div>
+
+      {/* Modern Grid Layout */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+        gap: '16px' 
+      }}>
+        {categories.map((cat) => {
+          const techs = techStack?.[cat.key] || [];
+          if (techs.length === 0) return null;
+
+          return (
+            <div
+              key={cat.key}
+              style={{
+                padding: '20px',
+                background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%)',
+                borderRadius: '12px',
+                border: '2px solid rgba(102, 126, 234, 0.2)',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = '0 8px 24px rgba(102, 126, 234, 0.3)';
+                e.currentTarget.style.borderColor = cat.color;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.borderColor = 'rgba(102, 126, 234, 0.2)';
+              }}
+            >
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                <div style={{ 
+                  padding: '12px', 
+                  background: `${cat.color}20`, 
+                  borderRadius: '10px',
+                  color: cat.color 
+                }}>
+                  {cat.icon}
+                </div>
+                <div>
+                  <div style={{ fontWeight: 'bold', fontSize: '16px', color: 'var(--text-primary)' }}>
+                    {cat.label}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    {cat.desc}
+                  </div>
+                </div>
+              </div>
+
+              {/* Count Badge */}
+              <Badge 
+                variant="info" 
+                style={{ 
+                  marginBottom: '12px', 
+                  display: 'inline-block',
+                  background: `${cat.color}30`,
+                  color: cat.color,
+                  border: `1px solid ${cat.color}50`
+                }}
+              >
+                {techs.length} {techs.length === 1 ? 'Technology' : 'Technologies'}
+              </Badge>
+
+              {/* Tech List */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {techs.map((tech, idx) => (
+                  <Pill 
+                    key={idx} 
+                    variant="default"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      fontSize: '12px'
+                    }}
+                  >
+                    {tech}
+                  </Pill>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Info Box */}
+      <div style={{
+        marginTop: '20px',
+        padding: '16px',
+        background: 'rgba(102, 126, 234, 0.08)',
+        borderRadius: '8px',
+        border: '1px solid rgba(102, 126, 234, 0.2)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+          <Info size={16} style={{ color: '#667eea' }} />
+          <span style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '14px' }}>
+            Modern Design Features
+          </span>
+        </div>
+        <ul style={{ 
+          margin: 0, 
+          paddingLeft: '20px', 
+          color: 'var(--text-secondary)', 
+          fontSize: '13px',
+          lineHeight: '1.8'
+        }}>
+          <li>Clean card-based layout with hover effects</li>
+          <li>Consistent color scheme matching app theme</li>
+          <li>Responsive grid that adapts to screen size</li>
+          <li>Modern badges and pills for visual hierarchy</li>
+        </ul>
+      </div>
+    </Card>
+  );
+}
 
 // Folder Structure Diagram Component
 function FolderStructureDiagram({ folders }) {
@@ -2333,6 +2380,11 @@ function Architecture({ repoData, architectureAnalysis, isArchitectureLoading, a
             </p>
           </div>
         </div>
+      )}
+
+      {/* NEW: Modern Styled Architecture Diagram for Comparison */}
+      {techStack && Object.keys(techStack).length > 0 && Object.values(techStack).some(arr => Array.isArray(arr) && arr.length > 0) && (
+        <ModernArchitectureDiagram techStack={techStack} detailedArchitecture={detailedArchitecture} />
       )}
 
       {/* Interactive Folder Structure with React Flow */}

@@ -1,28 +1,30 @@
 import React from 'react';
 import { cleanMarkdown, enhanceTextFormatting } from '../../utils/textFormatting';
+import { Star, FileText, GitBranch, Users, Clock, Keyboard, AlertTriangle, Target, FolderTree, Shield, Zap, Tag } from 'lucide-react';
+import Card from '../ui/Card';
+import Badge from '../ui/Badge';
+import Pill from '../ui/Pill';
+import MetricCard from '../ui/MetricCard';
 
 function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, summaryError, quickStartGuide, isQuickStartLoading, commonIssues, isIssuesLoading, firstContributions, isContributionsLoading, codeAnalysis, isCodeAnalysisLoading }) {
   // If no repoData, show placeholder
   if (!repoData) {
     return (
       <div className="tab-content summary-tab">
-        <div className="content-card">
-          <h2 className="card-title">Repository Overview</h2>
-          <div className="card-content">
-            <div className="info-row">
-              <span className="info-label">Repository URL:</span>
-              <span className="info-value">{repoUrl || 'N/A'}</span>
-            </div>
-            <div className="info-row">
-              <span className="info-label">Total Files:</span>
-              <span className="info-value">{repoSize} files</span>
-            </div>
-            <div className="info-row">
-              <span className="info-label">Analysis Status:</span>
-              <span className="info-value status-complete">✓ Complete</span>
-            </div>
+        <Card title="Repository Overview" icon={FolderTree}>
+          <div className="info-row">
+            <span className="info-label">Repository URL:</span>
+            <span className="info-value">{repoUrl || 'N/A'}</span>
           </div>
-        </div>
+          <div className="info-row">
+            <span className="info-label">Total Files:</span>
+            <span className="info-value">{repoSize} files</span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">Analysis Status:</span>
+            <Badge variant="success">Complete</Badge>
+          </div>
+        </Card>
       </div>
     );
   }
@@ -37,51 +39,36 @@ function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, sum
   return (
     <div className="tab-content summary-tab">
       {/* Repository Overview - Merged Section */}
-      <div className="content-card">
-        <h2 className="card-title">Repository Overview</h2>
-        <div className="card-content">
-          <div className="repo-stats-grid">
-            <div className="stat-row">
-              <span className="stat-label">Repository:</span>
-              <span className="stat-value">
-                <a href={repoInfo.url} target="_blank" rel="noopener noreferrer" className="repo-link">
-                  {repoInfo.name}
-                </a>
-              </span>
-            </div>
-            <div className="stat-row">
-              <span className="stat-label">Description:</span>
-              <span className="stat-value">{repoInfo.description}</span>
-            </div>
-            <div className="stat-row">
-              <span className="stat-label">Primary Language:</span>
-              <span className="stat-value">{repoInfo.language}</span>
-            </div>
-            <div className="stat-row">
-              <span className="stat-label">Stars:</span>
-              <span className="stat-value">⭐ {repoInfo.stars.toLocaleString()}</span>
-            </div>
-            <div className="stat-row">
-              <span className="stat-label">License:</span>
-              <span className="stat-value">{repoInfo.license}</span>
-            </div>
-            <div className="stat-row">
-              <span className="stat-label">Files Detected:</span>
-              <span className="stat-value">{repoSize.toLocaleString()} files</span>
-            </div>
-            <div className="stat-row">
-              <span className="stat-label">Last Updated:</span>
-              <span className="stat-value">{new Date(repoInfo.updatedAt).toLocaleDateString()}</span>
-            </div>
+      <Card title="Repository Overview" icon={FolderTree}>
+        <div className="ca-metrics-grid">
+          <MetricCard label="Stars" value={repoInfo.stars.toLocaleString()} icon={Star} />
+          <MetricCard label="Files" value={repoSize.toLocaleString()} icon={FileText} />
+          <MetricCard label="Language" value={repoInfo.language} icon={GitBranch} />
+          <MetricCard label="Last Updated" value={new Date(repoInfo.updatedAt).toLocaleDateString()} icon={Clock} />
+        </div>
+        <div className="repo-stats-grid">
+          <div className="stat-row">
+            <span className="stat-label">Repository:</span>
+            <span className="stat-value">
+              <a href={repoInfo.url} target="_blank" rel="noopener noreferrer" className="repo-link">
+                {repoInfo.name}
+              </a>
+            </span>
+          </div>
+          <div className="stat-row">
+            <span className="stat-label">Description:</span>
+            <span className="stat-value">{repoInfo.description}</span>
+          </div>
+          <div className="stat-row">
+            <span className="stat-label">License:</span>
+            <span className="stat-value">{repoInfo.license}</span>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Project Complexity Score */}
       {complexity && (
-        <div className="content-card">
-          <h2 className="card-title">📈 Project Complexity</h2>
-          <div className="card-content">
+        <Card title="Project Complexity" icon={Zap}>
             <div className="complexity-container">
               <div className="complexity-score-wrapper">
                 <div className="complexity-circle" style={{ borderColor: complexity.color }}>
@@ -115,14 +102,11 @@ function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, sum
                 </ul>
               </div>
             </div>
-          </div>
-        </div>
+        </Card>
       )}
 
       {/* AI-Generated Summary */}
-      <div className="content-card">
-        <h2 className="card-title">AI Generated Summary</h2>
-        <div className="card-content">
+      <Card title="AI Generated Summary" icon={FileText}>
           {isSummaryLoading && (
             <div className="loading-container">
               <div className="spinner"></div>
@@ -149,15 +133,12 @@ function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, sum
           {!aiSummary && !isSummaryLoading && !summaryError && (
             <p className="placeholder-text">AI summary will appear here after analysis...</p>
           )}
-        </div>
-      </div>
+      </Card>
 
       <div className="ca-summary-grid-2">
       {/* Tech Stack Detection */}
       {techStack && Object.values(techStack).some(arr => Array.isArray(arr) && arr.length > 0) && (
-        <div className="content-card">
-          <h2 className="card-title">Tech Stack</h2>
-          <div className="card-content">
+        <Card title="Tech Stack" icon={GitBranch}>
             <div className="tech-stack-inline">
               {techStack.frontend.length > 0 && (
                 <div className="tech-category-row">
@@ -210,14 +191,11 @@ function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, sum
                 </div>
               )}
             </div>
-          </div>
-        </div>
+        </Card>
       )}
 
       {/* Quick Start Guide */}
-      <div className="content-card">
-        <h2 className="card-title">Quick Start Guide</h2>
-        <div className="card-content">
+      <Card title="Quick Start Guide" icon={Zap}>
           {isQuickStartLoading && (
             <div className="loading-container">
               <div className="spinner"></div>
@@ -237,15 +215,12 @@ function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, sum
           {!quickStartGuide && !isQuickStartLoading && (
             <p className="placeholder-text">Quick start guide will appear here...</p>
           )}
-        </div>
-      </div>
+      </Card>
       </div>
 
       {/* Contributor Insights */}
       {contributors && contributors.length > 0 && (
-        <div className="content-card">
-          <h2 className="card-title">👥 Top Contributors</h2>
-          <div className="card-content">
+        <Card title="Top Contributors" icon={Users}>
             <div className="contributors-grid">
               {contributors.map((contributor, idx) => (
                 <a
@@ -284,121 +259,197 @@ function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, sum
                 </div>
               </div>
             )}
-          </div>
-        </div>
+        </Card>
       )}
 
       {/* Key Commands Cheatsheet */}
       {keyCommands && (
-        <div className="content-card">
-          <h2 className="card-title">⌨️ Key Commands Cheatsheet</h2>
-          <div className="card-content">
-            <div className="commands-grid">
+        <Card title="Key Commands Cheatsheet" icon={Keyboard}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {keyCommands.development.length > 0 && (
-                <div className="command-category">
-                  <h3 className="command-category-title">🚀 Development</h3>
-                  {keyCommands.development.map((cmd, idx) => (
-                    <div key={idx} className="command-item">
-                      <code className="command-name">npm run {cmd.name}</code>
-                      <span className="command-desc">{cmd.command}</span>
-                    </div>
-                  ))}
+                <div>
+                  <h4 style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: '600', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Zap size={16} />
+                    Development
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {keyCommands.development.map((cmd, idx) => (
+                      <div key={idx} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '10px',
+                        background: 'rgba(102, 126, 234, 0.08)',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(102, 126, 234, 0.15)'
+                      }}>
+                        <code style={{ color: 'var(--text-primary)', fontSize: '13px' }}>npm run {cmd.name}</code>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{cmd.command}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
               {keyCommands.build.length > 0 && (
-                <div className="command-category">
-                  <h3 className="command-category-title">🔨 Build</h3>
-                  {keyCommands.build.map((cmd, idx) => (
-                    <div key={idx} className="command-item">
-                      <code className="command-name">npm run {cmd.name}</code>
-                      <span className="command-desc">{cmd.command}</span>
-                    </div>
-                  ))}
+                <div>
+                  <h4 style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: '600', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FolderTree size={16} />
+                    Build
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {keyCommands.build.map((cmd, idx) => (
+                      <div key={idx} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '10px',
+                        background: 'rgba(102, 126, 234, 0.08)',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(102, 126, 234, 0.15)'
+                      }}>
+                        <code style={{ color: 'var(--text-primary)', fontSize: '13px' }}>npm run {cmd.name}</code>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{cmd.command}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
               {keyCommands.test.length > 0 && (
-                <div className="command-category">
-                  <h3 className="command-category-title">🧪 Testing</h3>
-                  {keyCommands.test.map((cmd, idx) => (
-                    <div key={idx} className="command-item">
-                      <code className="command-name">npm run {cmd.name}</code>
-                      <span className="command-desc">{cmd.command}</span>
-                    </div>
-                  ))}
+                <div>
+                  <h4 style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: '600', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Shield size={16} />
+                    Testing
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {keyCommands.test.map((cmd, idx) => (
+                      <div key={idx} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '10px',
+                        background: 'rgba(102, 126, 234, 0.08)',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(102, 126, 234, 0.15)'
+                      }}>
+                        <code style={{ color: 'var(--text-primary)', fontSize: '13px' }}>npm run {cmd.name}</code>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{cmd.command}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
               {keyCommands.deployment.length > 0 && (
-                <div className="command-category">
-                  <h3 className="command-category-title">🚢 Deployment</h3>
-                  {keyCommands.deployment.map((cmd, idx) => (
-                    <div key={idx} className="command-item">
-                      <code className="command-name">npm run {cmd.name}</code>
-                      <span className="command-desc">{cmd.command}</span>
-                    </div>
-                  ))}
+                <div>
+                  <h4 style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: '600', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <GitBranch size={16} />
+                    Deployment
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {keyCommands.deployment.map((cmd, idx) => (
+                      <div key={idx} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '10px',
+                        background: 'rgba(102, 126, 234, 0.08)',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(102, 126, 234, 0.15)'
+                      }}>
+                        <code style={{ color: 'var(--text-primary)', fontSize: '13px' }}>npm run {cmd.name}</code>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{cmd.command}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
-          </div>
-        </div>
+        </Card>
       )}
 
       {/* Common Issues & Solutions */}
-      <div className="content-card">
-        <h2 className="card-title">⚠️ Common Issues & Solutions</h2>
-        <div className="card-content">
+      <Card title="Common Issues & Solutions" icon={AlertTriangle}>
           {isIssuesLoading && (
-            <div className="loading-container">
-              <div className="spinner"></div>
-              <p>Analyzing common issues...</p>
+            <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                border: '4px solid var(--border-color)',
+                borderTop: '4px solid #667eea',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+                margin: '0 auto 16px'
+              }}></div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Analyzing common issues...</p>
             </div>
           )}
           
           {commonIssues && !isIssuesLoading && (
-            <div className="issues-content">
+            <div style={{
+              padding: '16px',
+              background: 'rgba(102, 126, 234, 0.08)',
+              borderRadius: '8px',
+              border: '1px solid rgba(102, 126, 234, 0.15)'
+            }}>
               <pre
-                style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}
+                style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0, fontSize: '14px', lineHeight: '1.6' }}
                 dangerouslySetInnerHTML={{ __html: enhanceTextFormatting(cleanMarkdown(commonIssues)) }}
               />
             </div>
           )}
           
           {!commonIssues && !isIssuesLoading && (
-            <p className="placeholder-text">Common issues will appear here...</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', padding: '20px' }}>Common issues will appear here...</p>
           )}
-        </div>
-      </div>
+      </Card>
 
       {/* First Contribution Suggestions */}
-      <div className="content-card">
-        <h2 className="card-title">🎯 Your First Contribution</h2>
-        <div className="card-content">
+      <Card title="Your First Contribution" icon={Target}>
           {isContributionsLoading && (
-            <div className="loading-container">
-              <div className="spinner"></div>
-              <p>Analyzing codebase...</p>
+            <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                border: '4px solid var(--border-color)',
+                borderTop: '4px solid #667eea',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+                margin: '0 auto 16px'
+              }}></div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Analyzing codebase...</p>
             </div>
           )}
           
           {firstContributions && firstContributions.length > 0 && !isContributionsLoading && (
-            <div className="contributions-grid">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {firstContributions.map((contribution, idx) => (
-                <div key={idx} className="contribution-card">
-                  <div className="contribution-header">
-                    <span className="contribution-number">#{idx + 1}</span>
-                    <span className={`difficulty-badge ${contribution.difficulty.toLowerCase()}`}>
+                <div 
+                  key={idx} 
+                  style={{
+                    padding: '16px',
+                    background: 'rgba(102, 126, 234, 0.08)',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(102, 126, 234, 0.15)'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <Badge variant="info">#{idx + 1}</Badge>
+                    <Badge 
+                      variant={contribution.difficulty === 'Beginner' ? 'success' : contribution.difficulty === 'Intermediate' ? 'warning' : 'danger'}
+                    >
                       {contribution.difficulty}
-                    </span>
+                    </Badge>
                   </div>
-                  <h3 className="contribution-task">{contribution.task}</h3>
-                  <div className="contribution-details">
-                    <div className="contribution-detail">
-                      <span className="detail-icon">📄</span>
-                      <span className="detail-text">{contribution.file}</span>
+                  <h3 style={{ color: 'var(--text-primary)', fontSize: '16px', fontWeight: '600', marginBottom: '12px' }}>
+                    {contribution.task}
+                  </h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <FileText size={14} style={{ color: 'var(--text-secondary)' }} />
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{contribution.file}</span>
                     </div>
-                    <div className="contribution-detail">
-                      <span className="detail-icon">💡</span>
-                      <span className="detail-text">{contribution.impact}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Zap size={14} style={{ color: 'var(--text-secondary)' }} />
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{contribution.impact}</span>
                     </div>
                   </div>
                 </div>
@@ -407,42 +458,56 @@ function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, sum
           )}
           
           {!firstContributions.length && !isContributionsLoading && (
-            <p className="placeholder-text">AI-powered task suggestions will appear here...</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', padding: '20px' }}>AI-powered task suggestions will appear here...</p>
           )}
           
-          <div className="contribution-note">
-            <span className="note-icon">⚡</span>
-            <span className="note-text">
+          <div style={{
+            marginTop: '16px',
+            padding: '12px',
+            background: 'rgba(102, 126, 234, 0.08)',
+            borderRadius: '6px',
+            border: '1px solid rgba(102, 126, 234, 0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <Zap size={16} style={{ color: '#667eea' }} />
+            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
               AI-powered insights help you make your first impact in minutes, not days!
             </span>
           </div>
-        </div>
-      </div>
+      </Card>
 
       {/* Environment Variables Guide */}
       {envVariables && envVariables.length > 0 && (
-        <div className="content-card">
-          <h2 className="card-title">🔐 Environment Variables</h2>
-          <div className="card-content">
-            <div className="env-vars-list">
+        <Card title="Environment Variables" icon={Shield}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {envVariables.map((envVar, idx) => (
-                <div key={idx} className="env-var-item">
-                  <code className="env-var-key">{envVar.key}</code>
-                  <span className="env-var-example">{envVar.example}</span>
+                <div 
+                  key={idx} 
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '10px',
+                    background: 'rgba(102, 126, 234, 0.08)',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(102, 126, 234, 0.15)'
+                  }}
+                >
+                  <code style={{ color: 'var(--text-primary)', fontSize: '13px' }}>{envVar.key}</code>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{envVar.example}</span>
                 </div>
               ))}
             </div>
-            <p className="env-note">
+            <p style={{ color: 'var(--text-secondary)', fontSize: '12px', marginTop: '12px' }}>
               💡 Copy <code>.env.example</code> to <code>.env</code> and fill in your values
             </p>
-          </div>
-        </div>
+        </Card>
       )}
 
       {/* README Preview */}
-      <div className="content-card">
-        <h2 className="card-title">📄 README Preview</h2>
-        <div className="card-content">
+      <Card title="README Preview" icon={FileText}>
           <div className="readme-preview">
             {readmePreview}
           </div>
@@ -456,14 +521,11 @@ function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, sum
               View Full README on GitHub →
             </a>
           )}
-        </div>
-      </div>
+      </Card>
 
       {/* Code Analysis Summary */}
       {codeAnalysis && codeAnalysis.summary && (
-        <div className="content-card">
-          <h2 className="card-title">📊 Code Analysis Summary</h2>
-          <div className="card-content">
+        <Card title="Code Analysis Summary" icon={FileText}>
             {isCodeAnalysisLoading ? (
               <div className="loading-container">
                 <div className="spinner"></div>
@@ -518,48 +580,56 @@ function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, sum
                 )}
               </div>
             )}
-          </div>
-        </div>
+        </Card>
       )}
 
       {/* Important Files Detected */}
-      <div className="content-card">
-        <h2 className="card-title">Important Files</h2>
-        <div className="card-content">
+      <Card title="Important Files" icon={FolderTree}>
           {importantFiles && importantFiles.length > 0 ? (
-            <div className="files-list ca-important-files">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {importantFiles.map((file, index) => (
-                <div key={index} className="file-item">
-                  <div className="file-header">
-                    <span className="file-icon">📄</span>
-                    <span className="file-path">{file.path}</span>
+                <div 
+                  key={index} 
+                  style={{
+                    padding: '12px',
+                    background: 'rgba(102, 126, 234, 0.08)',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(102, 126, 234, 0.15)'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <FileText size={14} style={{ color: 'var(--text-secondary)' }} />
+                    <span style={{ color: 'var(--text-primary)', fontSize: '13px' }}>{file?.path || 'Unknown file'}</span>
                   </div>
                   {!file.error && file.content && (
-                    <div className="file-preview">
-                      <pre>{file.content.substring(0, 200)}{file.content.length > 200 ? '...' : ''}</pre>
-                    </div>
+                    <pre style={{ 
+                      background: 'rgba(0,0,0,0.3)', 
+                      padding: '8px', 
+                      borderRadius: '4px', 
+                      fontSize: '11px',
+                      overflow: 'auto',
+                      margin: 0
+                    }}>
+                      {file.content.substring(0, 200)}{file.content.length > 200 ? '...' : ''}
+                    </pre>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <p>No important files detected</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', padding: '20px' }}>No important files detected</p>
           )}
-        </div>
-      </div>
+      </Card>
 
       {/* Repository Topics */}
       {repoInfo.topics && repoInfo.topics.length > 0 && (
-        <div className="content-card">
-          <h2 className="card-title">🏷️ Topics</h2>
-          <div className="card-content">
-            <div className="topics-container">
+        <Card title="Topics" icon={Tag}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               {repoInfo.topics.map((topic, index) => (
-                <span key={index} className="topic-badge">{topic}</span>
+                <Pill key={index} variant="info">{topic}</Pill>
               ))}
             </div>
-          </div>
-        </div>
+        </Card>
       )}
     </div>
   );

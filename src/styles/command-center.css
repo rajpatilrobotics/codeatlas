@@ -195,6 +195,7 @@
   cursor: pointer;
   transition: var(--transition-fast);
   text-align: left;
+  height: 36px;
 }
 
 .topbar-search-trigger:hover {

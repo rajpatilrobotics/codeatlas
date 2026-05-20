@@ -1,4 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { Rocket, CheckCircle, Users, Zap, FileCode, Target, Clock, RefreshCw, Award } from 'lucide-react';
+import Card from '../ui/Card';
+import Badge from '../ui/Badge';
+import Pill from '../ui/Pill';
+import MetricCard from '../ui/MetricCard';
 
 function OnboardingGuide({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
   const [loading, setLoading] = useState(false);
@@ -88,283 +93,230 @@ function OnboardingGuide({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
   return (
     <div className="tab-content onboarding-tab">
       {/* Header Section */}
-      <div className="content-card">
-        <h2 className="card-title">🚀 Personalized Onboarding Guide</h2>
-        <div className="card-content">
-          <p className="guide-intro">
-            Get a customized onboarding experience tailored to this repository. 
-            Our AI will analyze the codebase and create a step-by-step guide just for you.
-          </p>
-          
-          {!onboardingData && !loading && (
+      <Card 
+        title="Personalized Onboarding Guide" 
+        icon={Rocket}
+        headerAction={
+          onboardingData ? (
             <button
               onClick={generateOnboardingGuide}
-              className="generate-button"
               style={{
-                marginTop: '20px',
-                padding: '12px 24px',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '12px',
-                fontSize: '16px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.3s',
-                boxShadow: '0 4px 16px rgba(102, 126, 234, 0.3)'
-              }}
-              onMouseOver={(e) => {
-                e.target.style.transform = 'translateY(-2px)';
-                e.target.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.4)';
-              }}
-              onMouseOut={(e) => {
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = '0 4px 16px rgba(102, 126, 234, 0.3)';
-              }}
-            >
-              ✨ Generate My Onboarding Guide
-            </button>
-          )}
-
-          {onboardingData && (
-            <button
-              onClick={generateOnboardingGuide}
-              className="regenerate-button"
-              style={{
-                marginTop: '20px',
-                padding: '10px 20px',
-                background: 'rgba(255, 255, 255, 0.05)',
-                color: '#a0aec0',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                background: 'rgba(102, 126, 234, 0.1)',
+                color: '#667eea',
+                border: '1px solid rgba(102, 126, 234, 0.3)',
                 borderRadius: '8px',
                 fontSize: '14px',
-                fontWeight: '500',
+                fontWeight: '600',
                 cursor: 'pointer',
                 transition: 'all 0.3s'
               }}
-              onMouseOver={(e) => {
-                e.target.style.background = 'rgba(255, 255, 255, 0.08)';
-                e.target.style.color = '#ffffff';
-              }}
-              onMouseOut={(e) => {
-                e.target.style.background = 'rgba(255, 255, 255, 0.05)';
-                e.target.style.color = '#a0aec0';
-              }}
             >
-              🔄 Regenerate Guide
+              <RefreshCw size={16} />
+              Regenerate
             </button>
-          )}
-        </div>
-      </div>
+          ) : null
+        }
+      >
+        <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.6', marginBottom: '16px' }}>
+          Get a customized onboarding experience tailored to this repository. 
+          Our AI will analyze the codebase and create a step-by-step guide just for you.
+        </p>
+        
+        {!onboardingData && !loading && (
+          <button
+            onClick={generateOnboardingGuide}
+            style={{
+              padding: '12px 24px',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.3s',
+              boxShadow: '0 4px 16px rgba(102, 126, 234, 0.3)'
+            }}
+          >
+            <Zap size={16} style={{ display: 'inline', marginRight: '8px' }} />
+            Generate My Onboarding Guide
+          </button>
+        )}
+      </Card>
 
       {/* Loading State */}
       {loading && (
-        <div className="content-card" style={{ textAlign: 'center', padding: '40px' }}>
-          <div className="loading-spinner" style={{
-            width: '50px',
-            height: '50px',
-            border: '4px solid #e5e7eb',
-            borderTop: '4px solid #2563eb',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 20px'
-          }}></div>
-          <h3 style={{ color: '#374151', marginBottom: '10px' }}>
-            Generating your onboarding guide...
-          </h3>
-          <p style={{ color: '#6b7280' }}>
-            Analyzing repository structure and creating personalized steps
-          </p>
-        </div>
+        <Card title="Generating Guide" icon={Clock}>
+          <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+            <div style={{
+              width: '50px',
+              height: '50px',
+              border: '4px solid var(--border-color)',
+              borderTop: '4px solid #667eea',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto 20px'
+            }}></div>
+            <h3 style={{ color: 'var(--text-primary)', marginBottom: '10px', fontSize: '16px' }}>
+              Generating your onboarding guide...
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+              Analyzing repository structure and creating personalized steps
+            </p>
+          </div>
+        </Card>
       )}
 
       {/* Progress Bar */}
       {onboardingData && (
-        <div className="content-card" style={{ padding: '20px' }}>
-          <div style={{ marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontWeight: '600', color: '#374151' }}>
-              Progress: {completedSteps.size} of {onboardingData.steps.length} steps
-            </span>
-            <span style={{ fontSize: '14px', color: '#6b7280' }}>
-              {Math.round(progressPercentage)}% Complete
+        <Card 
+          title="Progress" 
+          icon={Award}
+          headerAction={<Badge variant="success">{Math.round(progressPercentage)}% Complete</Badge>}
+        >
+          <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '14px' }}>
+              {completedSteps.size} of {onboardingData.steps.length} steps completed
             </span>
           </div>
           <div style={{
             width: '100%',
             height: '12px',
-            backgroundColor: '#e5e7eb',
+            backgroundColor: 'rgba(255,255,255,0.1)',
             borderRadius: '6px',
             overflow: 'hidden'
           }}>
             <div style={{
               width: `${progressPercentage}%`,
               height: '100%',
-              backgroundColor: '#10b981',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               transition: 'width 0.3s ease',
               borderRadius: '6px'
             }}></div>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Code Analysis Insights */}
       {codeAnalysis && !isCodeAnalysisLoading && (
-        <div className="content-card">
-          <h3 className="card-title">🔬 Code Insights from Analysis</h3>
-          <div className="card-content">
-            <div className="code-insights-grid">
-              {/* Detected Frameworks */}
-              {codeAnalysis.summary && codeAnalysis.summary.frameworks && codeAnalysis.summary.frameworks.length > 0 && (
-                <div className="insight-section">
-                  <h4 className="insight-title">⚡ Frameworks & Libraries</h4>
-                  <div className="tech-badges">
-                    {codeAnalysis.summary.frameworks.map((fw, idx) => (
-                      <span key={idx} className="tech-badge">{fw}</span>
-                    ))}
-                  </div>
-                  <p className="insight-tip">
-                    💡 Familiarize yourself with these technologies before diving into the code
-                  </p>
-                </div>
-              )}
-
-              {/* Key Functions */}
-              {codeAnalysis.definitions && codeAnalysis.definitions.functions && codeAnalysis.definitions.functions.length > 0 && (
-                <div className="insight-section">
-                  <h4 className="insight-title">🔧 Key Functions to Understand</h4>
-                  <ul className="function-list">
-                    {codeAnalysis.definitions.functions.slice(0, 5).map((func, idx) => (
-                      <li key={idx} className="function-item">
-                        <code>{func.name}()</code>
-                        <span className="function-location">
-                          {func.file} : Line {func.line}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="insight-tip">
-                    💡 Start by understanding these core functions
-                  </p>
-                </div>
-              )}
-
-              {/* Architecture Patterns */}
-              {codeAnalysis.summary && codeAnalysis.summary.patterns && codeAnalysis.summary.patterns.length > 0 && (
-                <div className="insight-section">
-                  <h4 className="insight-title">🏗️ Architecture Patterns</h4>
-                  <div className="pattern-badges">
-                    {codeAnalysis.summary.patterns.map((pattern, idx) => (
-                      <span key={idx} className="pattern-badge">{pattern}</span>
-                    ))}
-                  </div>
-                  <p className="insight-tip">
-                    💡 The codebase follows these architectural patterns
-                  </p>
-                </div>
-              )}
-
-              {/* Files Analyzed */}
-              {codeAnalysis.summary && (
-                <div className="insight-section">
-                  <h4 className="insight-title">📊 Codebase Stats</h4>
-                  <div className="stats-grid">
-                    <div className="stat-item">
-                      <span className="stat-value">{codeAnalysis.summary.analyzedFiles || 0}</span>
-                      <span className="stat-label">Files Analyzed</span>
-                    </div>
-                    <div className="stat-item">
-                      <span className="stat-value">{codeAnalysis.summary.totalLines?.toLocaleString() || 0}</span>
-                      <span className="stat-label">Lines of Code</span>
-                    </div>
-                    <div className="stat-item">
-                      <span className="stat-value">{codeAnalysis.definitions?.functions?.length || 0}</span>
-                      <span className="stat-label">Functions</span>
-                    </div>
-                    <div className="stat-item">
-                      <span className="stat-value">{codeAnalysis.definitions?.classes?.length || 0}</span>
-                      <span className="stat-label">Classes</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+        <Card title="Code Insights from Analysis" icon={FileCode}>
+          <div className="ca-metrics-grid">
+            {codeAnalysis.summary && (
+              <MetricCard label="Files Analyzed" value={codeAnalysis.summary.analyzedFiles || 0} />
+            )}
+            {codeAnalysis.summary && (
+              <MetricCard label="Lines of Code" value={codeAnalysis.summary.totalLines?.toLocaleString() || 0} />
+            )}
+            {codeAnalysis.definitions && (
+              <MetricCard label="Functions" value={codeAnalysis.definitions?.functions?.length || 0} />
+            )}
+            {codeAnalysis.definitions && (
+              <MetricCard label="Classes" value={codeAnalysis.definitions?.classes?.length || 0} />
+            )}
           </div>
-        </div>
+          
+          {/* Detected Frameworks */}
+          {codeAnalysis.summary && codeAnalysis.summary.frameworks && codeAnalysis.summary.frameworks.length > 0 && (
+            <div style={{ marginBottom: '20px' }}>
+              <h4 style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: '600', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Zap size={16} />
+                Frameworks & Libraries
+              </h4>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {codeAnalysis.summary.frameworks.map((fw, idx) => (
+                  <Pill key={idx} variant="info">{fw}</Pill>
+                ))}
+              </div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '8px' }}>
+                💡 Familiarize yourself with these technologies before diving into the code
+              </p>
+            </div>
+          )}
+
+          {/* Key Functions */}
+          {codeAnalysis.definitions && codeAnalysis.definitions.functions && codeAnalysis.definitions.functions.length > 0 && (
+            <div style={{ marginBottom: '20px' }}>
+              <h4 style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: '600', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FileCode size={16} />
+                Key Functions to Understand
+              </h4>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                {codeAnalysis.definitions.functions.slice(0, 5).map((func, idx) => (
+                  <li 
+                    key={idx} 
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '10px',
+                      background: 'rgba(102, 126, 234, 0.08)',
+                      borderRadius: '6px',
+                      marginBottom: '8px',
+                      border: '1px solid rgba(102, 126, 234, 0.15)'
+                    }}
+                  >
+                    <code style={{ color: 'var(--text-primary)', fontSize: '13px' }}>{func.name}()</code>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+                      {func.file} : Line {func.line}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '8px' }}>
+                💡 Start by understanding these core functions
+              </p>
+            </div>
+          )}
+
+          {/* Architecture Patterns */}
+          {codeAnalysis.summary && codeAnalysis.summary.patterns && codeAnalysis.summary.patterns.length > 0 && (
+            <div>
+              <h4 style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: '600', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Users size={16} />
+                Architecture Patterns
+              </h4>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {codeAnalysis.summary.patterns.map((pattern, idx) => (
+                  <Pill key={idx} variant="success">{pattern}</Pill>
+                ))}
+              </div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '8px' }}>
+                💡 The codebase follows these architectural patterns
+              </p>
+            </div>
+          )}
+        </Card>
       )}
 
       {/* Onboarding Steps */}
       {onboardingData && onboardingData.steps.map((step, index) => (
-        <div
+        <Card
           key={index}
-          className="content-card"
+          title={step.title}
+          icon={() => <span style={{ fontSize: '24px' }}>{step.icon}</span>}
+          headerAction={
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Badge variant="info">Step {index + 1}</Badge>
+              <Badge 
+                variant={step.difficulty === 'Beginner' ? 'success' : step.difficulty === 'Intermediate' ? 'warning' : 'danger'}
+              >
+                {step.difficulty}
+              </Badge>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Clock size={12} />
+                {step.duration}
+              </span>
+            </div>
+          }
           style={{
             opacity: completedSteps.has(index) ? 0.85 : 1,
-            transition: 'all 0.3s ease',
-            position: 'relative',
-            background: completedSteps.has(index)
-              ? 'rgba(102, 126, 234, 0.08)'
-              : 'rgba(255, 255, 255, 0.05)'
+            transition: 'all 0.3s ease'
           }}
-        >
-          {/* Step Header */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            marginBottom: '15px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flex: 1 }}>
-              <div style={{
-                fontSize: '40px',
-                lineHeight: '1'
-              }}>
-                {step.icon}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px' }}>
-                  <span style={{
-                    display: 'inline-block',
-                    padding: '4px 10px',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    color: '#e2e8f0'
-                  }}>
-                    Step {index + 1}
-                  </span>
-                  <span style={{
-                    display: 'inline-block',
-                    padding: '4px 10px',
-                    backgroundColor: getDifficultyColor(step.difficulty) + '30',
-                    color: getDifficultyColor(step.difficulty),
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    border: `1px solid ${getDifficultyColor(step.difficulty)}50`
-                  }}>
-                    {step.difficulty}
-                  </span>
-                  <span style={{
-                    fontSize: '13px',
-                    color: '#cbd5e0',
-                    fontWeight: '500'
-                  }}>
-                    ⏱️ {step.duration}
-                  </span>
-                </div>
-                <h3 style={{
-                  margin: '0',
-                  fontSize: '22px',
-                  color: '#ffffff',
-                  fontWeight: '700'
-                }}>
-                  {step.title}
-                </h3>
-              </div>
-            </div>
-            
-            {/* Completion Checkbox */}
+          headerActionRight={
             <button
               onClick={() => toggleStepCompletion(index)}
               style={{
@@ -384,36 +336,34 @@ function OnboardingGuide({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
                 boxShadow: completedSteps.has(index) ? '0 0 15px rgba(102, 126, 234, 0.5)' : 'none'
               }}
             >
-              {completedSteps.has(index) && '✓'}
+              {completedSteps.has(index) && <CheckCircle size={16} />}
             </button>
-          </div>
-
-          {/* Step Description */}
-          <p style={{
-            color: '#cbd5e0',
-            marginBottom: '20px',
-            lineHeight: '1.7',
-            fontSize: '15px'
-          }}>
+          }
+        >
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.6', marginBottom: '16px' }}>
             {step.description}
           </p>
 
           {/* Action Items */}
           <div style={{
             background: 'rgba(102, 126, 234, 0.08)',
-            padding: '18px',
-            borderRadius: '10px',
+            padding: '16px',
+            borderRadius: '8px',
             border: '1px solid rgba(102, 126, 234, 0.2)'
           }}>
             <h4 style={{
-              margin: '0 0 14px 0',
-              fontSize: '13px',
-              fontWeight: '700',
-              color: '#e2e8f0',
+              margin: '0 0 12px 0',
+              fontSize: '12px',
+              fontWeight: '600',
+              color: 'var(--text-primary)',
               textTransform: 'uppercase',
-              letterSpacing: '1px'
+              letterSpacing: '1px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
             }}>
-              📋 Action Items
+              <Target size={14} />
+              Action Items
             </h4>
             <ul style={{
               margin: 0,
@@ -422,45 +372,45 @@ function OnboardingGuide({ repoData, codeAnalysis, isCodeAnalysisLoading }) {
             }}>
               {step.actions.map((action, actionIndex) => (
                 <li key={actionIndex} style={{
-                  marginBottom: '10px',
-                  color: '#cbd5e0',
+                  marginBottom: '8px',
+                  color: 'var(--text-secondary)',
                   display: 'flex',
                   alignItems: 'flex-start',
                   gap: '12px',
-                  fontSize: '14px',
+                  fontSize: '13px',
                   lineHeight: '1.6'
                 }}>
                   <span style={{
                     color: '#667eea',
                     fontWeight: 'bold',
-                    fontSize: '18px',
-                    minWidth: '18px'
+                    fontSize: '16px',
+                    minWidth: '16px'
                   }}>•</span>
                   <span>{action}</span>
                 </li>
               ))}
             </ul>
           </div>
-        </div>
+        </Card>
       ))}
 
       {/* Completion Message */}
       {onboardingData && completedSteps.size === onboardingData.steps.length && (
-        <div className="content-card" style={{
-          background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%)',
-          borderLeft: '4px solid #667eea',
-          textAlign: 'center',
-          padding: '30px',
-          border: '1px solid rgba(102, 126, 234, 0.3)'
-        }}>
-          <div style={{ fontSize: '60px', marginBottom: '15px' }}>🎉</div>
-          <h3 style={{ color: '#ffffff', marginBottom: '10px', fontSize: '24px' }}>
-            Congratulations!
-          </h3>
-          <p style={{ color: '#a0aec0', fontSize: '16px' }}>
-            You've completed all onboarding steps. You're now ready to contribute to this project!
-          </p>
-        </div>
+        <Card 
+          title="Congratulations!" 
+          icon={Award}
+          style={{
+            background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%)',
+            border: '2px solid rgba(102, 126, 234, 0.3)'
+          }}
+        >
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <CheckCircle size={64} style={{ color: '#10b981', marginBottom: '16px' }} />
+            <p style={{ color: 'var(--text-secondary)', fontSize: '16px', lineHeight: '1.6' }}>
+              You've completed all onboarding steps. You're now ready to contribute to this project!
+            </p>
+          </div>
+        </Card>
       )}
 
       <style>{`
