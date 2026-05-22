@@ -240,6 +240,14 @@ const handleAnalyze = async (urlOverride) => {
       return;
     }
 
+    console.log('[DEBUG] App.jsx: setRepoData called with data:', {
+      hasDependencyGraph: !!data.dependencyGraph,
+      dependencyGraphNodes: data.dependencyGraph?.nodes?.length || 0,
+      dependencyGraphEdges: data.dependencyGraph?.edges?.length || 0,
+      dataKeys: Object.keys(data),
+      sampleNode: data.dependencyGraph?.nodes?.[0]
+    });
+    
     setRepoData(data);
     setRepoSize(data.fileTree.length);
     setSuccessMessage('Repository analyzed successfully! ✓');

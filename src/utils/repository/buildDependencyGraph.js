@@ -348,10 +348,16 @@ function classifyFileLayer(path) {
 export function buildDependencyGraph(files, options = {}) {
   const opts = { ...DEFAULT_OPTIONS, ...options };
   
+  console.log('[DEBUG] buildDependencyGraph: Starting with', files?.length || 0, 'input files');
+  
   // Filter relevant files
   const relevantFiles = filterRelevantFiles(files, opts);
   
+  console.log('[DEBUG] buildDependencyGraph: Filtered to', relevantFiles.length, 'relevant files');
+  console.log('[DEBUG] buildDependencyGraph: Sample files:', relevantFiles.slice(0, 3).map(f => f.path));
+  
   if (relevantFiles.length === 0) {
+    console.log('[DEBUG] buildDependencyGraph: No relevant files found, returning empty graph');
     return {
       nodes: [],
       edges: [],
@@ -443,7 +449,7 @@ export function buildDependencyGraph(files, options = {}) {
   const totalDeps = nodes.reduce((sum, n) => sum + n.importCount, 0);
   const avgDependencies = nodes.length > 0 ? totalDeps / nodes.length : 0;
   
-  return {
+  const result = {
     nodes,
     edges,
     importsMap,
@@ -477,6 +483,12 @@ export function buildDependencyGraph(files, options = {}) {
       lastModified: null
     }
   };
+  
+  console.log('[DEBUG] buildDependencyGraph: Returning graph with', result.nodes.length, 'nodes and', result.edges.length, 'edges');
+  console.log('[DEBUG] buildDependencyGraph: Sample node:', result.nodes[0]);
+  console.log('[DEBUG] buildDependencyGraph: Sample edge:', result.edges[0]);
+  
+  return result;
 }
 
 export default {

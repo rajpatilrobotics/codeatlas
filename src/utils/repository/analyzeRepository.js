@@ -62,15 +62,25 @@ export async function analyzeRepository(repoData, codeAnalysis) {
   let dependencyGraph = null;
   try {
     if (codeAnalysis && codeAnalysis.files && Array.isArray(codeAnalysis.files)) {
+      console.log('[DEBUG] analyzeRepository: Building dependency graph from', codeAnalysis.files.length, 'files');
       dependencyGraph = buildDependencyGraph(codeAnalysis.files, {
         maxFiles: 150,
         priorityDirs: ['src', 'app', 'components', 'services', 'api', 'hooks', 'lib', 'utils'],
         ignoreDirs: ['node_modules', 'dist', 'build', '.next', 'coverage', '__tests__'],
         extensions: ['.js', '.jsx', '.ts', '.tsx']
       });
+      console.log('[DEBUG] analyzeRepository: Dependency graph generated:', {
+        nodes: dependencyGraph?.nodes?.length || 0,
+        edges: dependencyGraph?.edges?.length || 0,
+        hasAdjacencyList: !!dependencyGraph?.adjacencyList,
+        sampleNode: dependencyGraph?.nodes?.[0],
+        sampleEdge: dependencyGraph?.edges?.[0]
+      });
+    } else {
+      console.log('[DEBUG] analyzeRepository: Skipping dependency graph - no code analysis files');
     }
   } catch (error) {
-    console.warn('Dependency graph generation failed, continuing with analysis:', error.message);
+    console.warn('[DEBUG] analyzeRepository: Dependency graph generation failed:', error.message);
     dependencyGraph = null;
   }
 

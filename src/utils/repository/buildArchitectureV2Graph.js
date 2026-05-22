@@ -250,8 +250,23 @@ export function buildArchitectureV2Graph({
   if (viewMode === 'filedeps') {
     const dependencyGraph = repoData?.dependencyGraph;
     
+    console.log('[DEBUG] buildArchitectureV2Graph: filedeps mode activated');
+    console.log('[DEBUG] buildArchitectureV2Graph: repoData exists?', !!repoData);
+    console.log('[DEBUG] buildArchitectureV2Graph: dependencyGraph exists?', !!dependencyGraph);
+    console.log('[DEBUG] buildArchitectureV2Graph: dependencyGraph structure:', {
+      hasNodes: !!dependencyGraph?.nodes,
+      nodesIsArray: Array.isArray(dependencyGraph?.nodes),
+      nodeCount: dependencyGraph?.nodes?.length || 0,
+      hasEdges: !!dependencyGraph?.edges,
+      edgesIsArray: Array.isArray(dependencyGraph?.edges),
+      edgeCount: dependencyGraph?.edges?.length || 0,
+      sampleNode: dependencyGraph?.nodes?.[0],
+      sampleEdge: dependencyGraph?.edges?.[0]
+    });
+    
     // Graceful fallback if dependency graph is not available
     if (!dependencyGraph || !dependencyGraph.nodes || !Array.isArray(dependencyGraph.nodes)) {
+      console.log('[DEBUG] buildArchitectureV2Graph: Returning empty graph - dependency graph not available');
       return {
         nodes: [],
         edges: [],
@@ -306,7 +321,7 @@ export function buildArchitectureV2Graph({
       }
     }));
 
-    return {
+    const result = {
       nodes,
       edges,
       stats: {
@@ -320,6 +335,15 @@ export function buildArchitectureV2Graph({
         avgDependencies: dependencyGraph.metrics?.avgDependencies || 0
       }
     };
+    
+    console.log('[DEBUG] buildArchitectureV2Graph: filedeps returning:', {
+      nodeCount: result.nodes.length,
+      edgeCount: result.edges.length,
+      sampleNode: result.nodes[0],
+      sampleEdge: result.edges[0]
+    });
+    
+    return result;
   }
 
   if (viewMode === 'techstack') {

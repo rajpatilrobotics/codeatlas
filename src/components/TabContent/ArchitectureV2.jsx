@@ -338,15 +338,27 @@ function ArchitectureV2({
   const packageJson = useMemo(() => repoData?.packageJson || {}, [repoData]);
   const packageJsonPath = repoData?.packageJsonPath;
 
-  const rawGraph = useMemo(() => buildArchitectureV2Graph({
-    repoData,
-    detailedArchitecture,
-    codeAnalysis,
-    viewMode,
-    expandedGroups,
-    searchQuery,
-    maxNodes: 110
-  }), [repoData, detailedArchitecture, codeAnalysis, viewMode, expandedGroups, searchQuery]);
+  const rawGraph = useMemo(() => {
+    console.log('[DEBUG] ArchitectureV2: Building graph for viewMode:', viewMode);
+    console.log('[DEBUG] ArchitectureV2: repoData exists?', !!repoData);
+    console.log('[DEBUG] ArchitectureV2: repoData.dependencyGraph exists?', !!repoData?.dependencyGraph);
+    console.log('[DEBUG] ArchitectureV2: repoData.dependencyGraph structure:', {
+      nodes: repoData?.dependencyGraph?.nodes?.length || 0,
+      edges: repoData?.dependencyGraph?.edges?.length || 0,
+      hasAdjacencyList: !!repoData?.dependencyGraph?.adjacencyList,
+      sampleNode: repoData?.dependencyGraph?.nodes?.[0]
+    });
+    
+    return buildArchitectureV2Graph({
+      repoData,
+      detailedArchitecture,
+      codeAnalysis,
+      viewMode,
+      expandedGroups,
+      searchQuery,
+      maxNodes: 110
+    });
+  }, [repoData, detailedArchitecture, codeAnalysis, viewMode, expandedGroups, searchQuery]);
 
   const connectedIds = useMemo(() => {
     if (!selectedNode) return new Set();

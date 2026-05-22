@@ -3,6 +3,10 @@
 // Prevents token exposure and rate limit issues
 
 const fetch = require('node-fetch');
+const path = require('path');
+
+// Import the dependency graph builder directly
+const { buildDependencyGraph } = require('../../src/utils/repository/buildDependencyGraph');
 
 const GITHUB_API_BASE = 'https://api.github.com';
 
@@ -388,6 +392,30 @@ module.exports = async (req, res) => {
     const techStack = detectTechStack(fileTree, fileContents, packageJson);
     console.log('✓ Tech stack detected:', Object.entries(techStack).filter(([k, v]) => v.length > 0).map(([k, v]) => `${k}: ${v.length}`).join(', '));
 
+    // Generate dependency graph from important files
+    let dependencyGraph = null;
+    try {
+      console.log('✓ Generating dependency graph from', importantFilesWithContent.length, 'files...');
+      
+      // buildDependencyGraph expects an array of { path, content } objects
+      dependencyGraph = buildDependencyGraph(importantFilesWithContent, {
+        maxFiles: 150,
+        priorityDirs: ['src', 'app', 'components', 'services', 'api', 'hooks', 'lib', 'utils'],
+        ignoreDirs: ['node_modules', 'dist', 'build', '.next', 'coverage', '__tests__'],
+        extensions: ['.js', '.jsx', '.ts', '.tsx']
+      });
+      
+      console.log('✓ Dependency graph generated:', {
+        nodes: dependencyGraph?.nodes?.length || 0,
+        edges: dependencyGraph?.edges?.length || 0,
+        hasAdjacencyList: !!dependencyGraph?.adjacencyList
+      });
+    } catch (error) {
+      console.warn('⚠ Dependency graph generation failed:', error.message);
+      console.error(error);
+      // Continue without dependency graph
+    }
+
     // Return comprehensive analysis
     return res.status(200).json({
       success: true,
@@ -414,6 +442,7 @@ module.exports = async (req, res) => {
       techStack, // Add tech stack detection
       packageJson,
       packageJsonPath,
+      dependencyGraph, // Add dependency graph
     });
 
   } catch (error) {
