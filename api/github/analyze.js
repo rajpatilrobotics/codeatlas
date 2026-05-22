@@ -132,7 +132,7 @@ function identifyImportantFiles(fileTree, maxFiles = 50) {
 }
 
 // Detect tech stack from file tree and contents
-function detectTechStack(fileTree, fileContents) {
+function detectTechStack(fileTree, fileContents, packageJson) {
   const techStack = {
     frontend: [],
     backend: [],
@@ -145,42 +145,62 @@ function detectTechStack(fileTree, fileContents) {
     orm: []
   };
 
+  const depNames = (() => {
+    if (!packageJson || typeof packageJson !== 'object') return [];
+    const buckets = [
+      packageJson.dependencies,
+      packageJson.devDependencies,
+      packageJson.peerDependencies,
+      packageJson.optionalDependencies,
+    ].filter(Boolean);
+    const names = buckets.flatMap((bucket) => Object.keys(bucket || {}));
+    return Array.from(new Set(names.map((name) => String(name).toLowerCase())));
+  })();
+
   const allContent = Object.values(fileContents).join('\n').toLowerCase();
   const fileTreeStr = fileTree.join('\n').toLowerCase();
 
+  const hasDep = (name) => depNames.includes(String(name).toLowerCase());
+  const anyDep = (...names) => names.some(hasDep);
+
   // Frontend detection
-  if (fileTreeStr.includes('package.json') && allContent.includes('react')) techStack.frontend.push('React');
-  if (allContent.includes('vue')) techStack.frontend.push('Vue.js');
-  if (allContent.includes('angular')) techStack.frontend.push('Angular');
-  if (allContent.includes('svelte')) techStack.frontend.push('Svelte');
-  if (allContent.includes('next')) techStack.frontend.push('Next.js');
+  if (anyDep('react', 'react-dom') || allContent.includes('react')) techStack.frontend.push('React');
+  if (anyDep('vue', '@vue/cli-service') || allContent.includes('vue')) techStack.frontend.push('Vue.js');
+  if (anyDep('@angular/core', '@angular/cli') || allContent.includes('angular')) techStack.frontend.push('Angular');
+  if (anyDep('svelte', '@sveltejs/kit') || allContent.includes('svelte')) techStack.frontend.push('Svelte');
+  if (anyDep('next') || fileTreeStr.includes('next.config.') || allContent.includes('next')) techStack.frontend.push('Next.js');
+  if (anyDep('vite') || fileTreeStr.includes('vite.config.')) techStack.frontend.push('Vite');
 
   // Backend detection
-  if (allContent.includes('express')) techStack.backend.push('Express.js');
-  if (allContent.includes('fastify')) techStack.backend.push('Fastify');
+  if (anyDep('express') || allContent.includes('express')) techStack.backend.push('Express.js');
+  if (anyDep('fastify') || allContent.includes('fastify')) techStack.backend.push('Fastify');
+  if (anyDep('koa') || allContent.includes('koa')) techStack.backend.push('Koa');
+  if (anyDep('@nestjs/core') || allContent.includes('nestjs')) techStack.backend.push('NestJS');
   if (allContent.includes('django')) techStack.backend.push('Django');
   if (allContent.includes('flask')) techStack.backend.push('Flask');
   if (allContent.includes('spring')) techStack.backend.push('Spring Boot');
   if (fileTreeStr.includes('go.mod')) techStack.backend.push('Go');
 
   // Database detection
-  if (allContent.includes('mongodb') || allContent.includes('mongoose')) techStack.database.push('MongoDB');
-  if (allContent.includes('postgresql') || allContent.includes('pg')) techStack.database.push('PostgreSQL');
-  if (allContent.includes('mysql')) techStack.database.push('MySQL');
-  if (allContent.includes('redis')) techStack.database.push('Redis');
-  if (allContent.includes('sqlite')) techStack.database.push('SQLite');
+  if (anyDep('mongodb', 'mongoose') || allContent.includes('mongodb') || allContent.includes('mongoose')) techStack.database.push('MongoDB');
+  if (anyDep('pg', 'postgres') || allContent.includes('postgresql') || allContent.includes(' pg')) techStack.database.push('PostgreSQL');
+  if (anyDep('mysql', 'mysql2') || allContent.includes('mysql')) techStack.database.push('MySQL');
+  if (anyDep('redis', 'ioredis') || allContent.includes('redis')) techStack.database.push('Redis');
+  if (anyDep('sqlite3', 'better-sqlite3') || allContent.includes('sqlite')) techStack.database.push('SQLite');
 
   // ORM detection
-  if (allContent.includes('prisma')) techStack.orm.push('Prisma');
-  if (allContent.includes('sequelize')) techStack.orm.push('Sequelize');
-  if (allContent.includes('typeorm')) techStack.orm.push('TypeORM');
-  if (allContent.includes('mongoose')) techStack.orm.push('Mongoose');
+  if (anyDep('prisma') || allContent.includes('prisma')) techStack.orm.push('Prisma');
+  if (anyDep('sequelize') || allContent.includes('sequelize')) techStack.orm.push('Sequelize');
+  if (anyDep('typeorm') || allContent.includes('typeorm')) techStack.orm.push('TypeORM');
+  if (anyDep('mongoose') || allContent.includes('mongoose')) techStack.orm.push('Mongoose');
 
   // Testing detection
-  if (allContent.includes('jest')) techStack.testing.push('Jest');
-  if (allContent.includes('mocha')) techStack.testing.push('Mocha');
+  if (anyDep('jest', '@jest/globals') || allContent.includes('jest')) techStack.testing.push('Jest');
+  if (anyDep('mocha') || allContent.includes('mocha')) techStack.testing.push('Mocha');
+  if (anyDep('vitest') || allContent.includes('vitest')) techStack.testing.push('Vitest');
   if (allContent.includes('pytest')) techStack.testing.push('Pytest');
-  if (allContent.includes('cypress')) techStack.testing.push('Cypress');
+  if (anyDep('cypress') || allContent.includes('cypress')) techStack.testing.push('Cypress');
+  if (anyDep('@playwright/test') || allContent.includes('playwright')) techStack.testing.push('Playwright');
 
   // DevOps detection
   if (fileTreeStr.includes('dockerfile')) techStack.devops.push('Docker');
@@ -189,16 +209,38 @@ function detectTechStack(fileTree, fileContents) {
   if (allContent.includes('kubernetes')) techStack.devops.push('Kubernetes');
 
   // Cache detection
-  if (allContent.includes('redis')) techStack.cache.push('Redis');
-  if (allContent.includes('memcached')) techStack.cache.push('Memcached');
+  if (anyDep('redis', 'ioredis') || allContent.includes('redis')) techStack.cache.push('Redis');
+  if (anyDep('memcached') || allContent.includes('memcached')) techStack.cache.push('Memcached');
+
+  // Message queues
+  if (anyDep('amqplib') || allContent.includes('rabbitmq')) techStack.messageQueue.push('RabbitMQ');
+  if (anyDep('kafkajs') || allContent.includes('kafka')) techStack.messageQueue.push('Kafka');
+  if (anyDep('bull', 'bullmq') || allContent.includes('bullmq')) techStack.messageQueue.push('BullMQ');
 
   // Authentication detection
-  if (allContent.includes('passport')) techStack.authentication.push('Passport.js');
-  if (allContent.includes('jwt') || allContent.includes('jsonwebtoken')) techStack.authentication.push('JWT');
+  if (anyDep('passport') || allContent.includes('passport')) techStack.authentication.push('Passport.js');
+  if (anyDep('jsonwebtoken') || allContent.includes('jwt') || allContent.includes('jsonwebtoken')) techStack.authentication.push('JWT');
   if (allContent.includes('oauth')) techStack.authentication.push('OAuth');
-  if (allContent.includes('auth0')) techStack.authentication.push('Auth0');
+  if (anyDep('auth0') || allContent.includes('auth0')) techStack.authentication.push('Auth0');
 
   return techStack;
+}
+
+function extractPackageJson(fileContents) {
+  const candidates = Object.entries(fileContents || {})
+    .filter(([path, content]) => /(^|\/)package\.json$/i.test(path) && typeof content === 'string')
+    .sort((a, b) => a[0].length - b[0].length);
+
+  for (const [path, content] of candidates) {
+    try {
+      const parsed = JSON.parse(content);
+      if (parsed && typeof parsed === 'object') return { path, packageJson: parsed };
+    } catch (e) {
+      // ignore invalid JSON
+    }
+  }
+
+  return { path: null, packageJson: null };
 }
 
 module.exports = async (req, res) => {
@@ -339,8 +381,11 @@ module.exports = async (req, res) => {
 
     console.log(`✓ Successfully analyzed ${owner}/${repo}`);
 
-    // Detect tech stack
-    const techStack = detectTechStack(fileTree, fileContents);
+    // Parse package.json (if present in fetched important files)
+    const { path: packageJsonPath, packageJson } = extractPackageJson(fileContents);
+
+    // Detect tech stack (prefer package.json deps, fallback to content scanning)
+    const techStack = detectTechStack(fileTree, fileContents, packageJson);
     console.log('✓ Tech stack detected:', Object.entries(techStack).filter(([k, v]) => v.length > 0).map(([k, v]) => `${k}: ${v.length}`).join(', '));
 
     // Return comprehensive analysis
@@ -367,6 +412,8 @@ module.exports = async (req, res) => {
       importantFiles: importantFilesWithContent, // Now includes content
       fileContents, // Keep for backward compatibility
       techStack, // Add tech stack detection
+      packageJson,
+      packageJsonPath,
     });
 
   } catch (error) {

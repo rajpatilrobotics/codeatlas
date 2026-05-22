@@ -219,6 +219,10 @@ function edge(id, source, target, type, strength = 1, inferred = false) {
   };
 }
 
+function normalizeList(items) {
+  return Array.from(new Set((items || []).filter(Boolean).map(item => String(item).trim()).filter(Boolean)));
+}
+
 function filterRecords(records, query) {
   const normalized = query.trim().toLowerCase();
   if (!normalized) return records;
@@ -240,6 +244,119 @@ export function buildArchitectureV2Graph({
 }) {
   if (!repoData) {
     return { nodes: [], edges: [], stats: null };
+  }
+
+  if (viewMode === 'techstack') {
+    const nodes = [];
+    const edges = [];
+    const techStack = repoData?.techStack && typeof repoData.techStack === 'object' ? repoData.techStack : {};
+    const packageJson = repoData?.packageJson && typeof repoData.packageJson === 'object' ? repoData.packageJson : null;
+
+    const depBuckets = [
+      packageJson?.dependencies,
+      packageJson?.devDependencies,
+      packageJson?.peerDependencies,
+      packageJson?.optionalDependencies,
+    ].filter(Boolean);
+
+    const deps = depBuckets.flatMap((bucket) => Object.entries(bucket || {}).map(([name, version]) => ({ name, version })));
+    const depsByName = new Map(deps.map((dep) => [String(dep.name), dep]));
+
+    const orderedKeys = [
+      'frontend',
+      'backend',
+      'database',
+      'orm',
+      'cache',
+      'messageQueue',
+      'authentication',
+      'testing',
+      'devops',
+    ];
+
+    const dynamicKeys = Object.keys(techStack || {}).filter((k) => Array.isArray(techStack[k]) && techStack[k].length > 0);
+    const keys = Array.from(new Set([...orderedKeys.filter((k) => dynamicKeys.includes(k)), ...dynamicKeys.filter((k) => !orderedKeys.includes(k)), 'dependencies']));
+
+    const query = searchQuery.trim().toLowerCase();
+    const matchesQuery = (value) => !query || String(value).toLowerCase().includes(query);
+
+    const makeTechNode = ({ id, label, category, meta, version, index }) => ({
+      id,
+      type: 'architectureV2',
+      data: {
+        compact: true,
+        label,
+        path: meta || label,
+        nodeType: 'technology',
+        layer: category,
+        color: LAYER_META.utility.color,
+        version,
+        importance: Math.max(4, 16 - (index || 0)),
+        functions: 0,
+        classes: 0,
+        securityIssues: 0
+      }
+    });
+
+    const maxItemsPerCategory = Math.max(12, Math.floor((maxNodes - keys.length) / Math.max(1, keys.length)));
+
+    keys.forEach((key) => {
+      let items = Array.isArray(techStack[key]) ? techStack[key] : [];
+      if (key === 'dependencies') items = Array.from(depsByName.keys());
+
+      const normalized = normalizeList(items)
+        .filter((item) => matchesQuery(item) || matchesQuery(key));
+
+      if (normalized.length === 0) return;
+
+      const clusterId = `cluster:techstack:${key}`;
+      const clusterNode = makeClusterNode(
+        clusterId,
+        key === 'dependencies' ? 'Dependencies' : (LAYER_META[key]?.label || key),
+        key,
+        normalized.length,
+        LAYER_META.utility.color,
+        0
+      );
+      clusterNode.data.eyebrow = 'Category';
+      clusterNode.data.compact = true;
+      uniquePush(nodes, clusterNode);
+
+      const shown = normalized.slice(0, maxItemsPerCategory);
+      shown.forEach((item, index) => {
+        if (nodes.length >= maxNodes) return;
+        const dep = depsByName.get(item);
+        const id = `tech:${key}:${index}:${item}`;
+        uniquePush(nodes, makeTechNode({
+          id,
+          label: item,
+          category: key,
+          meta: key === 'dependencies' ? 'package' : undefined,
+          version: dep?.version,
+          index
+        }));
+        edges.push({
+          ...edge(`edge:${clusterId}:${id}`, clusterId, id, 'contains', 1, false),
+          data: { relationship: 'contains', strength: 1, inferred: false, showLabel: false }
+        });
+      });
+    });
+
+    return {
+      nodes,
+      edges,
+      stats: {
+        totalFiles: (repoData?.fileTree || []).length,
+        visibleNodes: nodes.length,
+        visibleEdges: edges.length,
+        dependencies: depsByName.size,
+        components: detailedArchitecture?.components?.length || 0,
+        endpoints: detailedArchitecture?.apiEndpoints?.length || 0,
+        securityIssues: countSecurityIssues(codeAnalysis),
+        analyzedFiles: codeAnalysis?.summary?.analyzedFiles || 0,
+        architecturePattern: 'Technology stack derived from package.json + repository signals'
+      }
+    };
   }
 
   const expanded = new Set(expandedGroups);

@@ -1,3 +1,5 @@
+/* CodeAtlas — Architecture V2 (Monochrome Matte Black) */
+
 .architecture-v2-tab {
   display: grid;
   gap: 20px;
@@ -7,11 +9,12 @@
 .arch-v2-shell,
 .arch-v2-inspector,
 .arch-v2-empty {
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background:
-    linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.98)),
-    radial-gradient(circle at 20% 10%, rgba(34, 211, 238, 0.12), transparent 38%);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+  border: 1px solid var(--border-default);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+  border-radius: var(--radius-md);
 }
 
 .arch-v2-hero {
@@ -19,12 +22,11 @@
   justify-content: space-between;
   gap: 24px;
   padding: 24px;
-  border-radius: 8px;
 }
 
 .arch-v2-kicker {
-  color: #67e8f9;
-  font-size: 12px;
+  color: var(--text-muted);
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
   margin-bottom: 8px;
@@ -39,7 +41,7 @@
 
 .arch-v2-hero p {
   color: var(--text-secondary);
-  line-height: 1.6;
+  line-height: 1.65;
   margin: 0;
   max-width: 760px;
 }
@@ -53,15 +55,15 @@
 
 .arch-v2-stats div,
 .arch-v2-inspector-grid div {
-  background: rgba(15, 23, 42, 0.72);
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
   padding: 12px;
 }
 
 .arch-v2-stats strong,
 .arch-v2-inspector-grid strong {
-  color: #f8fafc;
+  color: var(--text-primary);
   display: block;
   font-size: 20px;
   line-height: 1;
@@ -69,7 +71,7 @@
 
 .arch-v2-stats span,
 .arch-v2-inspector-grid span {
-  color: #94a3b8;
+  color: var(--text-muted);
   display: block;
   font-size: 11px;
   margin-top: 7px;
@@ -77,13 +79,12 @@
 }
 
 .arch-v2-shell {
-  border-radius: 8px;
   overflow: hidden;
 }
 
 .arch-v2-toolbar {
   align-items: center;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  border-bottom: 1px solid var(--border-subtle);
   display: flex;
   gap: 16px;
   justify-content: space-between;
@@ -91,9 +92,9 @@
 }
 
 .arch-v2-modes {
-  background: rgba(2, 6, 23, 0.76);
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
   display: flex;
   gap: 4px;
   padding: 4px;
@@ -101,27 +102,34 @@
 
 .arch-v2-modes button {
   background: transparent;
-  border: 0;
+  border: 1px solid transparent;
   border-radius: 6px;
-  color: #94a3b8;
+  color: var(--text-secondary);
   cursor: pointer;
   font-size: 13px;
   font-weight: 700;
   padding: 9px 12px;
+  transition: var(--transition-fast);
+}
+
+.arch-v2-modes button:hover {
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-primary);
 }
 
 .arch-v2-modes button.active {
-  background: rgba(34, 211, 238, 0.14);
-  color: #ecfeff;
-  box-shadow: inset 0 0 0 1px rgba(103, 232, 249, 0.24);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.02) inset;
 }
 
 .arch-v2-search {
   align-items: center;
-  background: rgba(2, 6, 23, 0.76);
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 8px;
-  color: #64748b;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
   display: flex;
   gap: 8px;
   min-width: 300px;
@@ -131,35 +139,285 @@
 .arch-v2-search input {
   background: transparent;
   border: 0;
-  color: #e2e8f0;
+  color: var(--text-primary);
   font-size: 13px;
   outline: 0;
   padding: 11px 0;
   width: 100%;
 }
 
+.arch-v2-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+}
+
+.arch-v2-btn {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  gap: 10px;
+  height: 40px;
+  padding: 0 12px;
+  transition: var(--transition-fast);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.arch-v2-btn:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.10);
+  color: var(--text-primary);
+}
+
+.arch-v2-btn:active {
+  transform: translateY(1px);
+}
+
+.arch-v2-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.10), 0 0 0 4px rgba(255, 255, 255, 0.05);
+}
+
+.arch-v2-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
+}
+
+.arch-v2-btn--icon svg {
+  flex: 0 0 auto;
+}
+
+.arch-v2-btn-text {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.arch-v2-btn-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.16);
+  border-top-color: rgba(255, 255, 255, 0.7);
+  animation: arch-v2-spin 700ms linear infinite;
+}
+
+@keyframes arch-v2-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .arch-v2-map {
   height: min(78vh, 860px);
   min-height: 620px;
   position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Cinematic canvas overlays (subtle depth, grid, vignette) */
+.arch-v2-map::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.11), transparent 38%),
+    radial-gradient(circle at 78% 70%, rgba(255, 255, 255, 0.07), transparent 48%),
+    radial-gradient(circle at 52% 48%, rgba(255, 255, 255, 0.035), transparent 56%),
+    linear-gradient(120deg, rgba(255, 255, 255, 0.04), transparent 34%, rgba(255, 255, 255, 0.02) 64%, transparent 100%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.028) 0,
+      rgba(255, 255, 255, 0.028) 1px,
+      transparent 1px,
+      transparent 36px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.018) 0,
+      rgba(255, 255, 255, 0.018) 1px,
+      transparent 1px,
+      transparent 44px
+    );
+  opacity: 0.5;
+  mix-blend-mode: screen;
+}
+
+/* Faint glass “reflection sweep” (no layout impact, very subtle) */
+.arch-v2-map .react-flow::before {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.06), transparent 42%),
+    linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.05) 35%, transparent 62%);
+  opacity: 0.35;
+  mix-blend-mode: overlay;
+  transform: translate3d(-6%, -4%, 0);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .arch-v2-map .react-flow::before {
+    animation: arch-v2-reflection 18s ease-in-out infinite;
+  }
+}
+
+@keyframes arch-v2-reflection {
+  0%, 100% { opacity: 0.26; transform: translate3d(-6%, -4%, 0) rotate(-1deg); }
+  50% { opacity: 0.42; transform: translate3d(4%, 2%, 0) rotate(1deg); }
+}
+
+.arch-v2-map::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(closest-side, transparent 56%, rgba(0, 0, 0, 0.76) 100%);
+  opacity: 0.72;
+}
+
+.arch-v2-map:fullscreen {
+  height: 100vh;
+  min-height: 100vh;
+  width: 100vw;
+  background: var(--bg-primary);
+}
+
+.arch-v2-map:fullscreen .react-flow {
+  height: 100%;
 }
 
 .arch-v2-map .react-flow {
+  position: relative;
+  z-index: 1;
   background:
-    radial-gradient(circle at 30% 20%, rgba(56, 189, 248, 0.08), transparent 30%),
-    linear-gradient(180deg, #020617 0%, #050914 100%);
+    radial-gradient(circle at 28% 18%, rgba(255, 255, 255, 0.035), transparent 42%),
+    radial-gradient(circle at 70% 72%, rgba(255, 255, 255, 0.02), transparent 46%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.72));
 }
 
-.arch-v2-node,
-.arch-v2-cluster {
-  background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(2, 6, 23, 0.96));
-  border: 1px solid color-mix(in srgb, var(--node-accent) 62%, rgba(148, 163, 184, 0.2));
-  border-radius: 8px;
-  box-shadow:
-    0 16px 42px rgba(0, 0, 0, 0.38),
-    0 0 28px color-mix(in srgb, var(--node-accent) 16%, transparent);
-  color: #e2e8f0;
+.arch-v2-map .react-flow .react-flow__renderer,
+.arch-v2-map .react-flow .react-flow__viewport,
+.arch-v2-map .react-flow .react-flow__pane {
   position: relative;
+  z-index: 1;
+}
+
+/* Subtle “breathing” atmosphere — applied to canvas only */
+@media (prefers-reduced-motion: no-preference) {
+  .arch-v2-map::before {
+    animation: arch-v2-atmosphere 12s ease-in-out infinite;
+  }
+}
+
+@keyframes arch-v2-atmosphere {
+  0%, 100% { opacity: 0.52; transform: translate3d(0, 0, 0); }
+  50% { opacity: 0.62; transform: translate3d(0, -2px, 0); }
+}
+
+/*
+  macOS-style glass nodes:
+  - Translucent panels with real background bleed-through
+  - Strong blur + saturation (when supported)
+  - Layered reflections + soft depth
+*/
+.arch-v2-map .arch-v2-node,
+.arch-v2-map .arch-v2-cluster {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.08));
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.48),
+    0 10px 26px rgba(0, 0, 0, 0.28),
+    0 1px 0 rgba(255, 255, 255, 0.16) inset;
+  color: rgba(255, 255, 255, 0.92);
+  position: relative;
+  transition: var(--transition-base);
+  -webkit-font-smoothing: antialiased;
+}
+
+@supports ((-webkit-backdrop-filter: blur(12px)) or (backdrop-filter: blur(12px))) {
+  .arch-v2-map .arch-v2-node,
+  .arch-v2-map .arch-v2-cluster {
+    -webkit-backdrop-filter: blur(18px) saturate(1.35);
+    backdrop-filter: blur(18px) saturate(1.35);
+  }
+}
+
+.arch-v2-map .arch-v2-node::before,
+.arch-v2-map .arch-v2-cluster::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.52), transparent 38%),
+    radial-gradient(circle at 82% 76%, rgba(255, 255, 255, 0.18), transparent 44%),
+    linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.24) 35%, transparent 62%);
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  transform: translate3d(-8%, -6%, 0);
+  transition: opacity 240ms ease, transform 480ms ease;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .arch-v2-map .arch-v2-node::before,
+  .arch-v2-map .arch-v2-cluster::before {
+    animation: arch-v2-glass-drift 16s ease-in-out infinite;
+  }
+}
+
+@keyframes arch-v2-glass-drift {
+  0%, 100% { transform: translate3d(-8%, -6%, 0); opacity: 0.46; }
+  50% { transform: translate3d(4%, 3%, 0); opacity: 0.6; }
+}
+
+.arch-v2-map .arch-v2-node::after,
+.arch-v2-map .arch-v2-cluster::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.12) inset,
+    0 -18px 40px rgba(255, 255, 255, 0.06) inset;
+  opacity: 0.9;
+}
+
+.arch-v2-map .arch-v2-node:hover,
+.arch-v2-map .arch-v2-cluster:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.1));
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 40px 130px rgba(0, 0, 0, 0.56),
+    0 16px 34px rgba(0, 0, 0, 0.34),
+    0 1px 0 rgba(255, 255, 255, 0.2) inset;
+}
+
+.arch-v2-map .arch-v2-node:hover::before,
+.arch-v2-map .arch-v2-cluster:hover::before {
+  opacity: 0.68;
+  transform: translate3d(0, 0, 0);
 }
 
 .arch-v2-node {
@@ -168,16 +426,42 @@
   width: 252px;
 }
 
-.arch-v2-node.selected,
-.arch-v2-cluster.selected {
+.arch-v2-map .arch-v2-node.selected,
+.arch-v2-map .arch-v2-cluster.selected {
+  border-color: rgba(255, 255, 255, 0.34);
   box-shadow:
-    0 20px 54px rgba(0, 0, 0, 0.5),
-    0 0 0 1px color-mix(in srgb, var(--node-accent) 80%, white),
-    0 0 44px color-mix(in srgb, var(--node-accent) 30%, transparent);
+    0 38px 120px rgba(0, 0, 0, 0.78),
+    0 0 26px rgba(255, 255, 255, 0.08);
+}
+
+/* Cluster depth: slightly different surface + accent rail */
+.arch-v2-map .arch-v2-cluster {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06));
+}
+
+.arch-v2-map .arch-v2-cluster::after {
+  box-shadow:
+    0 -16px 34px rgba(0, 0, 0, 0.18) inset,
+    0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.arch-v2-map .arch-v2-cluster .arch-v2-cluster-orbit {
+  position: relative;
+}
+
+.arch-v2-map .arch-v2-cluster .arch-v2-cluster-orbit::before {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.14), transparent 62%);
+  opacity: 0.38;
 }
 
 .arch-v2-muted {
-  opacity: 0.34;
+  opacity: 0.3;
+  filter: saturate(0.75);
 }
 
 .arch-v2-node-topline {
@@ -190,7 +474,7 @@
 .arch-v2-node-kind,
 .arch-v2-node-score,
 .arch-v2-cluster-eyebrow {
-  color: var(--node-accent);
+  color: rgba(255, 255, 255, 0.66);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -198,13 +482,14 @@
 }
 
 .arch-v2-node-score {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
   padding: 4px 7px;
 }
 
 .arch-v2-node-title {
-  color: #f8fafc;
+  color: rgba(255, 255, 255, 0.92);
   font-size: 15px;
   font-weight: 800;
   overflow: hidden;
@@ -213,8 +498,8 @@
 }
 
 .arch-v2-node-path {
-  color: #94a3b8;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: rgba(255, 255, 255, 0.68);
+  font-family: var(--font-mono);
   font-size: 10px;
   margin-top: 5px;
   overflow: hidden;
@@ -230,18 +515,18 @@
 }
 
 .arch-v2-node-metrics span {
-  background: rgba(148, 163, 184, 0.1);
-  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
-  color: #cbd5e1;
+  color: rgba(255, 255, 255, 0.74);
   font-size: 10px;
   padding: 4px 7px;
 }
 
 .arch-v2-node-metrics .arch-v2-node-risk {
-  background: rgba(248, 113, 113, 0.14);
-  border-color: rgba(248, 113, 113, 0.32);
-  color: #fecaca;
+  background: rgba(248, 81, 73, 0.14);
+  border-color: rgba(248, 81, 73, 0.28);
+  color: rgba(255, 255, 255, 0.86);
 }
 
 .arch-v2-cluster {
@@ -254,16 +539,18 @@
 }
 
 .arch-v2-cluster-orbit {
-  border: 1px solid color-mix(in srgb, var(--node-accent) 70%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 50%;
-  box-shadow: inset 0 0 18px color-mix(in srgb, var(--node-accent) 20%, transparent);
+  box-shadow:
+    inset 0 0 18px rgba(0, 0, 0, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
   flex: 0 0 42px;
   height: 42px;
   position: relative;
 }
 
 .arch-v2-cluster-orbit::after {
-  background: var(--node-accent);
+  background: rgba(255, 255, 255, 0.4);
   border-radius: 50%;
   content: '';
   height: 8px;
@@ -275,29 +562,56 @@
 }
 
 .arch-v2-cluster-title {
-  color: #f8fafc;
+  color: rgba(255, 255, 255, 0.92);
   font-size: 15px;
   font-weight: 800;
 }
 
 .arch-v2-cluster-subtitle {
-  color: #94a3b8;
+  color: rgba(255, 255, 255, 0.7);
   font-size: 12px;
   margin-top: 4px;
 }
 
 .arch-v2-handle {
-  background: var(--node-accent);
-  border: 1px solid #020617;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.32);
   height: 8px;
   width: 8px;
 }
 
+/* Edge rendering polish (SVG paths) */
+.react-flow__edge-path.arch-v2-edge-path {
+  shape-rendering: geometricPrecision;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: opacity 220ms ease;
+}
+
+.react-flow__edge-path.arch-v2-edge-glow {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.16;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .react-flow__edge-path.arch-v2-edge-path.is-active {
+    stroke-dasharray: 18 28;
+    animation: arch-v2-edge-flow 4.2s linear infinite;
+  }
+}
+
+@keyframes arch-v2-edge-flow {
+  to {
+    stroke-dashoffset: -240;
+  }
+}
+
 .arch-v2-edge-label {
-  background: rgba(2, 6, 23, 0.82);
-  border: 1px solid rgba(103, 232, 249, 0.22);
+  background: rgba(17, 17, 17, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 999px;
-  color: #bae6fd;
+  color: rgba(255, 255, 255, 0.74);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -307,13 +621,28 @@
   text-transform: uppercase;
 }
 
+/* Tech Stack sizing (keeps the same design system, just tighter density) */
+.arch-v2-techstack-item {
+  width: 220px;
+  min-height: 86px;
+  padding: 12px;
+}
+
+.arch-v2-techstack-item .arch-v2-node-title {
+  font-size: 14px;
+}
+
+.arch-v2-techstack-item .arch-v2-node-path {
+  margin-top: 6px;
+}
+
 .arch-v2-status-panel,
 .arch-v2-fit-hint {
   align-items: center;
-  background: rgba(2, 6, 23, 0.82);
-  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.03);
   border-radius: 8px;
-  color: #cbd5e1;
+  color: var(--text-secondary);
   display: flex;
   gap: 9px;
   left: 16px;
@@ -324,7 +653,7 @@
 }
 
 .arch-v2-status-panel span {
-  background: #34d399;
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 50%;
   height: 8px;
   width: 8px;
@@ -332,15 +661,16 @@
 
 .arch-v2-status-panel span.pulse {
   animation: arch-v2-pulse 1.2s infinite;
-  background: #67e8f9;
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .arch-v2-status-panel strong {
+  color: var(--text-primary);
   font-size: 12px;
 }
 
 .arch-v2-status-panel em {
-  color: #94a3b8;
+  color: var(--text-muted);
   font-size: 11px;
   font-style: normal;
 }
@@ -356,7 +686,6 @@
 }
 
 .arch-v2-inspector {
-  border-radius: 8px;
   padding: 18px;
 }
 
@@ -367,22 +696,22 @@
 }
 
 .arch-v2-inspector-heading > span {
-  background: #67e8f9;
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 999px;
-  box-shadow: 0 0 18px rgba(103, 232, 249, 0.45);
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.05);
   flex: 0 0 10px;
   height: 10px;
   margin-top: 7px;
 }
 
 .arch-v2-inspector h3 {
-  color: #f8fafc;
+  color: var(--text-primary);
   font-size: 18px;
   margin: 0 0 4px;
 }
 
 .arch-v2-inspector p {
-  color: #94a3b8;
+  color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.6;
   margin: 0;
@@ -408,19 +737,301 @@
 
 .arch-v2-inspector-actions div {
   align-items: center;
-  background: rgba(15, 23, 42, 0.72);
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  border-radius: 8px;
-  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
   display: flex;
   gap: 10px;
   padding: 12px;
 }
 
+.arch-v2-insight {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+}
+
+.arch-v2-insight + .arch-v2-insight {
+  margin-top: 12px;
+}
+
+.arch-v2-insight[open] {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.arch-v2-insight-summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 12px 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.arch-v2-insight-summary::-webkit-details-marker {
+  display: none;
+}
+
+.arch-v2-insight-summary::after {
+  content: '▾';
+  color: var(--text-muted);
+  font-size: 12px;
+  transform: rotate(-90deg);
+  transition: transform 180ms ease;
+}
+
+.arch-v2-insight[open] > .arch-v2-insight-summary::after {
+  transform: rotate(0deg);
+}
+
+.arch-v2-insight-body {
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 12px;
+}
+
+.arch-v2-insight-title {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.arch-v2-insight-desc {
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.arch-v2-insight-list {
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  line-height: 1.55;
+  margin: 10px 0 0;
+  padding-left: 16px;
+}
+
+.arch-v2-insight-muted {
+  color: var(--text-muted);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.arch-v2-insight-scroll {
+  max-height: 280px;
+  overflow: auto;
+  padding-right: 6px;
+}
+
+.arch-v2-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.arch-v2-pill {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  padding: 5px 10px;
+}
+
+.arch-v2-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.arch-v2-mini-grid div {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.arch-v2-mini-grid strong {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.arch-v2-mini-grid span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.arch-v2-language-list {
+  margin-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  padding-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.arch-v2-language-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+}
+
+.arch-v2-language-item em {
+  font-style: normal;
+  color: var(--text-muted);
+}
+
+.arch-v2-defs {
+  margin-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  padding-top: 12px;
+}
+
+.arch-v2-defs-title {
+  color: var(--text-primary);
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.arch-v2-defs-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.arch-v2-defs-coltitle {
+  color: var(--text-muted);
+  font-size: 11.5px;
+  margin-bottom: 8px;
+}
+
+.arch-v2-defs-list {
+  display: grid;
+  gap: 8px;
+}
+
+.arch-v2-def {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-sm);
+  padding: 9px 10px;
+}
+
+.arch-v2-def-name {
+  color: var(--text-primary);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.arch-v2-def-meta {
+  color: var(--text-muted);
+  font-size: 11.5px;
+  margin-top: 4px;
+  word-break: break-word;
+}
+
+.arch-v2-keyfiles {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.arch-v2-keyfiles-path {
+  color: var(--text-secondary);
+  font-size: 12px;
+  word-break: break-word;
+}
+
+.arch-v2-tech-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.arch-v2-tech-card {
+  align-items: baseline;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-sm);
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+}
+
+.arch-v2-tech-card strong {
+  color: var(--text-secondary);
+  font-size: 12.5px;
+}
+
+.arch-v2-tech-card span {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.arch-v2-analysis {
+  display: grid;
+  gap: 12px;
+}
+
+.arch-v2-analysis-section {
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.12);
+  padding: 10px;
+}
+
+.arch-v2-analysis-title {
+  color: var(--text-primary);
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.arch-v2-analysis-body {
+  display: grid;
+  gap: 6px;
+}
+
+.arch-v2-analysis-line,
+.arch-v2-analysis-bullet {
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.arch-v2-analysis-bullet {
+  padding-left: 12px;
+  position: relative;
+}
+
+.arch-v2-analysis-bullet::before {
+  content: '•';
+  color: rgba(255, 255, 255, 0.38);
+  position: absolute;
+  left: 0;
+}
+
+.arch-v2-analysis-more {
+  color: var(--text-muted);
+  font-size: 11.5px;
+}
+
 .arch-v2-empty {
   align-items: center;
-  border-radius: 8px;
-  color: #e2e8f0;
+  color: var(--text-primary);
   display: flex;
   flex-direction: column;
   min-height: 340px;
@@ -429,12 +1040,24 @@
   text-align: center;
 }
 
+/* React Flow minimap & controls (monochrome) */
+.react-flow__minimap,
+.react-flow__controls {
+  background: rgba(0, 0, 0, 0.48) !important;
+  border: 1px solid rgba(255, 255, 255, 0.03) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
+.react-flow__minimap .react-flow__minimap-viewport {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
 @keyframes arch-v2-pulse {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(103, 232, 249, 0.5);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.15);
   }
   50% {
-    box-shadow: 0 0 0 8px rgba(103, 232, 249, 0);
+    box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);
   }
 }
 
@@ -454,5 +1077,16 @@
   .arch-v2-search {
     min-width: 0;
     width: 100%;
+  }
+
+  .arch-v2-actions {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .arch-v2-btn {
+    height: 44px;
+    padding: 0 14px;
   }
 }
