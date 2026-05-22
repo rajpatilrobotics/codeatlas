@@ -7,6 +7,7 @@ import { extractPackageDependencies, categorizeDependencies, getDependencyTree }
 import { extractJSImports, extractCSSImports, categorizeImports, getImportFrequency } from './extractImports.js';
 import { detectArchitecturePattern, extractComponentHierarchy, detectStateManagement, detectRouting, extractServiceLayer, analyzeArchitectureComplexity } from './extractArchitecture.js';
 import { buildGraphData, buildSimplifiedGraph, calculateGraphStats } from './buildGraphData.js';
+import { buildDependencyGraph } from './buildDependencyGraph.js';
 
 /**
  * Main repository analysis function
@@ -57,6 +58,22 @@ export async function analyzeRepository(repoData, codeAnalysis) {
   const simplifiedGraph = buildSimplifiedGraph(fileStructure);
   const graphStats = calculateGraphStats(graphData.nodes, graphData.edges);
 
+  // Build dependency graph (with graceful fallback)
+  let dependencyGraph = null;
+  try {
+    if (codeAnalysis && codeAnalysis.files && Array.isArray(codeAnalysis.files)) {
+      dependencyGraph = buildDependencyGraph(codeAnalysis.files, {
+        maxFiles: 150,
+        priorityDirs: ['src', 'app', 'components', 'services', 'api', 'hooks', 'lib', 'utils'],
+        ignoreDirs: ['node_modules', 'dist', 'build', '.next', 'coverage', '__tests__'],
+        extensions: ['.js', '.jsx', '.ts', '.tsx']
+      });
+    }
+  } catch (error) {
+    console.warn('Dependency graph generation failed, continuing with analysis:', error.message);
+    dependencyGraph = null;
+  }
+
   return {
     dependencies: {
       raw: dependencyData,
@@ -81,6 +98,7 @@ export async function analyzeRepository(repoData, codeAnalysis) {
       simplified: simplifiedGraph,
       stats: graphStats
     },
+    dependencyGraph: dependencyGraph,
     summary: {
       totalFiles: fileStructure ? fileStructure.length : 0,
       totalDependencies: dependencyTree.total,
