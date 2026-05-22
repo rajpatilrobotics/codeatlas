@@ -32,6 +32,7 @@ const VIEW_MODES = [
   { id: 'system', label: 'System', description: 'Layered architecture overview' },
   { id: 'modules', label: 'Modules', description: 'Folder and module clusters' },
   { id: 'dependencies', label: 'Dependencies', description: 'Internal and package usage' },
+  { id: 'filedeps', label: 'File Dependencies', description: 'Real import relationships' },
   { id: 'flow', label: 'Flow', description: 'Entrypoint to data path' },
   { id: 'techstack', label: 'Tech Stack', description: 'Detected technologies & infrastructure' }
 ];
