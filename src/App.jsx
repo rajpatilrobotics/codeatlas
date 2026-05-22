@@ -23,7 +23,6 @@ import CTASection from './components/Homepage/CTASection';
 
 // Tab Content Components
 import Summary from './components/TabContent/Summary';
-import Architecture from './components/TabContent/Architecture';
 import ArchitectureV2 from './components/TabContent/ArchitectureV2';
 import OnboardingGuide from './components/TabContent/OnboardingGuide';
 import Documentation from './components/TabContent/Documentation';
@@ -1147,18 +1146,6 @@ const handleAnalyze = async (urlOverride) => {
             isCodeAnalysisLoading={isCodeAnalysisLoading}
           />
         );
-      case 'architecture':
-        return (
-          <Architecture
-            repoData={repoData}
-            architectureAnalysis={architectureAnalysis}
-            isArchitectureLoading={isArchitectureLoading}
-            architectureError={architectureError}
-            detailedArchitecture={detailedArchitecture}
-            codeAnalysis={codeAnalysis}
-            isCodeAnalysisLoading={isCodeAnalysisLoading}
-          />
-        );
       case 'architecture-v2':
         return (
           <ArchitectureV2
@@ -1353,27 +1340,6 @@ const handleAnalyze = async (urlOverride) => {
                 {renderTabContent()}
               </div>
               
-              {/* Hidden Architecture component for PDF diagram capture */}
-              <div style={{
-                position: 'fixed',
-                left: '-9999px',
-                top: 0,
-                width: '1200px',
-                height: '3000px',
-                overflow: 'hidden',
-                pointerEvents: 'none',
-                zIndex: -1
-              }}>
-                <Architecture
-                  repoData={repoData}
-                  architectureAnalysis={architectureAnalysis}
-                  isArchitectureLoading={isArchitectureLoading}
-                  architectureError={architectureError}
-                  detailedArchitecture={detailedArchitecture}
-                  codeAnalysis={codeAnalysis}
-                  isCodeAnalysisLoading={isCodeAnalysisLoading}
-                />
-              </div>
             </div>
           )}
         </AppShell>

@@ -21,7 +21,6 @@ export const NAV_SECTIONS = [
     items: [
       { id: 'dashboard', label: 'Dashboard', subtitle: 'Repository mission control', icon: LayoutDashboard },
       { id: 'summary', label: 'Summary', subtitle: 'Repository overview and insights', icon: FileText },
-      { id: 'architecture', label: 'Architecture', subtitle: 'System structure and diagrams', icon: Network },
       { id: 'architecture-v2', label: 'Architecture V2', subtitle: 'Experimental system intelligence map', icon: GitBranch },
       { id: 'onboarding', label: 'Onboarding Guide', subtitle: 'Get started with this repository', icon: BookOpen },
       { id: 'documentation', label: 'Documentation', subtitle: 'Generated docs and references', icon: FileCode },
