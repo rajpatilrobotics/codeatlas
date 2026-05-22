@@ -246,6 +246,82 @@ export function buildArchitectureV2Graph({
     return { nodes: [], edges: [], stats: null };
   }
 
+  // File Dependencies mode - render real dependency graph
+  if (viewMode === 'filedeps') {
+    const dependencyGraph = repoData?.dependencyGraph;
+    
+    // Graceful fallback if dependency graph is not available
+    if (!dependencyGraph || !dependencyGraph.nodes || !Array.isArray(dependencyGraph.nodes)) {
+      return {
+        nodes: [],
+        edges: [],
+        stats: {
+          totalFiles: 0,
+          visibleNodes: 0,
+          dependencies: 0,
+          securityIssues: 0,
+          architecturePattern: 'No dependency graph available'
+        }
+      };
+    }
+
+    // Map dependency graph nodes to ReactFlow nodes
+    const nodes = dependencyGraph.nodes.map(node => ({
+      id: node.id,
+      type: 'architectureV2',
+      data: {
+        label: node.name,
+        path: node.path,
+        nodeType: 'file',
+        layer: node.layer || 'file',
+        color: LAYER_META[node.layer]?.color || LAYER_META.utility.color,
+        importance: node.importance || 0,
+        functions: node.functions || 0,
+        classes: node.classes || 0,
+        securityIssues: node.securityIssues || 0,
+        // Additional metadata for future use
+        importCount: node.importCount || 0,
+        dependentCount: node.dependentCount || 0,
+        isHub: node.isHub || false
+      },
+      position: { x: 0, y: 0 } // ELK will layout
+    }));
+
+    // Map dependency graph edges to ReactFlow edges
+    const edges = (dependencyGraph.edges || []).map(edge => ({
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      type: 'architectureV2Edge',
+      data: {
+        relationship: edge.relationship || 'imports',
+        strength: edge.strength || 1,
+        inferred: false,
+        showLabel: false
+      },
+      animated: edge.strength > 2,
+      style: {
+        stroke: edge.strength > 3 ? '#22d3ee' : 'rgba(255,255,255,0.88)',
+        strokeWidth: Math.min(4, 1 + (edge.strength || 1) * 0.5)
+      }
+    }));
+
+    return {
+      nodes,
+      edges,
+      stats: {
+        totalFiles: dependencyGraph.metrics?.totalFiles || nodes.length,
+        visibleNodes: nodes.length,
+        dependencies: dependencyGraph.metrics?.totalEdges || edges.length,
+        securityIssues: 0,
+        architecturePattern: 'File Dependency Graph',
+        hubNodes: dependencyGraph.metrics?.hubNodes || 0,
+        isolatedNodes: dependencyGraph.metrics?.isolatedNodes || 0,
+        avgDependencies: dependencyGraph.metrics?.avgDependencies || 0
+      }
+    };
+  }
+
   if (viewMode === 'techstack') {
     const nodes = [];
     const edges = [];
