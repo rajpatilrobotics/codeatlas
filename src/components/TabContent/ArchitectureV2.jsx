@@ -15,6 +15,7 @@ import '../../styles/architecture-v2.css';
 import { Network, Search, Layers, GitBranch, Boxes, Activity, Maximize2, DownloadCloud } from 'lucide-react';
 import { buildArchitectureV2Graph } from '../../utils/repository/buildArchitectureV2Graph';
 import { cleanMarkdown } from '../../utils/textFormatting';
+import { calculateBlastRadius } from '../../utils/repository/calculateBlastRadius';
 
 let elkInstancePromise;
 
@@ -328,6 +329,9 @@ function ArchitectureV2({
   const fullscreenWrapper = useRef(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  
+  // Blast radius state (Phase BR-2: state integration only, no visual highlighting yet)
+  const [blastRadiusData, setBlastRadiusData] = useState(null);
 
   const importantFiles = useMemo(() => repoData?.importantFiles || [], [repoData]);
   const techStack = useMemo(() => repoData?.techStack || {}, [repoData]);
@@ -400,10 +404,61 @@ function ArchitectureV2({
 
   const handleNodeClick = useCallback((event, node) => {
     setSelectedNode(node);
-  }, []);
+    
+    // Phase BR-2: Integrate blast radius calculation for filedeps mode
+    // State integration only - no visual highlighting yet
+    if (viewMode === 'filedeps' && repoData?.dependencyGraph) {
+      try {
+        const dependencyGraph = repoData.dependencyGraph;
+        
+        // Validate dependency graph structure
+        if (!dependencyGraph.adjacencyList || !dependencyGraph.nodes) {
+          console.warn('[Blast Radius] Dependency graph missing required structure');
+          setBlastRadiusData(null);
+          return;
+        }
+        
+        // Get the file path from the node data
+        const filePath = node.data?.path || node.id;
+        
+        if (!filePath) {
+          console.warn('[Blast Radius] Node missing file path');
+          setBlastRadiusData(null);
+          return;
+        }
+        
+        // Calculate blast radius for the selected node
+        const blastRadius = calculateBlastRadius(
+          filePath,
+          dependencyGraph,
+          { maxDepth: 10, maxNodes: 500 }
+        );
+        
+        // Store blast radius state (no visual changes yet)
+        setBlastRadiusData(blastRadius);
+        
+        // Log blast radius statistics for debugging
+        console.log('[Blast Radius] Calculated for:', filePath);
+        console.log('[Blast Radius] Affected nodes:', blastRadius.affectedNodes.size);
+        console.log('[Blast Radius] Affected edges:', blastRadius.affectedEdges.length);
+        console.log('[Blast Radius] Max depth reached:', blastRadius.stats.maxDepthReached);
+        console.log('[Blast Radius] Circular dependencies:', blastRadius.stats.circularDependencies);
+        
+      } catch (error) {
+        // Graceful fallback - log error but don't crash
+        console.error('[Blast Radius] Calculation failed:', error);
+        setBlastRadiusData(null);
+      }
+    } else {
+      // Clear blast radius state when not in filedeps mode or no dependency graph
+      setBlastRadiusData(null);
+    }
+  }, [viewMode, repoData]);
 
   const handlePaneClick = useCallback(() => {
     setSelectedNode(null);
+    // Clear blast radius state when deselecting
+    setBlastRadiusData(null);
   }, []);
 
   const handleNodeDoubleClick = useCallback((event, node) => {
@@ -608,6 +663,8 @@ function ArchitectureV2({
                 onClick={() => {
                   setViewMode(mode.id);
                   setSelectedNode(null);
+                  // Clear blast radius state when switching modes
+                  setBlastRadiusData(null);
                 }}
                 title={mode.description}
               >
