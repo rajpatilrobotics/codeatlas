@@ -244,13 +244,15 @@ const handleAnalyze = async (urlOverride) => {
       hasDependencyGraph: !!data.dependencyGraph,
       dependencyGraphNodes: data.dependencyGraph?.nodes?.length || 0,
       dependencyGraphEdges: data.dependencyGraph?.edges?.length || 0,
+      analysisTiming: data.analysisTiming,
       dataKeys: Object.keys(data),
       sampleNode: data.dependencyGraph?.nodes?.[0]
     });
     
     setRepoData(data);
     setRepoSize(data.fileTree.length);
-    setSuccessMessage('Repository analyzed successfully! ✓');
+    const timingText = data.analysisTiming?.display ? ` in ${data.analysisTiming.display}` : '';
+    setSuccessMessage(`Repository analyzed successfully${timingText}! ✓`);
     setAnalysisComplete(true);
     setActiveTab('dashboard');
 
@@ -370,7 +372,7 @@ const handleAnalyze = async (urlOverride) => {
       });
       const result = await response.json();
       if (result.success) {
-        setFirstContributions(result.contributions);
+        setFirstContributions(Array.isArray(result.contributions) ? result.contributions : []);
       } else {
         throw new Error(result.error || 'Failed to generate contribution opportunities');
       }
@@ -1199,10 +1201,19 @@ const handleAnalyze = async (urlOverride) => {
         );
       case 'repository-graph':
         return (
-          <RepositoryGraph onOpenArchitecture={() => setActiveTab('architecture')} />
+          <RepositoryGraph
+            repoData={repoData}
+            codeAnalysis={codeAnalysis}
+            onOpenArchitecture={() => setActiveTab('architecture')}
+          />
         );
       case 'blast-radius':
-        return <BlastRadius />;
+        return (
+          <BlastRadius
+            repoData={repoData}
+            codeAnalysis={codeAnalysis}
+          />
+        );
       case 'planner':
         return <Planner />;
       case 'debug-navigator':

@@ -30,6 +30,7 @@ function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, sum
   }
 
   const { repoInfo, importantFiles, readme, techStack, contributors, commitActivity, keyCommands, complexity, envVariables } = repoData;
+  const contributionItems = Array.isArray(firstContributions) ? firstContributions : [];
 
   // Truncate README to first 500 characters
   const readmePreview = readme && readme !== 'No README found'
@@ -419,9 +420,9 @@ function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, sum
             </div>
           )}
           
-          {firstContributions && firstContributions.length > 0 && !isContributionsLoading && (
+          {contributionItems.length > 0 && !isContributionsLoading && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {firstContributions.map((contribution, idx) => (
+              {contributionItems.map((contribution, idx) => (
                 <div 
                   key={idx} 
                   style={{
@@ -457,7 +458,7 @@ function Summary({ repoUrl, repoSize, repoData, aiSummary, isSummaryLoading, sum
             </div>
           )}
           
-          {!firstContributions.length && !isContributionsLoading && (
+          {contributionItems.length === 0 && !isContributionsLoading && (
             <p style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', padding: '20px' }}>AI-powered task suggestions will appear here...</p>
           )}
           
