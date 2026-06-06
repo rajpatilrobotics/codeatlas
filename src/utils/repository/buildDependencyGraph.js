@@ -8,14 +8,11 @@
  * @module buildDependencyGraph
  */
 
-// Supported file extensions for dependency analysis
-const SUPPORTED_EXTENSIONS = /\.(js|jsx|ts|tsx)$/i;
-
 // Directories to prioritize during file filtering
-const PRIORITY_DIRS = ['src', 'app', 'components', 'services', 'api', 'hooks', 'lib', 'utils', 'pages'];
+const PRIORITY_DIRS = ['src', 'app', 'components', 'services', 'api', 'hooks', 'lib', 'utils', 'pages', 'static'];
 
 // Directories to ignore during file filtering
-const IGNORE_DIRS = ['node_modules', 'dist', 'build', '.next', 'coverage', '__tests__', '.git', 'public'];
+const IGNORE_DIRS = ['node_modules', 'dist', 'build', '.next', 'coverage', '.git', 'vendor', '__pycache__'];
 
 /**
  * Default configuration options for dependency graph generation
@@ -24,13 +21,42 @@ const DEFAULT_OPTIONS = {
   maxFiles: 150,
   priorityDirs: PRIORITY_DIRS,
   ignoreDirs: IGNORE_DIRS,
-  extensions: ['.js', '.jsx', '.ts', '.tsx'],
+  extensions: ['.js', '.jsx', '.ts', '.tsx', '.py'],
   aliasMap: {
     '@': 'src',
     '~': 'src'
   },
   hubThreshold: 5
 };
+
+function normalizeExtensions(extensions = DEFAULT_OPTIONS.extensions) {
+  return Array.from(new Set(
+    extensions
+      .map(ext => String(ext || '').trim().toLowerCase())
+      .filter(Boolean)
+      .map(ext => ext.startsWith('.') ? ext : `.${ext}`)
+  ));
+}
+
+function getFileExtension(filePath) {
+  const match = String(filePath || '').toLowerCase().match(/\.[^.\/]+$/);
+  return match ? match[0] : '';
+}
+
+function getFileLanguage(filePath) {
+  const ext = getFileExtension(filePath);
+  if (['.js', '.jsx', '.ts', '.tsx'].includes(ext)) return ext.slice(1);
+  if (ext === '.py') return 'python';
+  return ext.replace('.', '') || 'unknown';
+}
+
+function isIgnoredPath(filePath, ignoreDirs = IGNORE_DIRS) {
+  const pathLower = String(filePath || '').toLowerCase();
+  return ignoreDirs.some(dir => (
+    pathLower.includes(`/${dir.toLowerCase()}/`) ||
+    pathLower.startsWith(`${dir.toLowerCase()}/`)
+  ));
+}
 
 /**
  * Filter files to only include relevant ones for dependency analysis
@@ -41,6 +67,7 @@ const DEFAULT_OPTIONS = {
  */
 function filterRelevantFiles(files, options = {}) {
   const opts = { ...DEFAULT_OPTIONS, ...options };
+  const supportedExtensions = normalizeExtensions(opts.extensions);
   
   if (!Array.isArray(files)) {
     return [];
@@ -51,13 +78,12 @@ function filterRelevantFiles(files, options = {}) {
     const path = file.path || file;
     
     // Check extension
-    if (!SUPPORTED_EXTENSIONS.test(path)) {
+    if (!supportedExtensions.includes(getFileExtension(path))) {
       return false;
     }
     
     // Check ignored directories
-    const pathLower = path.toLowerCase();
-    if (opts.ignoreDirs.some(dir => pathLower.includes(`/${dir}/`) || pathLower.startsWith(`${dir}/`))) {
+    if (isIgnoredPath(path, opts.ignoreDirs)) {
       return false;
     }
     
@@ -78,13 +104,18 @@ function filterRelevantFiles(files, options = {}) {
     });
     
     // Boost score for entry points
-    if (/(\b|\/)(index|main|app|server)\.(js|jsx|ts|tsx)$/i.test(path)) {
+    if (/(\b|\/)(index|main|app|server|manage|cli)\.(js|jsx|ts|tsx|py)$/i.test(path)) {
       score += 20;
+    }
+
+    if (/(\b|\/)(__init__|models|routes|views|urls|settings)\.py$/i.test(path)) {
+      score += 8;
     }
     
     return {
       ...file,
       path: typeof file === 'string' ? file : file.path,
+      language: getFileLanguage(path),
       score
     };
   });
@@ -107,6 +138,45 @@ function extractAllImports(content, filePath) {
   }
 
   const imports = [];
+  const language = getFileLanguage(filePath);
+
+  if (language === 'python') {
+    const importRegex = /^\s*import\s+([A-Za-z_][\w.]*\s*(?:as\s+\w+)?(?:\s*,\s*[A-Za-z_][\w.]*\s*(?:as\s+\w+)?)*)/gm;
+    const fromImportRegex = /^\s*from\s+(\.*[A-Za-z_][\w.]*|\.+)\s+import\s+([A-Za-z_*][\w*]*(?:\s+as\s+\w+)?(?:\s*,\s*[A-Za-z_*][\w*]*(?:\s+as\s+\w+)?)*)/gm;
+    let match;
+
+    while ((match = importRegex.exec(content)) !== null) {
+      match[1].split(',').forEach(rawModule => {
+        const moduleName = rawModule.trim().split(/\s+as\s+/i)[0];
+        if (moduleName) {
+          imports.push({
+            source: moduleName,
+            type: 'python-import',
+            statement: match[0],
+            language: 'python',
+            importedNames: []
+          });
+        }
+      });
+    }
+
+    while ((match = fromImportRegex.exec(content)) !== null) {
+      const importedNames = match[2]
+        .split(',')
+        .map(name => name.trim().split(/\s+as\s+/i)[0])
+        .filter(Boolean);
+
+      imports.push({
+        source: match[1],
+        type: 'python-from',
+        statement: match[0],
+        language: 'python',
+        importedNames
+      });
+    }
+
+    return imports;
+  }
   
   // ES6 imports: import X from 'Y'
   const es6ImportRegex = /import\s+(?:(?:\{[^}]*\})|(?:\*\s+as\s+\w+)|(?:\w+(?:\s*,\s*\{[^}]*\})?))\s+from\s+['"]([^'"]+)['"]/g;
@@ -120,8 +190,19 @@ function extractAllImports(content, filePath) {
     });
   }
 
+  // Side-effect imports: import 'Y'
+  const sideEffectImportRegex = /import\s+['"]([^'"]+)['"]/g;
+
+  while ((match = sideEffectImportRegex.exec(content)) !== null) {
+    imports.push({
+      source: match[1],
+      type: 'side-effect',
+      statement: match[0]
+    });
+  }
+
   // CommonJS requires: require('Y')
-  const requireRegex = /(?:const|let|var)\s+(?:\{[^}]*\}|\w+)\s*=\s*require\(['"]([^'"]+)['"]\)/g;
+  const requireRegex = /require\(['"]([^'"]+)['"]\)/g;
   
   while ((match = requireRegex.exec(content)) !== null) {
     imports.push({
@@ -154,23 +235,159 @@ function extractAllImports(content, filePath) {
  * @param {Object} options - Resolution options including aliasMap
  * @returns {string|null} Resolved file path or null if not found
  */
-function resolveImportPath(importPath, sourceFilePath, filePathSet, options = {}) {
-  const opts = { ...DEFAULT_OPTIONS, ...options };
-  
-  if (!importPath || !sourceFilePath) {
+function buildRelativePath(sourceFilePath, importPath) {
+  const sourceParts = sourceFilePath.split('/');
+  sourceParts.pop(); // Remove filename
+
+  const importParts = importPath.split('/');
+  const resolvedParts = [...sourceParts];
+
+  for (const part of importParts) {
+    if (part === '.') {
+      continue;
+    } else if (part === '..') {
+      resolvedParts.pop();
+    } else if (part) {
+      resolvedParts.push(part);
+    }
+  }
+
+  return resolvedParts.join('/');
+}
+
+function findFirstExistingCandidate(candidates, filePathSet) {
+  for (const candidate of candidates.filter(Boolean)) {
+    if (filePathSet.has(candidate)) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function findPythonModuleBySuffix(modulePath, filePathSet) {
+  const suffixCandidates = [
+    `${modulePath}.py`,
+    `${modulePath}/__init__.py`
+  ];
+
+  for (const suffix of suffixCandidates) {
+    const matches = Array.from(filePathSet)
+      .filter(filePath => filePath === suffix || filePath.endsWith(`/${suffix}`))
+      .sort((a, b) => a.length - b.length);
+
+    if (matches.length > 0) {
+      return matches[0];
+    }
+  }
+
+  return null;
+}
+
+function resolvePythonImport(importEntry, sourceFilePath, filePathSet) {
+  const rawImportPath = String(importEntry?.source || '').trim();
+  if (!rawImportPath) {
     return null;
   }
 
+  const sourceDirParts = sourceFilePath.split('/');
+  sourceDirParts.pop();
+  const importedNames = Array.isArray(importEntry.importedNames)
+    ? importEntry.importedNames.filter(name => name && name !== '*')
+    : [];
+  let modulePath = rawImportPath;
+  let baseParts = [];
+
+  if (rawImportPath.startsWith('.')) {
+    const leadingDots = rawImportPath.match(/^\.+/)?.[0]?.length || 0;
+    const moduleRemainder = rawImportPath.slice(leadingDots).replace(/\./g, '/');
+    baseParts = [...sourceDirParts];
+
+    for (let i = 1; i < leadingDots; i += 1) {
+      baseParts.pop();
+    }
+
+    if (moduleRemainder) {
+      baseParts.push(...moduleRemainder.split('/').filter(Boolean));
+    }
+
+    modulePath = baseParts.join('/');
+  } else {
+    modulePath = rawImportPath.replace(/\./g, '/');
+  }
+
+  const candidates = [
+    `${modulePath}.py`,
+    `${modulePath}/__init__.py`
+  ];
+
+  importedNames.forEach(name => {
+    const namePath = name.replace(/\./g, '/');
+    candidates.push(`${modulePath}/${namePath}.py`);
+    candidates.push(`${modulePath}/${namePath}/__init__.py`);
+
+    if (rawImportPath.startsWith('.') && modulePath) {
+      candidates.push(`${modulePath}/${namePath}.py`);
+    }
+  });
+
+  if (rawImportPath === '.' || /^\.+$/.test(rawImportPath)) {
+    importedNames.forEach(name => {
+      const namePath = name.replace(/\./g, '/');
+      const base = baseParts.join('/');
+      candidates.push(`${base}/${namePath}.py`);
+      candidates.push(`${base}/${namePath}/__init__.py`);
+    });
+  }
+
+  const directMatch = findFirstExistingCandidate(candidates, filePathSet);
+  if (directMatch) {
+    return directMatch;
+  }
+
+  if (!rawImportPath.startsWith('.')) {
+    const suffixMatch = findPythonModuleBySuffix(modulePath, filePathSet);
+    if (suffixMatch) {
+      return suffixMatch;
+    }
+
+    for (const name of importedNames) {
+      const suffix = `${modulePath}/${name.replace(/\./g, '/')}`;
+      const importedMatch = findPythonModuleBySuffix(suffix, filePathSet);
+      if (importedMatch) {
+        return importedMatch;
+      }
+    }
+  }
+
+  return null;
+}
+
+function resolveImportPath(importPath, sourceFilePath, filePathSet, options = {}) {
+  const opts = { ...DEFAULT_OPTIONS, ...options };
+  const importEntry = typeof importPath === 'object'
+    ? importPath
+    : { source: importPath };
+  let normalizedImportPath = String(importEntry.source || '').trim();
+  
+  if (!normalizedImportPath || !sourceFilePath) {
+    return null;
+  }
+
+  if (getFileLanguage(sourceFilePath) === 'python' || String(importEntry.type || '').startsWith('python')) {
+    return resolvePythonImport(importEntry, sourceFilePath, filePathSet);
+  }
+
   // Skip npm packages (don't start with . or /)
-  if (!importPath.startsWith('.') && !importPath.startsWith('/')) {
+  if (!normalizedImportPath.startsWith('.') && !normalizedImportPath.startsWith('/')) {
     // Check for path aliases
     const aliasKeys = Object.keys(opts.aliasMap);
     let resolved = null;
     
     for (const alias of aliasKeys) {
-      if (importPath.startsWith(alias + '/') || importPath === alias) {
+      if (normalizedImportPath.startsWith(alias + '/') || normalizedImportPath === alias) {
         const aliasPath = opts.aliasMap[alias];
-        const remainder = importPath.slice(alias.length + 1);
+        const remainder = normalizedImportPath.slice(alias.length + 1);
         resolved = `${aliasPath}/${remainder}`;
         break;
       }
@@ -180,50 +397,27 @@ function resolveImportPath(importPath, sourceFilePath, filePathSet, options = {}
       return null; // External package
     }
     
-    importPath = resolved;
+    normalizedImportPath = resolved;
   }
 
   // Handle relative imports
-  if (importPath.startsWith('.')) {
-    const sourceParts = sourceFilePath.split('/');
-    sourceParts.pop(); // Remove filename
-    
-    const importParts = importPath.split('/');
-    const resolvedParts = [...sourceParts];
-    
-    for (const part of importParts) {
-      if (part === '.') {
-        continue;
-      } else if (part === '..') {
-        resolvedParts.pop();
-      } else {
-        resolvedParts.push(part);
-      }
-    }
-    
-    importPath = resolvedParts.join('/');
+  if (normalizedImportPath.startsWith('.')) {
+    normalizedImportPath = buildRelativePath(sourceFilePath, normalizedImportPath);
   }
 
   // Try different file extensions
+  const supportedExtensions = normalizeExtensions(opts.extensions)
+    .filter(ext => ext !== '.py');
+  const indexCandidates = supportedExtensions.flatMap(ext => [
+    `${normalizedImportPath}${ext}`,
+    `${normalizedImportPath}/index${ext}`
+  ]);
   const candidates = [
-    importPath,
-    `${importPath}.js`,
-    `${importPath}.jsx`,
-    `${importPath}.ts`,
-    `${importPath}.tsx`,
-    `${importPath}/index.js`,
-    `${importPath}/index.jsx`,
-    `${importPath}/index.ts`,
-    `${importPath}/index.tsx`
+    normalizedImportPath,
+    ...indexCandidates
   ];
 
-  for (const candidate of candidates) {
-    if (filePathSet.has(candidate)) {
-      return candidate;
-    }
-  }
-
-  return null;
+  return findFirstExistingCandidate(candidates, filePathSet);
 }
 
 /**
@@ -236,6 +430,7 @@ function resolveImportPath(importPath, sourceFilePath, filePathSet, options = {}
 function buildFileDependencyMap(files, options = {}) {
   const importsMap = {};
   const dependentsMap = {};
+  const edgeMetadata = {};
   const filePathSet = new Set(files.map(f => f.path));
 
   files.forEach(file => {
@@ -252,12 +447,31 @@ function buildFileDependencyMap(files, options = {}) {
     
     // Resolve each import
     imports.forEach(imp => {
-      const resolvedPath = resolveImportPath(imp.source, filePath, filePathSet, options);
+      const resolvedPath = resolveImportPath(imp, filePath, filePathSet, options);
       
       if (resolvedPath && resolvedPath !== filePath) {
+        const edgeKey = `${filePath}->${resolvedPath}`;
+
         // Add to imports map
         if (!importsMap[filePath].includes(resolvedPath)) {
           importsMap[filePath].push(resolvedPath);
+        }
+
+        if (!edgeMetadata[edgeKey]) {
+          edgeMetadata[edgeKey] = {
+            source: filePath,
+            target: resolvedPath,
+            importTypes: [],
+            statements: []
+          };
+        }
+
+        if (!edgeMetadata[edgeKey].importTypes.includes(imp.type)) {
+          edgeMetadata[edgeKey].importTypes.push(imp.type);
+        }
+
+        if (imp.statement && !edgeMetadata[edgeKey].statements.includes(imp.statement)) {
+          edgeMetadata[edgeKey].statements.push(imp.statement);
         }
         
         // Add to dependents map (reverse)
@@ -271,7 +485,7 @@ function buildFileDependencyMap(files, options = {}) {
     });
   });
 
-  return { importsMap, dependentsMap };
+  return { importsMap, dependentsMap, edgeMetadata };
 }
 
 /**
@@ -282,7 +496,13 @@ function buildFileDependencyMap(files, options = {}) {
  * @param {Object} importsMap - Map of file imports
  * @returns {number} Strength score (1-10)
  */
-function calculateDependencyStrength(sourceFile, targetFile, importsMap) {
+function calculateDependencyStrength(sourceFile, targetFile, importsMap, edgeMetadata = {}) {
+  const edgeKey = `${sourceFile}->${targetFile}`;
+  const metadata = edgeMetadata[edgeKey];
+  if (metadata?.statements?.length) {
+    return Math.min(10, Math.max(1, metadata.statements.length));
+  }
+
   const imports = importsMap[sourceFile] || [];
   const count = imports.filter(imp => imp === targetFile).length;
   
@@ -328,12 +548,14 @@ function buildAdjacencyList(importsMap, dependentsMap) {
 function classifyFileLayer(path) {
   const lower = path.toLowerCase();
   
-  if (/(\b|\/)(index|main|app|server)\.(js|jsx|ts|tsx)$/i.test(path)) return 'entry';
+  if (/(\b|\/)(index|main|app|server|manage|cli)\.(js|jsx|ts|tsx|py)$/i.test(path)) return 'entry';
   if (lower.includes('/components/') || lower.includes('/pages/') || /\.(jsx|tsx)$/i.test(path)) return 'ui';
   if (lower.includes('/api/') || lower.includes('/routes/') || lower.includes('/controllers/')) return 'api';
   if (lower.includes('/services/') || lower.includes('/lib/')) return 'service';
   if (lower.includes('/utils/') || lower.includes('/helpers/') || lower.includes('/hooks/')) return 'utility';
-  if (lower.includes('/models/') || lower.includes('/schema') || lower.includes('/database')) return 'data';
+  if (lower.includes('/models/') || lower.includes('/schema') || lower.includes('/database') || /(^|\/)models\.py$/i.test(path)) return 'data';
+  if (/(^|\/)(views|urls|forms|serializers|admin)\.py$/i.test(path)) return 'api';
+  if (/(^|\/)(__init__)\.py$/i.test(path)) return 'package';
   
   return 'file';
 }
@@ -347,6 +569,7 @@ function classifyFileLayer(path) {
  */
 export function buildDependencyGraph(files, options = {}) {
   const opts = { ...DEFAULT_OPTIONS, ...options };
+  const supportedExtensions = normalizeExtensions(opts.extensions);
   
   console.log('[DEBUG] buildDependencyGraph: Starting with', files?.length || 0, 'input files');
   
@@ -363,6 +586,7 @@ export function buildDependencyGraph(files, options = {}) {
       edges: [],
       importsMap: {},
       dependentsMap: {},
+      edgeMetadata: {},
       adjacencyList: {},
       metrics: {
         totalFiles: 0,
@@ -382,13 +606,15 @@ export function buildDependencyGraph(files, options = {}) {
         generatedAt: new Date().toISOString(),
         version: '1.0.0',
         fileCount: 0,
-        analysisLevel: 'basic'
+        inputFileCount: Array.isArray(files) ? files.length : 0,
+        analysisLevel: 'basic',
+        supportedExtensions
       }
     };
   }
 
   // Build dependency maps
-  const { importsMap, dependentsMap } = buildFileDependencyMap(relevantFiles, opts);
+  const { importsMap, dependentsMap, edgeMetadata } = buildFileDependencyMap(relevantFiles, opts);
   
   // Build adjacency list
   const adjacencyList = buildAdjacencyList(importsMap, dependentsMap);
@@ -404,6 +630,7 @@ export function buildDependencyGraph(files, options = {}) {
       name: filePath.split('/').pop(),
       type: 'file',
       layer: classifyFileLayer(filePath),
+      language: file.language || getFileLanguage(filePath),
       importCount: adj.outDegree,
       dependentCount: adj.inDegree,
       isHub: adj.inDegree >= opts.hubThreshold,
@@ -425,14 +652,17 @@ export function buildDependencyGraph(files, options = {}) {
     targets.forEach(targetFile => {
       const edgeId = `${sourceFile}->${targetFile}`;
       if (!edgeSet.has(edgeId)) {
-        const strength = calculateDependencyStrength(sourceFile, targetFile, importsMap);
+        const metadata = edgeMetadata[edgeId] || {};
+        const strength = calculateDependencyStrength(sourceFile, targetFile, importsMap, edgeMetadata);
         
         edges.push({
           id: `edge:${edgeId}`,
           source: `file:${sourceFile}`,
           target: `file:${targetFile}`,
           strength,
-          importType: 'es6', // Simplified for now
+          importType: metadata.importTypes?.[0] || 'unknown',
+          importTypes: metadata.importTypes || [],
+          statements: (metadata.statements || []).slice(0, 3),
           relationship: 'imports',
           weight: strength,
           bidirectional: false
@@ -454,6 +684,7 @@ export function buildDependencyGraph(files, options = {}) {
     edges,
     importsMap,
     dependentsMap,
+    edgeMetadata,
     adjacencyList,
     metrics: {
       totalFiles: nodes.length,
@@ -478,6 +709,8 @@ export function buildDependencyGraph(files, options = {}) {
       generatedAt: new Date().toISOString(),
       version: '1.0.0',
       fileCount: nodes.length,
+      inputFileCount: Array.isArray(files) ? files.length : 0,
+      supportedExtensions,
       analysisLevel: 'basic',
       fileHashes: null,
       lastModified: null

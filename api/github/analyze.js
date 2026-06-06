@@ -9,6 +9,38 @@ const path = require('path');
 const { buildDependencyGraph } = require('../../src/utils/repository/buildDependencyGraph');
 
 const GITHUB_API_BASE = 'https://api.github.com';
+const DEPENDENCY_ANALYSIS_MAX_FILES = 200;
+const DEPENDENCY_FILE_SIZE_LIMIT = 250 * 1024;
+const DEPENDENCY_EXTENSIONS = ['.js', '.jsx', '.ts', '.tsx', '.py'];
+const DEPENDENCY_IGNORE_SEGMENTS = [
+  'node_modules',
+  '.git',
+  'dist',
+  'build',
+  'coverage',
+  '.next',
+  '__pycache__',
+  'vendor',
+  '.venv',
+  'venv',
+  'site-packages'
+];
+
+function getAnalysisTiming(startedAt) {
+  const finishedAt = Date.now();
+  const milliseconds = finishedAt - startedAt;
+  const seconds = Number((milliseconds / 1000).toFixed(2));
+  const minutes = Number((milliseconds / 60000).toFixed(2));
+
+  return {
+    milliseconds,
+    seconds,
+    minutes,
+    display: `${seconds}s (${minutes} min)`,
+    startedAt: new Date(startedAt).toISOString(),
+    finishedAt: new Date(finishedAt).toISOString()
+  };
+}
 
 // Helper to get authenticated headers
 const getHeaders = (token) => {
@@ -133,6 +165,63 @@ function identifyImportantFiles(fileTree, maxFiles = 50) {
     })
     .slice(0, maxFiles)
     .map(item => item.path);
+}
+
+function getExtension(filePath) {
+  const match = String(filePath || '').toLowerCase().match(/\.[^.\/]+$/);
+  return match ? match[0] : '';
+}
+
+function shouldSkipDependencyPath(filePath) {
+  const lowerPath = String(filePath || '').toLowerCase();
+  return (
+    DEPENDENCY_IGNORE_SEGMENTS.some(segment => (
+      lowerPath.includes(`/${segment}/`) ||
+      lowerPath.startsWith(`${segment}/`)
+    )) ||
+    lowerPath.includes('.min.') ||
+    lowerPath.endsWith('.lock') ||
+    lowerPath.endsWith('.sum') ||
+    lowerPath.endsWith('.map')
+  );
+}
+
+function scoreDependencyCandidate(filePath) {
+  const lowerPath = String(filePath || '').toLowerCase();
+  let score = 1;
+
+  if (/(\b|\/)(index|main|app|server|manage|cli)\.(js|jsx|ts|tsx|py)$/i.test(filePath)) score += 40;
+  if (/(\b|\/)(__init__|models|routes|views|urls|settings|service|client)\.py$/i.test(filePath)) score += 18;
+  if (/(\b|\/)(api|apis|routes?|controllers?|handlers?|services?|lib|utils?|src|app|static)\//i.test(filePath)) score += 14;
+  if (/(\b|\/)(auth|token|security|permissions?|database|db|models?|schemas?)\//i.test(filePath)) score += 10;
+  if (/(\b|\/)(test|tests|spec|__tests__)\//i.test(filePath) || /\.(test|spec)\./i.test(filePath)) score -= 8;
+  if (/(\b|\/)(docs?|examples?)\//i.test(filePath)) score -= 6;
+  if (lowerPath.endsWith('.py')) score += 6;
+
+  return score;
+}
+
+function selectDependencyAnalysisCandidates(treeEntries, importantFiles = [], maxFiles = DEPENDENCY_ANALYSIS_MAX_FILES) {
+  const importantSet = new Set(importantFiles);
+  const candidates = treeEntries
+    .filter(entry => entry?.type === 'blob')
+    .map(entry => ({
+      path: entry.path,
+      size: Number(entry.size || 0)
+    }))
+    .filter(entry => DEPENDENCY_EXTENSIONS.includes(getExtension(entry.path)))
+    .filter(entry => !shouldSkipDependencyPath(entry.path))
+    .filter(entry => !entry.size || entry.size <= DEPENDENCY_FILE_SIZE_LIMIT)
+    .map(entry => ({
+      ...entry,
+      score: scoreDependencyCandidate(entry.path) + (importantSet.has(entry.path) ? 25 : 0)
+    }))
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.path.length - b.path.length;
+    });
+
+  return candidates.slice(0, maxFiles);
 }
 
 // Detect tech stack from file tree and contents
@@ -262,6 +351,7 @@ module.exports = async (req, res) => {
   }
 
   try {
+    const analysisStartedAt = Date.now();
     const { repoUrl } = req.body;
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
@@ -334,15 +424,19 @@ module.exports = async (req, res) => {
 
     let fileTree = [];
     let importantFiles = [];
+    let fileTreeEntries = [];
+    let dependencyCandidates = [];
     
     if (treeResponse.ok) {
       const treeData = await treeResponse.json();
-      fileTree = treeData.tree
-        .filter(item => item.type === 'blob')
-        .map(item => item.path);
+      fileTreeEntries = treeData.tree
+        .filter(item => item.type === 'blob');
+      fileTree = fileTreeEntries.map(item => item.path);
       
       importantFiles = identifyImportantFiles(fileTree, 50); // Top 50 most important files
+      dependencyCandidates = selectDependencyAnalysisCandidates(fileTreeEntries, importantFiles);
       console.log(`✓ Identified ${importantFiles.length} important files for analysis`);
+      console.log(`✓ Selected ${dependencyCandidates.length} dependency graph candidates`);
     }
 
     // Fetch contents of important files IN PARALLEL (massive speed improvement)
@@ -350,6 +444,7 @@ module.exports = async (req, res) => {
     const CONCURRENCY = 10;
     const fileContents = {};
     const importantFilesWithContent = [];
+    const fetchedFilesByPath = {};
 
     const fetchFile = async (filePath) => {
       try {
@@ -379,6 +474,24 @@ module.exports = async (req, res) => {
         importantFilesWithContent.push(result);
         if (result.content) {
           fileContents[result.path] = result.content;
+          fetchedFilesByPath[result.path] = result;
+        }
+      }
+    }
+
+    const dependencyFilesWithContent = [];
+    const dependencyCandidatePaths = dependencyCandidates.map(candidate => candidate.path);
+
+    for (let i = 0; i < dependencyCandidatePaths.length; i += CONCURRENCY) {
+      const batch = dependencyCandidatePaths.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(batch.map(async (filePath) => (
+        fetchedFilesByPath[filePath] || fetchFile(filePath)
+      )));
+
+      for (const result of results) {
+        if (result.content) {
+          fetchedFilesByPath[result.path] = result;
+          dependencyFilesWithContent.push(result);
         }
       }
     }
@@ -392,23 +505,45 @@ module.exports = async (req, res) => {
     const techStack = detectTechStack(fileTree, fileContents, packageJson);
     console.log('✓ Tech stack detected:', Object.entries(techStack).filter(([k, v]) => v.length > 0).map(([k, v]) => `${k}: ${v.length}`).join(', '));
 
-    // Generate dependency graph from important files
+    // Generate dependency graph from broader source candidates
     let dependencyGraph = null;
     try {
-      console.log('✓ Generating dependency graph from', importantFilesWithContent.length, 'files...');
+      console.log('✓ Generating dependency graph from', dependencyFilesWithContent.length, 'files...');
       
       // buildDependencyGraph expects an array of { path, content } objects
-      dependencyGraph = buildDependencyGraph(importantFilesWithContent, {
-        maxFiles: 150,
-        priorityDirs: ['src', 'app', 'components', 'services', 'api', 'hooks', 'lib', 'utils'],
-        ignoreDirs: ['node_modules', 'dist', 'build', '.next', 'coverage', '__tests__'],
-        extensions: ['.js', '.jsx', '.ts', '.tsx']
+      dependencyGraph = buildDependencyGraph(dependencyFilesWithContent, {
+        maxFiles: DEPENDENCY_ANALYSIS_MAX_FILES,
+        priorityDirs: ['src', 'app', 'components', 'services', 'api', 'hooks', 'lib', 'utils', 'static'],
+        ignoreDirs: DEPENDENCY_IGNORE_SEGMENTS,
+        extensions: DEPENDENCY_EXTENSIONS
       });
+
+      const graphNodeCount = dependencyGraph?.nodes?.length || 0;
+      const dependencyMetadata = {
+        candidateCount: dependencyCandidates.length,
+        fetchedCount: dependencyFilesWithContent.length,
+        skippedCount: Math.max(fileTree.length - dependencyCandidates.length, 0),
+        maxFiles: DEPENDENCY_ANALYSIS_MAX_FILES,
+        fileSizeLimit: DEPENDENCY_FILE_SIZE_LIMIT,
+        supportedExtensions: DEPENDENCY_EXTENSIONS,
+        coverageRatio: fileTree.length > 0
+          ? Number((graphNodeCount / fileTree.length).toFixed(3))
+          : 0
+      };
+
+      dependencyGraph = {
+        ...dependencyGraph,
+        metadata: {
+          ...(dependencyGraph?.metadata || {}),
+          ...dependencyMetadata
+        }
+      };
       
       console.log('✓ Dependency graph generated:', {
-        nodes: dependencyGraph?.nodes?.length || 0,
+        nodes: graphNodeCount,
         edges: dependencyGraph?.edges?.length || 0,
-        hasAdjacencyList: !!dependencyGraph?.adjacencyList
+        hasAdjacencyList: !!dependencyGraph?.adjacencyList,
+        coverageRatio: dependencyGraph?.metadata?.coverageRatio
       });
     } catch (error) {
       console.warn('⚠ Dependency graph generation failed:', error.message);
@@ -443,6 +578,7 @@ module.exports = async (req, res) => {
       packageJson,
       packageJsonPath,
       dependencyGraph, // Add dependency graph
+      analysisTiming: getAnalysisTiming(analysisStartedAt),
     });
 
   } catch (error) {
