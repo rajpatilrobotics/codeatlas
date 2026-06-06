@@ -1,33 +1,32 @@
-/* CodeAtlas — Architecture V2 (Monochrome Matte Black) */
+/* CodeAtlas Architecture V2: high-level architecture board */
 
 .architecture-v2-tab {
   display: grid;
-  gap: 20px;
+  gap: 18px;
 }
 
 .arch-v2-hero,
 .arch-v2-shell,
 .arch-v2-inspector,
 .arch-v2-empty {
-  border: 1px solid var(--border-default);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.65),
-    0 0 0 1px rgba(255, 255, 255, 0.02) inset;
-  border-radius: var(--radius-md);
+  background: rgba(17, 17, 19, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.42);
 }
 
 .arch-v2-hero {
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 24px;
+  align-items: center;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 22px 24px;
 }
 
 .arch-v2-kicker {
   color: var(--text-muted);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.08em;
   margin-bottom: 8px;
   text-transform: uppercase;
@@ -36,67 +35,247 @@
 .arch-v2-hero h2 {
   color: var(--text-primary);
   font-size: 28px;
+  letter-spacing: 0;
   margin: 0 0 8px;
 }
 
 .arch-v2-hero p {
   color: var(--text-secondary);
-  line-height: 1.65;
+  line-height: 1.58;
   margin: 0;
-  max-width: 760px;
+  max-width: 780px;
 }
 
 .arch-v2-stats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(80px, 1fr));
-  gap: 10px;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(82px, 1fr));
   min-width: 420px;
 }
 
 .arch-v2-stats div,
-.arch-v2-inspector-grid div {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 12px;
+.arch-v2-inspector-grid div,
+.arch-v2-mini-grid div {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  padding: 10px 11px;
 }
 
 .arch-v2-stats strong,
-.arch-v2-inspector-grid strong {
+.arch-v2-inspector-grid strong,
+.arch-v2-mini-grid strong {
   color: var(--text-primary);
   display: block;
-  font-size: 20px;
-  line-height: 1;
+  font-size: 18px;
+  line-height: 1.05;
 }
 
 .arch-v2-stats span,
-.arch-v2-inspector-grid span {
+.arch-v2-inspector-grid span,
+.arch-v2-mini-grid span {
   color: var(--text-muted);
   display: block;
-  font-size: 11px;
-  margin-top: 7px;
+  font-size: 10.5px;
+  margin-top: 6px;
   text-transform: uppercase;
+}
+
+.arch-v2-overview-summary {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015)),
+    rgba(17, 17, 19, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.38);
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.arch-v2-overview-brief {
+  align-items: start;
+  display: grid;
+  gap: 4px;
+}
+
+.arch-v2-overview-brief h3 {
+  color: var(--text-primary);
+  font-size: 19px;
+  letter-spacing: 0;
+  margin: 0;
+}
+
+.arch-v2-overview-brief p {
+  color: var(--text-secondary);
+  font-size: 12.75px;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 820px;
+}
+
+.arch-v2-overview-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.arch-v2-summary-card {
+  align-items: flex-start;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  border-radius: 8px;
+  display: flex;
+  gap: 9px;
+  min-height: 92px;
+  padding: 10px;
+}
+
+.arch-v2-summary-card--warning {
+  border-color: rgba(255, 183, 77, 0.18);
+}
+
+.arch-v2-summary-card--calm {
+  border-color: rgba(126, 231, 181, 0.14);
+}
+
+.arch-v2-summary-icon {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: var(--text-primary);
+  display: flex;
+  flex: 0 0 30px;
+  height: 30px;
+  justify-content: center;
+}
+
+.arch-v2-summary-body {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.arch-v2-summary-body > span {
+  color: var(--text-muted);
+  font-size: 10.5px;
+  font-weight: 850;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.arch-v2-summary-body strong {
+  color: var(--text-primary);
+  font-size: 13.25px;
+  font-weight: 850;
+  letter-spacing: 0;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arch-v2-summary-body em {
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-style: normal;
+}
+
+.arch-v2-summary-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.arch-v2-summary-list small {
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-size: 10.8px;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 4px 7px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arch-v2-reading-path {
+  align-items: center;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: 9px 10px;
+}
+
+.arch-v2-reading-title {
+  align-items: center;
+  color: var(--text-primary);
+  display: flex;
+  font-size: 12.5px;
+  font-weight: 800;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.arch-v2-reading-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-width: 0;
+}
+
+.arch-v2-reading-list span {
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 5px 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .arch-v2-shell {
   overflow: hidden;
 }
 
+.arch-v2-shell:fullscreen {
+  background: #09090a;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  height: 100vh;
+  width: 100vw;
+}
+
 .arch-v2-toolbar {
   align-items: center;
-  border-bottom: 1px solid var(--border-subtle);
-  display: flex;
-  gap: 16px;
-  justify-content: space-between;
-  padding: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  display: grid;
+  gap: 12px;
+  grid-template-areas:
+    "modes"
+    "search";
+  grid-template-columns: minmax(0, 1fr);
+  padding: 12px;
 }
 
 .arch-v2-modes {
-  background: rgba(255, 255, 255, 0.01);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
+  grid-area: modes;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
+  overflow: visible;
   padding: 4px;
 }
 
@@ -106,33 +285,35 @@
   border-radius: 6px;
   color: var(--text-secondary);
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 700;
-  padding: 9px 12px;
-  transition: var(--transition-fast);
+  flex: 0 0 auto;
+  font-size: 12.5px;
+  font-weight: 750;
+  height: 34px;
+  padding: 0 11px;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
 }
 
 .arch-v2-modes button:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.045);
   color: var(--text-primary);
 }
 
 .arch-v2-modes button.active {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.11);
   color: var(--text-primary);
-  border-color: rgba(255, 255, 255, 0.04);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.02) inset;
 }
 
 .arch-v2-search {
   align-items: center;
-  background: rgba(255, 255, 255, 0.01);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-full);
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
   color: var(--text-secondary);
   display: flex;
   gap: 8px;
-  min-width: 300px;
+  grid-area: search;
+  min-width: 0;
   padding: 0 12px;
 }
 
@@ -141,38 +322,50 @@
   border: 0;
   color: var(--text-primary);
   font-size: 13px;
+  height: 38px;
   outline: 0;
-  padding: 11px 0;
   width: 100%;
 }
 
-.arch-v2-actions {
-  display: flex;
-  gap: 10px;
+.arch-v2-canvas-toolbar {
   align-items: center;
+  background: rgba(8, 8, 9, 0.72);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+}
+
+.arch-v2-canvas-tools {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.arch-v2-canvas-tools--right {
   justify-content: flex-end;
-  flex: 0 0 auto;
 }
 
 .arch-v2-btn {
   align-items: center;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
   color: var(--text-secondary);
   cursor: pointer;
   display: inline-flex;
-  gap: 10px;
-  height: 40px;
-  padding: 0 12px;
-  transition: var(--transition-fast);
+  gap: 8px;
+  height: 34px;
+  padding: 0 10px;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
   user-select: none;
-  -webkit-tap-highlight-color: transparent;
 }
 
 .arch-v2-btn:hover {
-  background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.075);
+  border-color: rgba(255, 255, 255, 0.12);
   color: var(--text-primary);
 }
 
@@ -180,480 +373,455 @@
   transform: translateY(1px);
 }
 
-.arch-v2-btn:focus-visible {
+.arch-v2-btn:focus-visible,
+.arch-v2-modes button:focus-visible {
+  box-shadow: 0 0 0 2px rgba(122, 167, 255, 0.35);
   outline: none;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.10), 0 0 0 4px rgba(255, 255, 255, 0.05);
 }
 
 .arch-v2-btn:disabled {
-  opacity: 0.6;
   cursor: default;
-  transform: none;
-}
-
-.arch-v2-btn--icon svg {
-  flex: 0 0 auto;
+  opacity: 0.55;
 }
 
 .arch-v2-btn-text {
-  font-size: 12.5px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
+  font-size: 12px;
+  font-weight: 750;
   white-space: nowrap;
 }
 
 .arch-v2-btn-spinner {
-  width: 16px;
-  height: 16px;
-  border-radius: 999px;
-  border: 2px solid rgba(255, 255, 255, 0.16);
-  border-top-color: rgba(255, 255, 255, 0.7);
   animation: arch-v2-spin 700ms linear infinite;
+  border: 2px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  border-top-color: rgba(255, 255, 255, 0.72);
+  height: 16px;
+  width: 16px;
 }
 
 @keyframes arch-v2-spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
 .arch-v2-map {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px),
+    linear-gradient(180deg, #0b0b0d 0%, #080809 100%);
+  background-size: 28px 28px, 28px 28px, auto;
   height: min(78vh, 860px);
-  min-height: 620px;
-  position: relative;
-  overflow: hidden;
   isolation: isolate;
+  min-height: 620px;
+  overflow: hidden;
+  position: relative;
 }
 
-/* Cinematic canvas overlays (subtle depth, grid, vignette) */
-.arch-v2-map::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background:
-    radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.11), transparent 38%),
-    radial-gradient(circle at 78% 70%, rgba(255, 255, 255, 0.07), transparent 48%),
-    radial-gradient(circle at 52% 48%, rgba(255, 255, 255, 0.035), transparent 56%),
-    linear-gradient(120deg, rgba(255, 255, 255, 0.04), transparent 34%, rgba(255, 255, 255, 0.02) 64%, transparent 100%),
-    repeating-linear-gradient(
-      0deg,
-      rgba(255, 255, 255, 0.028) 0,
-      rgba(255, 255, 255, 0.028) 1px,
-      transparent 1px,
-      transparent 36px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.018) 0,
-      rgba(255, 255, 255, 0.018) 1px,
-      transparent 1px,
-      transparent 44px
-    );
-  opacity: 0.5;
-  mix-blend-mode: screen;
-}
-
-/* Faint glass “reflection sweep” (no layout impact, very subtle) */
-.arch-v2-map .react-flow::before {
-  content: '';
-  position: absolute;
-  inset: -20%;
-  pointer-events: none;
-  z-index: 0;
-  background:
-    radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.06), transparent 42%),
-    linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.05) 35%, transparent 62%);
-  opacity: 0.35;
-  mix-blend-mode: overlay;
-  transform: translate3d(-6%, -4%, 0);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .arch-v2-map .react-flow::before {
-    animation: arch-v2-reflection 18s ease-in-out infinite;
-  }
-}
-
-@keyframes arch-v2-reflection {
-  0%, 100% { opacity: 0.26; transform: translate3d(-6%, -4%, 0) rotate(-1deg); }
-  50% { opacity: 0.42; transform: translate3d(4%, 2%, 0) rotate(1deg); }
-}
-
-.arch-v2-map::after {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  pointer-events: none;
-  z-index: 0;
-  background:
-    radial-gradient(closest-side, transparent 56%, rgba(0, 0, 0, 0.76) 100%);
-  opacity: 0.72;
-}
-
-.arch-v2-map:fullscreen {
-  height: 100vh;
-  min-height: 100vh;
-  width: 100vw;
-  background: var(--bg-primary);
-}
-
-.arch-v2-map:fullscreen .react-flow {
+.arch-v2-shell:fullscreen .arch-v2-map {
   height: 100%;
+  min-height: 0;
 }
 
 .arch-v2-map .react-flow {
-  position: relative;
-  z-index: 1;
-  background:
-    radial-gradient(circle at 28% 18%, rgba(255, 255, 255, 0.035), transparent 42%),
-    radial-gradient(circle at 70% 72%, rgba(255, 255, 255, 0.02), transparent 46%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.72));
+  background: transparent;
 }
 
-.arch-v2-map .react-flow .react-flow__renderer,
-.arch-v2-map .react-flow .react-flow__viewport,
-.arch-v2-map .react-flow .react-flow__pane {
-  position: relative;
+.arch-v2-map .react-flow__edges {
   z-index: 1;
 }
 
-/* Subtle “breathing” atmosphere — applied to canvas only */
-@media (prefers-reduced-motion: no-preference) {
-  .arch-v2-map::before {
-    animation: arch-v2-atmosphere 12s ease-in-out infinite;
-  }
+.arch-v2-map .react-flow__nodes {
+  z-index: 2;
 }
 
-@keyframes arch-v2-atmosphere {
-  0%, 100% { opacity: 0.52; transform: translate3d(0, 0, 0); }
-  50% { opacity: 0.62; transform: translate3d(0, -2px, 0); }
-}
-
-/*
-  macOS-style glass nodes:
-  - Translucent panels with real background bleed-through
-  - Strong blur + saturation (when supported)
-  - Layered reflections + soft depth
-*/
 .arch-v2-map .arch-v2-node,
 .arch-v2-map .arch-v2-cluster {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.08));
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 12px;
-  box-shadow:
-    0 30px 90px rgba(0, 0, 0, 0.48),
-    0 10px 26px rgba(0, 0, 0, 0.28),
-    0 1px 0 rgba(255, 255, 255, 0.16) inset;
-  color: rgba(255, 255, 255, 0.92);
+  background: rgba(19, 20, 23, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+  box-sizing: border-box;
+  color: var(--text-primary);
   position: relative;
-  transition: var(--transition-base);
-  -webkit-font-smoothing: antialiased;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease, opacity 160ms ease;
 }
 
 @supports ((-webkit-backdrop-filter: blur(12px)) or (backdrop-filter: blur(12px))) {
   .arch-v2-map .arch-v2-node,
   .arch-v2-map .arch-v2-cluster {
-    -webkit-backdrop-filter: blur(18px) saturate(1.35);
-    backdrop-filter: blur(18px) saturate(1.35);
+    -webkit-backdrop-filter: blur(14px) saturate(1.18);
+    backdrop-filter: blur(14px) saturate(1.18);
   }
 }
 
 .arch-v2-map .arch-v2-node::before,
 .arch-v2-map .arch-v2-cluster::before {
+  background: var(--node-accent, rgba(255, 255, 255, 0.18));
+  border-radius: 8px 0 0 8px;
   content: '';
+  inset: 0 auto 0 0;
+  opacity: 0.95;
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.52), transparent 38%),
-    radial-gradient(circle at 82% 76%, rgba(255, 255, 255, 0.18), transparent 44%),
-    linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.24) 35%, transparent 62%);
-  opacity: 0.5;
-  mix-blend-mode: overlay;
-  transform: translate3d(-8%, -6%, 0);
-  transition: opacity 240ms ease, transform 480ms ease;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .arch-v2-map .arch-v2-node::before,
-  .arch-v2-map .arch-v2-cluster::before {
-    animation: arch-v2-glass-drift 16s ease-in-out infinite;
-  }
-}
-
-@keyframes arch-v2-glass-drift {
-  0%, 100% { transform: translate3d(-8%, -6%, 0); opacity: 0.46; }
-  50% { transform: translate3d(4%, 3%, 0); opacity: 0.6; }
-}
-
-.arch-v2-map .arch-v2-node::after,
-.arch-v2-map .arch-v2-cluster::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  box-shadow:
-    0 10px 30px rgba(0, 0, 0, 0.12) inset,
-    0 -18px 40px rgba(255, 255, 255, 0.06) inset;
-  opacity: 0.9;
+  width: 4px;
 }
 
 .arch-v2-map .arch-v2-node:hover,
 .arch-v2-map .arch-v2-cluster:hover {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.1));
-  border-color: rgba(255, 255, 255, 0.22);
-  box-shadow:
-    0 40px 130px rgba(0, 0, 0, 0.56),
-    0 16px 34px rgba(0, 0, 0, 0.34),
-    0 1px 0 rgba(255, 255, 255, 0.2) inset;
-}
-
-.arch-v2-map .arch-v2-node:hover::before,
-.arch-v2-map .arch-v2-cluster:hover::before {
-  opacity: 0.68;
-  transform: translate3d(0, 0, 0);
-}
-
-.arch-v2-node {
-  min-height: 106px;
-  padding: 14px;
-  width: 252px;
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.38);
+  transform: translateY(-1px);
 }
 
 .arch-v2-map .arch-v2-node.selected,
 .arch-v2-map .arch-v2-cluster.selected {
-  border-color: rgba(255, 255, 255, 0.34);
+  border-color: color-mix(in srgb, var(--node-accent, #ffffff) 70%, white 20%);
   box-shadow:
-    0 38px 120px rgba(0, 0, 0, 0.78),
-    0 0 26px rgba(255, 255, 255, 0.08);
+    0 18px 34px rgba(0, 0, 0, 0.5),
+    0 0 0 1px color-mix(in srgb, var(--node-accent, #ffffff) 42%, transparent) inset;
 }
 
-/* Cluster depth: slightly different surface + accent rail */
-.arch-v2-map .arch-v2-cluster {
+.arch-v2-node {
+  min-height: 150px;
+  padding: 16px 17px 15px 20px;
+  width: 320px;
+}
+
+.arch-v2-node--compact {
+  min-height: 104px;
+  width: 240px;
+}
+
+.arch-v2-node--technology {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06));
+    linear-gradient(135deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.02)),
+    rgba(18, 19, 22, 0.94);
 }
 
-.arch-v2-map .arch-v2-cluster::after {
+.arch-v2-node--technology.arch-v2-node--compact {
+  background:
+    linear-gradient(180deg, rgba(28, 29, 32, 0.96), rgba(18, 19, 22, 0.985)),
+    rgba(19, 20, 23, 0.985);
+  border-color: rgba(255, 255, 255, 0.13);
   box-shadow:
-    0 -16px 34px rgba(0, 0, 0, 0.18) inset,
-    0 0 0 1px rgba(255, 255, 255, 0.06);
+    0 14px 26px rgba(0, 0, 0, 0.34),
+    0 1px 0 rgba(255, 255, 255, 0.05) inset;
+  display: flex;
+  flex-direction: column;
+  min-height: 124px;
+  padding: 15px 18px 14px 21px;
+  width: 260px;
 }
 
-.arch-v2-map .arch-v2-cluster .arch-v2-cluster-orbit {
-  position: relative;
+.arch-v2-node--technology.arch-v2-node--compact::before {
+  opacity: 0.82;
+  width: 3px;
 }
 
-.arch-v2-map .arch-v2-cluster .arch-v2-cluster-orbit::before {
-  content: '';
-  position: absolute;
-  inset: -7px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.14), transparent 62%);
-  opacity: 0.38;
+.arch-v2-node--technology.arch-v2-node--compact .arch-v2-node-topline {
+  margin-bottom: 3px;
+}
+
+.arch-v2-node--technology.arch-v2-node--compact .arch-v2-node-kind {
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 10px;
+  letter-spacing: 0.09em;
+}
+
+.arch-v2-node--technology.arch-v2-node--compact .arch-v2-confidence {
+  background: rgba(255, 255, 255, 0.055);
+  border-color: rgba(255, 255, 255, 0.11);
+  font-size: 10px;
+  padding: 5px 9px;
+}
+
+.arch-v2-node--action {
+  background:
+    linear-gradient(135deg, rgba(122, 167, 255, 0.1), rgba(255, 255, 255, 0.02)),
+    rgba(20, 22, 28, 0.985);
+  border-color: rgba(122, 167, 255, 0.18);
+  cursor: pointer;
+}
+
+.arch-v2-node--boundary {
+  background: rgba(25, 18, 20, 0.92);
+  border-style: dashed;
+}
+
+.arch-v2-primary {
+  opacity: 1;
+}
+
+.arch-v2-related {
+  opacity: 0.78;
+  filter: saturate(0.92);
 }
 
 .arch-v2-muted {
-  opacity: 0.3;
-  filter: saturate(0.75);
+  opacity: 0.34;
+  filter: saturate(0.62);
 }
 
 .arch-v2-node-topline {
   align-items: center;
   display: flex;
+  gap: 10px;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 9px;
 }
 
 .arch-v2-node-kind,
-.arch-v2-node-score,
 .arch-v2-cluster-eyebrow {
-  color: rgba(255, 255, 255, 0.66);
-  font-size: 10px;
-  font-weight: 800;
+  color: var(--text-muted);
+  font-size: 10.5px;
+  font-weight: 850;
   letter-spacing: 0.08em;
+  overflow: hidden;
+  text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
-.arch-v2-node-score {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+.arch-v2-confidence,
+.arch-v2-node-metrics span {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 999px;
-  padding: 4px 7px;
+  color: var(--text-secondary);
+  font-size: 10.5px;
+  font-weight: 750;
+  line-height: 1;
+  max-width: 180px;
+  overflow: hidden;
+  padding: 5px 8px;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.arch-v2-confidence--high {
+  color: #b7f7d6;
+}
+
+.arch-v2-confidence--medium {
+  color: #f7e2a8;
+}
+
+.arch-v2-confidence--low {
+  color: #ffb4b4;
 }
 
 .arch-v2-node-title {
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 15px;
-  font-weight: 800;
+  color: var(--text-primary);
+  font-size: 16.5px;
+  font-weight: 850;
+  letter-spacing: 0;
+  line-height: 1.25;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.arch-v2-node-path {
-  color: rgba(255, 255, 255, 0.68);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  margin-top: 5px;
+.arch-v2-node--technology.arch-v2-node--compact .arch-v2-node-title {
+  font-size: 24px;
+  line-height: 1.05;
+}
+
+.arch-v2-node-desc {
+  color: var(--text-secondary);
+  display: -webkit-box;
+  font-size: 12.75px;
+  line-height: 1.48;
+  margin-top: 8px;
+  min-height: 38px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.arch-v2-node--technology.arch-v2-node--compact .arch-v2-node-desc {
+  -webkit-line-clamp: 1;
+  color: rgba(255, 255, 255, 0.52);
+  font-size: 12.75px;
+  line-height: 1.3;
+  margin-top: 6px;
+  min-height: 0;
 }
 
 .arch-v2-node-metrics {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 12px;
+  margin-top: 13px;
 }
 
-.arch-v2-node-metrics span {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-  color: rgba(255, 255, 255, 0.74);
+.arch-v2-node--technology.arch-v2-node--compact .arch-v2-node-metrics {
+  margin-top: 10px;
+}
+
+.arch-v2-node--technology.arch-v2-node--compact .arch-v2-node-metrics span {
+  background: rgba(255, 255, 255, 0.052);
+  border-color: rgba(255, 255, 255, 0.095);
+  color: rgba(255, 255, 255, 0.58);
   font-size: 10px;
-  padding: 4px 7px;
+  padding: 5px 9px;
+}
+
+.arch-v2-node-metrics .arch-v2-node-boundary {
+  color: #ffb4b4;
 }
 
 .arch-v2-node-metrics .arch-v2-node-risk {
-  background: rgba(248, 81, 73, 0.14);
-  border-color: rgba(248, 81, 73, 0.28);
-  color: rgba(255, 255, 255, 0.86);
+  color: #ffb4b4;
 }
 
 .arch-v2-cluster {
   align-items: center;
   display: flex;
-  gap: 14px;
-  min-height: 88px;
-  padding: 15px;
-  width: 226px;
+  gap: 12px;
+  min-height: 112px;
+  padding: 16px 17px 16px 20px;
+  width: 300px;
 }
 
-.arch-v2-cluster-orbit {
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 50%;
+.arch-v2-cluster--technology {
+  background:
+    linear-gradient(180deg, rgba(31, 32, 35, 0.96), rgba(19, 20, 23, 0.985)),
+    rgba(20, 21, 24, 0.985);
+  border-color: rgba(255, 255, 255, 0.145);
   box-shadow:
-    inset 0 0 18px rgba(0, 0, 0, 0.18),
-    0 0 0 1px rgba(255, 255, 255, 0.06);
-  flex: 0 0 42px;
-  height: 42px;
-  position: relative;
+    0 16px 30px rgba(0, 0, 0, 0.36),
+    0 1px 0 rgba(255, 255, 255, 0.055) inset;
+  gap: 13px;
+  padding: 15px 18px 15px 21px;
+  width: 300px;
 }
 
-.arch-v2-cluster-orbit::after {
-  background: rgba(255, 255, 255, 0.4);
-  border-radius: 50%;
-  content: '';
-  height: 8px;
-  left: 50%;
-  position: absolute;
-  top: -4px;
-  transform: translateX(-50%);
-  width: 8px;
+.arch-v2-cluster--technology::before {
+  opacity: 0.86;
+  width: 3px;
+}
+
+.arch-v2-cluster-mark {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.08)),
+    var(--node-accent, rgba(255, 255, 255, 0.16));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.22),
+    0 1px 0 rgba(255, 255, 255, 0.16) inset;
+  flex: 0 0 38px;
+  height: 38px;
+}
+
+.arch-v2-cluster--technology .arch-v2-cluster-eyebrow {
+  color: rgba(255, 255, 255, 0.46);
+  font-size: 9.6px;
+  letter-spacing: 0.092em;
 }
 
 .arch-v2-cluster-title {
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 15px;
-  font-weight: 800;
+  color: var(--text-primary);
+  font-size: 16.5px;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.arch-v2-cluster--technology .arch-v2-cluster-title {
+  font-size: 19px;
+  line-height: 1.08;
 }
 
 .arch-v2-cluster-subtitle {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  line-height: 1.42;
+  margin-top: 6px;
+}
+
+.arch-v2-cluster--technology .arch-v2-cluster-subtitle {
+  color: rgba(255, 255, 255, 0.52);
   font-size: 12px;
-  margin-top: 4px;
+  line-height: 1.35;
+  margin-top: 5px;
 }
 
 .arch-v2-handle {
-  background: rgba(255, 255, 255, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.32);
+  background: rgba(255, 255, 255, 0.32);
+  border: 1px solid rgba(0, 0, 0, 0.45);
   height: 8px;
   width: 8px;
 }
 
-/* Edge rendering polish (SVG paths) */
+.arch-v2-handle--vertical {
+  background: rgba(255, 255, 255, 0.34);
+  opacity: 0.82;
+}
+
 .react-flow__edge-path.arch-v2-edge-path {
   shape-rendering: geometricPrecision;
   stroke-linecap: round;
   stroke-linejoin: round;
-  transition: opacity 220ms ease;
+  transition: opacity 160ms ease, stroke-width 160ms ease;
+}
+
+.react-flow__edge-path.arch-v2-edge-path.is-hierarchy-line {
+  stroke-linecap: square;
+}
+
+.react-flow__edge-path.arch-v2-edge-path.is-relationship-line {
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.08));
 }
 
 .react-flow__edge-path.arch-v2-edge-glow {
   stroke-linecap: round;
   stroke-linejoin: round;
-  opacity: 0.16;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .react-flow__edge-path.arch-v2-edge-path.is-active {
-    stroke-dasharray: 18 28;
-    animation: arch-v2-edge-flow 4.2s linear infinite;
-  }
-}
-
-@keyframes arch-v2-edge-flow {
-  to {
-    stroke-dashoffset: -240;
-  }
 }
 
 .arch-v2-edge-label {
-  background: rgba(17, 17, 17, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(8, 8, 9, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
-  color: rgba(255, 255, 255, 0.74);
-  font-size: 10px;
-  font-weight: 800;
+  color: var(--text-secondary);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.34);
+  font-size: 11px;
+  font-weight: 850;
   letter-spacing: 0.04em;
-  padding: 4px 8px;
-  pointer-events: all;
+  padding: 5px 9px;
+  opacity: 0.9;
+  pointer-events: none;
   position: absolute;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
-/* Tech Stack sizing (keeps the same design system, just tighter density) */
-.arch-v2-techstack-item {
-  width: 220px;
-  min-height: 86px;
-  padding: 12px;
+.arch-v2-edge-label.is-visible {
+  color: var(--text-primary);
+  opacity: 0.98;
 }
 
-.arch-v2-techstack-item .arch-v2-node-title {
-  font-size: 14px;
-}
-
-.arch-v2-techstack-item .arch-v2-node-path {
-  margin-top: 6px;
+.arch-v2-edge-label--relationship {
+  color: rgba(245, 245, 245, 0.9);
 }
 
 .arch-v2-status-panel,
 .arch-v2-fit-hint {
   align-items: center;
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.03);
+  background: rgba(8, 8, 9, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
   color: var(--text-secondary);
   display: flex;
   gap: 9px;
-  left: 16px;
-  padding: 10px 12px;
+  left: 14px;
+  max-width: min(560px, calc(100% - 28px));
+  padding: 9px 11px;
   position: absolute;
-  top: 16px;
+  top: 14px;
   z-index: 8;
 }
 
 .arch-v2-status-panel span {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.22);
   border-radius: 50%;
   height: 8px;
   width: 8px;
@@ -661,24 +829,25 @@
 
 .arch-v2-status-panel span.pulse {
   animation: arch-v2-pulse 1.2s infinite;
-  background: rgba(255, 255, 255, 0.12);
 }
 
 .arch-v2-status-panel strong {
   color: var(--text-primary);
   font-size: 12px;
+  white-space: nowrap;
 }
 
 .arch-v2-status-panel em {
   color: var(--text-muted);
   font-size: 11px;
   font-style: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .arch-v2-fit-hint {
-  border: 0;
-  bottom: 18px;
-  cursor: default;
+  bottom: 16px;
   font-size: 12px;
   left: 50%;
   top: auto;
@@ -696,80 +865,161 @@
 }
 
 .arch-v2-inspector-heading > span {
-  background: rgba(255, 255, 255, 0.08);
   border-radius: 999px;
-  box-shadow: 0 0 18px rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.08);
   flex: 0 0 10px;
   height: 10px;
-  margin-top: 7px;
+  margin-top: 8px;
 }
 
 .arch-v2-inspector h3 {
   color: var(--text-primary);
   font-size: 18px;
-  margin: 0 0 4px;
+  letter-spacing: 0;
+  margin: 0 0 5px;
 }
 
 .arch-v2-inspector p {
   color: var(--text-secondary);
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.58;
   margin: 0;
 }
 
 .arch-v2-inspector-grid {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   grid-template-columns: repeat(4, 1fr);
-  margin-top: 18px;
+  margin-top: 16px;
 }
 
 .arch-v2-inspector-note {
-  margin-top: 14px !important;
+  margin-top: 12px !important;
+}
+
+.arch-v2-node-explain {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  margin-top: 14px;
+  padding: 12px;
+}
+
+.arch-v2-node-explain--muted {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.arch-v2-node-explain-title {
+  align-items: center;
+  color: var(--text-primary);
+  display: flex;
+  font-size: 12.5px;
+  font-weight: 800;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+.arch-v2-node-explain p {
+  color: var(--text-secondary);
+  font-size: 12.75px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.arch-v2-relation-group + .arch-v2-relation-group {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+.arch-v2-relation-title {
+  color: var(--text-muted);
+  font-size: 10.5px;
+  font-weight: 850;
+  letter-spacing: 0.07em;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.arch-v2-relation-item {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.065);
+  border-radius: 8px;
+  display: grid;
+  gap: 5px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 38px;
+  padding: 8px 10px;
+}
+
+.arch-v2-relation-item + .arch-v2-relation-item {
+  margin-top: 7px;
+}
+
+.arch-v2-relation-item span {
+  color: var(--text-primary);
+  font-size: 12.5px;
+  font-weight: 750;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arch-v2-relation-item em {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-style: normal;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .arch-v2-inspector-actions {
   display: grid;
-  gap: 10px;
+  gap: 9px;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  margin-top: 18px;
+  margin-top: 16px;
 }
 
 .arch-v2-inspector-actions div {
   align-items: center;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
   color: var(--text-secondary);
   display: flex;
   gap: 10px;
-  padding: 12px;
+  min-height: 42px;
+  padding: 10px 11px;
 }
 
 .arch-v2-insight {
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
   overflow: hidden;
 }
 
 .arch-v2-insight + .arch-v2-insight {
-  margin-top: 12px;
+  margin-top: 11px;
 }
 
 .arch-v2-insight[open] {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.035);
 }
 
 .arch-v2-insight-summary {
   align-items: center;
+  color: var(--text-primary);
   cursor: pointer;
   display: flex;
+  font-size: 13px;
+  font-weight: 750;
   gap: 10px;
   justify-content: space-between;
-  padding: 12px 12px;
-  color: var(--text-primary);
-  font-size: 13px;
+  padding: 11px 12px;
 }
 
 .arch-v2-insight-summary::-webkit-details-marker {
@@ -777,11 +1027,11 @@
 }
 
 .arch-v2-insight-summary::after {
-  content: '▾';
   color: var(--text-muted);
+  content: '▾';
   font-size: 12px;
   transform: rotate(-90deg);
-  transition: transform 180ms ease;
+  transition: transform 160ms ease;
 }
 
 .arch-v2-insight[open] > .arch-v2-insight-summary::after {
@@ -789,35 +1039,34 @@
 }
 
 .arch-v2-insight-body {
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
   padding: 12px;
 }
 
 .arch-v2-insight-title {
   color: var(--text-primary);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 750;
   margin-bottom: 6px;
 }
 
-.arch-v2-insight-desc {
+.arch-v2-insight-desc,
+.arch-v2-insight-muted {
   color: var(--text-secondary);
   font-size: 12.5px;
   line-height: 1.55;
+}
+
+.arch-v2-insight-muted {
+  color: var(--text-muted);
 }
 
 .arch-v2-insight-list {
   color: var(--text-secondary);
   font-size: 12.5px;
-  line-height: 1.55;
+  line-height: 1.58;
   margin: 10px 0 0;
   padding-left: 16px;
-}
-
-.arch-v2-insight-muted {
-  color: var(--text-muted);
-  font-size: 12.5px;
-  line-height: 1.55;
 }
 
 .arch-v2-insight-scroll {
@@ -829,108 +1078,86 @@
 .arch-v2-pill-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 7px;
   margin-bottom: 12px;
 }
 
 .arch-v2-pill {
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.03);
   color: var(--text-secondary);
   font-size: 11.5px;
-  padding: 5px 10px;
+  padding: 5px 9px;
 }
 
 .arch-v2-mini-grid {
   display: grid;
+  gap: 8px;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
   margin-top: 10px;
 }
 
-.arch-v2-mini-grid div {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: var(--radius-sm);
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.arch-v2-mini-grid strong {
-  color: var(--text-primary);
-  font-size: 14px;
-}
-
-.arch-v2-mini-grid span {
-  color: var(--text-muted);
-  font-size: 11px;
-}
-
 .arch-v2-language-list {
-  margin-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
-  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
   display: grid;
   gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
 }
 
 .arch-v2-language-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
   color: var(--text-secondary);
+  display: flex;
   font-size: 12.5px;
+  gap: 10px;
+  justify-content: space-between;
 }
 
 .arch-v2-language-item em {
-  font-style: normal;
   color: var(--text-muted);
+  font-style: normal;
 }
 
 .arch-v2-defs {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
   margin-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
   padding-top: 12px;
 }
 
-.arch-v2-defs-title {
+.arch-v2-defs-title,
+.arch-v2-defs-coltitle {
   color: var(--text-primary);
   font-size: 12.5px;
-  font-weight: 600;
-  margin-bottom: 10px;
-}
-
-.arch-v2-defs-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
+  font-weight: 750;
+  margin-bottom: 9px;
 }
 
 .arch-v2-defs-coltitle {
   color: var(--text-muted);
-  font-size: 11.5px;
-  margin-bottom: 8px;
+  font-weight: 650;
 }
 
-.arch-v2-defs-list {
+.arch-v2-defs-grid,
+.arch-v2-defs-list,
+.arch-v2-keyfiles,
+.arch-v2-analysis,
+.arch-v2-analysis-body {
   display: grid;
   gap: 8px;
 }
 
 .arch-v2-def {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
   padding: 9px 10px;
 }
 
 .arch-v2-def-name {
   color: var(--text-primary);
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 750;
 }
 
 .arch-v2-def-meta {
@@ -942,32 +1169,42 @@
 
 .arch-v2-keyfiles {
   list-style: none;
-  padding: 0;
   margin: 0;
-  display: grid;
-  gap: 8px;
+  padding: 0;
 }
 
 .arch-v2-keyfiles-path {
   color: var(--text-secondary);
-  font-size: 12px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
   word-break: break-word;
 }
 
 .arch-v2-tech-grid {
   display: grid;
+  gap: 8px;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
 }
 
 .arch-v2-tech-card {
   align-items: baseline;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  color: inherit;
+  cursor: pointer;
   display: flex;
+  font: inherit;
   justify-content: space-between;
-  padding: 10px;
+  padding: 9px 10px;
+  text-align: left;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.arch-v2-tech-card:hover,
+.arch-v2-tech-card.is-expanded {
+  background: rgba(122, 167, 255, 0.08);
+  border-color: rgba(122, 167, 255, 0.18);
 }
 
 .arch-v2-tech-card strong {
@@ -978,31 +1215,21 @@
 .arch-v2-tech-card span {
   color: var(--text-primary);
   font-size: 13px;
-  font-weight: 600;
-}
-
-.arch-v2-analysis {
-  display: grid;
-  gap: 12px;
+  font-weight: 750;
 }
 
 .arch-v2-analysis-section {
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: var(--radius-sm);
-  background: rgba(0, 0, 0, 0.12);
+  background: rgba(0, 0, 0, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
   padding: 10px;
 }
 
 .arch-v2-analysis-title {
   color: var(--text-primary);
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 750;
   margin-bottom: 6px;
-}
-
-.arch-v2-analysis-body {
-  display: grid;
-  gap: 6px;
 }
 
 .arch-v2-analysis-line,
@@ -1018,10 +1245,10 @@
 }
 
 .arch-v2-analysis-bullet::before {
+  color: rgba(255, 255, 255, 0.42);
   content: '•';
-  color: rgba(255, 255, 255, 0.38);
-  position: absolute;
   left: 0;
+  position: absolute;
 }
 
 .arch-v2-analysis-more {
@@ -1034,38 +1261,102 @@
   color: var(--text-primary);
   display: flex;
   flex-direction: column;
-  min-height: 340px;
   justify-content: center;
+  min-height: 340px;
   padding: 40px;
   text-align: center;
 }
 
-/* React Flow minimap & controls (monochrome) */
-.react-flow__minimap,
-.react-flow__controls {
-  background: rgba(0, 0, 0, 0.48) !important;
-  border: 1px solid rgba(255, 255, 255, 0.03) !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+.arch-v2-map .react-flow__minimap,
+.arch-v2-map .react-flow__controls {
+  background: rgba(8, 8, 9, 0.82) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.34);
 }
 
-.react-flow__minimap .react-flow__minimap-viewport {
-  border: 1px solid rgba(255, 255, 255, 0.06);
+.arch-v2-map .react-flow__controls {
+  opacity: 0.62;
+  transform: scale(0.9);
+  transform-origin: bottom left;
+  transition: opacity 160ms ease;
+}
+
+.arch-v2-map .react-flow__controls:hover {
+  opacity: 0.9;
+}
+
+.arch-v2-map .react-flow__controls-button {
+  background: transparent !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+  color: var(--text-secondary) !important;
+}
+
+.arch-v2-map .react-flow__controls-button:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: var(--text-primary) !important;
+}
+
+.arch-v2-map .react-flow__minimap-viewport {
+  stroke: rgba(255, 255, 255, 0.18);
+}
+
+.arch-v2-map .react-flow__minimap {
+  opacity: 0.34;
+  transition: opacity 160ms ease;
+}
+
+.arch-v2-map .react-flow__minimap:hover {
+  opacity: 0.72;
+}
+
+.arch-v2-shell:fullscreen .react-flow__minimap {
+  display: block;
+  opacity: 0.5;
 }
 
 @keyframes arch-v2-pulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.15);
+  0%, 100% { box-shadow: 0 0 0 0 rgba(122, 167, 255, 0.2); }
+  50% { box-shadow: 0 0 0 8px rgba(122, 167, 255, 0); }
+}
+
+@media (max-width: 1180px) {
+  .arch-v2-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  50% {
-    box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);
+
+  .arch-v2-reading-path {
+    align-items: flex-start;
+    grid-template-columns: 1fr;
+  }
+
+  .arch-v2-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .arch-v2-canvas-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .arch-v2-canvas-tools--right {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 1440px) {
+  .arch-v2-map .react-flow__minimap {
+    display: none;
   }
 }
 
 @media (max-width: 980px) {
-  .arch-v2-hero,
-  .arch-v2-toolbar {
-    align-items: stretch;
-    flex-direction: column;
+  .arch-v2-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .arch-v2-overview-grid {
+    grid-template-columns: 1fr;
   }
 
   .arch-v2-stats,
@@ -1074,19 +1365,16 @@
     min-width: 0;
   }
 
-  .arch-v2-search {
-    min-width: 0;
+  .arch-v2-map {
+    height: 580px;
+    min-height: 520px;
+  }
+
+  .arch-v2-canvas-tools {
     width: 100%;
   }
 
-  .arch-v2-actions {
-    width: 100%;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-  }
-
-  .arch-v2-btn {
-    height: 44px;
-    padding: 0 14px;
+  .arch-v2-canvas-tools .arch-v2-btn {
+    flex: 1 1 auto;
   }
 }
