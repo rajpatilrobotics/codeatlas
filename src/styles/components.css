@@ -3189,6 +3189,10 @@
   gap: 14px;
 }
 
+.ca-debug-graph-card {
+  grid-column: 1 / -1;
+}
+
 .ca-debug-summary {
   display: flex;
   flex-direction: column;
@@ -3375,6 +3379,261 @@
   border-radius: var(--radius-md);
   color: var(--text-secondary);
 }
+
+.ca-debug-flow-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ca-debug-flow-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+}
+
+.ca-debug-flow-header strong {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-primary);
+  font-size: 15px;
+}
+
+.ca-debug-flow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.ca-debug-flow-actions span {
+  padding: 6px 8px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: var(--radius-sm);
+  color: var(--warning);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.ca-debug-flow-actions button {
+  padding: 7px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ca-debug-flow-actions button:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-strong);
+}
+
+.ca-debug-flow-canvas {
+  height: 520px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 22%, rgba(139, 92, 246, 0.08), transparent 28%),
+    var(--bg-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+}
+
+.ca-debug-flow-canvas .react-flow {
+  background: transparent;
+}
+
+.ca-debug-flow-canvas .react-flow__node {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ca-debug-flow-node {
+  position: relative;
+  width: 230px;
+  min-height: 88px;
+  padding: 12px 14px;
+  background: rgba(24, 24, 27, 0.94);
+  border: 1px solid var(--border-default);
+  border-left: 4px solid rgba(255, 255, 255, 0.28);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+}
+
+.ca-debug-flow-handle {
+  width: 8px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+}
+
+.ca-debug-flow-node-kicker {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ca-debug-flow-node strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 15px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.ca-debug-flow-node > span {
+  display: block;
+  margin-top: 5px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.ca-debug-flow-node p {
+  display: -webkit-box;
+  margin: 8px 0 0;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.3;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.ca-debug-flow-node-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.ca-debug-flow-node-meta em {
+  padding: 3px 7px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.ca-debug-flow-node--error {
+  border-color: rgba(239, 68, 68, 0.4);
+  border-left-color: #ef4444;
+}
+
+.ca-debug-flow-node--stack {
+  border-left-color: #8b5cf6;
+}
+
+.ca-debug-flow-node--root-cause {
+  border-color: rgba(245, 158, 11, 0.52);
+  border-left-color: #f59e0b;
+}
+
+.ca-debug-flow-node--upstream {
+  border-left-color: #38bdf8;
+}
+
+.ca-debug-flow-node--downstream {
+  border-left-color: #22c55e;
+}
+
+.ca-debug-flow-node--same-module {
+  border-left-color: #a3a3a3;
+}
+
+.ca-debug-flow-canvas .react-flow__edge-path {
+  stroke: rgba(255, 255, 255, 0.34);
+}
+
+.ca-debug-flow-canvas .ca-debug-flow-edge--stack .react-flow__edge-path {
+  stroke: rgba(139, 92, 246, 0.78);
+}
+
+.ca-debug-flow-canvas .ca-debug-flow-edge--root-cause .react-flow__edge-path {
+  stroke: rgba(245, 158, 11, 0.86);
+}
+
+.ca-debug-flow-canvas .ca-debug-flow-edge--upstream .react-flow__edge-path {
+  stroke: rgba(56, 189, 248, 0.72);
+}
+
+.ca-debug-flow-canvas .ca-debug-flow-edge--downstream .react-flow__edge-path {
+  stroke: rgba(34, 197, 94, 0.72);
+}
+
+.ca-debug-flow-canvas .react-flow__edge-textbg {
+  fill: rgba(10, 10, 10, 0.78);
+}
+
+.ca-debug-flow-canvas .react-flow__controls {
+  background: rgba(18, 18, 20, 0.88);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.ca-debug-flow-canvas .react-flow__controls-button {
+  background: transparent;
+  border-bottom-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+.ca-debug-flow-canvas .react-flow__minimap {
+  width: 128px;
+  height: 88px;
+  opacity: 0.58;
+  background: rgba(0, 0, 0, 0.36);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+}
+
+.ca-debug-flow-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ca-debug-flow-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.ca-debug-flow-legend span::before {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  content: '';
+}
+
+.ca-debug-flow-legend .is-error::before { background: #ef4444; }
+.ca-debug-flow-legend .is-stack::before { background: #8b5cf6; }
+.ca-debug-flow-legend .is-root::before { background: #f59e0b; }
+.ca-debug-flow-legend .is-upstream::before { background: #38bdf8; }
+.ca-debug-flow-legend .is-downstream::before { background: #22c55e; }
 
 .ca-debug-reference-row {
   align-items: center;

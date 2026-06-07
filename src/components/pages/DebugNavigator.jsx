@@ -1,4 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import ReactFlow, { Background, Controls, Handle, MiniMap, Position } from 'reactflow';
+import 'reactflow/dist/style.css';
 import {
   AlertTriangle,
   Bug,
@@ -15,6 +17,7 @@ import Badge from '../ui/Badge';
 import Card from '../ui/Card';
 import EmptyState from '../ui/EmptyState';
 import { buildDebugTraceContext } from '../../utils/repository/buildDebugTraceContext';
+import { buildDebugTraceGraph } from '../../utils/repository/buildDebugTraceGraph';
 
 const EXAMPLE_INPUTS = [
   {
@@ -69,6 +72,32 @@ function DebugMetric({ label, value }) {
     </div>
   );
 }
+
+function DebugTraceNode({ data }) {
+  const type = data?.type || 'related';
+  const label = data?.label || 'Unknown';
+  const path = data?.path || '';
+  const reason = data?.reason || '';
+
+  return (
+    <div className={`ca-debug-flow-node ca-debug-flow-node--${type}`}>
+      <Handle type="target" position={Position.Left} className="ca-debug-flow-handle" />
+      <Handle type="source" position={Position.Right} className="ca-debug-flow-handle" />
+      <div className="ca-debug-flow-node-kicker">{type.replace(/-/g, ' ')}</div>
+      <strong title={label}>{label}</strong>
+      {path && <span title={path}>{path}</span>}
+      <div className="ca-debug-flow-node-meta">
+        {data?.confidence && <em>{data.confidence}</em>}
+        {data?.depth !== null && data?.depth !== undefined && <em>depth {data.depth}</em>}
+      </div>
+      {reason && <p title={reason}>{reason}</p>}
+    </div>
+  );
+}
+
+const DEBUG_TRACE_NODE_TYPES = {
+  debugTrace: DebugTraceNode,
+};
 
 function EmptyResult({ hasInput }) {
   return (
@@ -340,6 +369,89 @@ function DependencyTraceCard({ context }) {
   );
 }
 
+function DebugTraceGraphCard({ context, graphModel }) {
+  const reactFlowInstanceRef = useRef(null);
+  const hasNodes = graphModel.available && graphModel.nodes.length > 0;
+
+  const handleInit = useCallback((instance) => {
+    reactFlowInstanceRef.current = instance;
+    window.setTimeout(() => instance.fitView?.({ padding: 0.18, duration: 180 }), 80);
+  }, []);
+
+  const fitGraph = useCallback(() => {
+    reactFlowInstanceRef.current?.fitView?.({ padding: 0.18, duration: 180 });
+  }, []);
+
+  return (
+    <Card title="Debug Trace Graph" icon={Network} className="ca-debug-graph-card">
+      {!context.hasInput ? (
+        <EmptyResult hasInput={context.hasInput} />
+      ) : !hasNodes ? (
+        <div className="ca-debug-dependency-unavailable">
+          <AlertTriangle size={16} />
+          <span>{graphModel.reason || 'Dependency graph unavailable. Showing parser/list view only.'}</span>
+        </div>
+      ) : (
+        <div className="ca-debug-flow-shell">
+          <div className="ca-debug-flow-header">
+            <div>
+              <span className="ca-debug-label">Deterministic/probable trace</span>
+              <strong>{graphModel.summary.nodeCount} nodes · {graphModel.summary.edgeCount} edges</strong>
+            </div>
+            <div className="ca-debug-flow-actions">
+              {graphModel.summary.isLimited && <span>bounded view</span>}
+              <button type="button" onClick={fitGraph}>Fit</button>
+            </div>
+          </div>
+          <div className="ca-debug-flow-canvas">
+            <ReactFlow
+              nodes={graphModel.nodes}
+              edges={graphModel.edges}
+              nodeTypes={DEBUG_TRACE_NODE_TYPES}
+              onInit={handleInit}
+              fitView
+              fitViewOptions={{ padding: 0.18, minZoom: 0.28, maxZoom: 1.25 }}
+              minZoom={0.2}
+              maxZoom={1.6}
+              zoomOnScroll={false}
+              panOnScroll={false}
+              preventScrolling={false}
+              zoomOnPinch
+              panOnDrag
+              nodesDraggable={false}
+              nodesConnectable={false}
+              elementsSelectable
+              proOptions={{ hideAttribution: true }}
+            >
+              <Background color="rgba(255,255,255,0.06)" gap={18} size={1} />
+              <Controls showInteractive={false} />
+              <MiniMap
+                nodeColor={node => {
+                  const type = node.data?.type;
+                  if (type === 'error') return '#ef4444';
+                  if (type === 'root-cause') return '#f59e0b';
+                  if (type === 'stack') return '#8b5cf6';
+                  if (type === 'upstream') return '#38bdf8';
+                  if (type === 'downstream') return '#22c55e';
+                  return '#737373';
+                }}
+                maskColor="rgba(0,0,0,0.78)"
+              />
+            </ReactFlow>
+          </div>
+          <div className="ca-debug-flow-legend">
+            <span className="is-error">Error</span>
+            <span className="is-stack">Stack file</span>
+            <span className="is-root">Root cause</span>
+            <span className="is-upstream">Upstream</span>
+            <span className="is-downstream">Downstream</span>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function ValidationCard({ context }) {
   return (
     <Card title="Validation Checklist" icon={CheckCircle2}>
@@ -392,6 +504,7 @@ function DebugNavigator({
     repoData,
     codeAnalysis,
   }), [errorText, repoData, codeAnalysis]);
+  const graphModel = useMemo(() => buildDebugTraceGraph(debugContext), [debugContext]);
 
   if (!hasRepository) {
     return (
@@ -481,6 +594,7 @@ function DebugNavigator({
         <RootCauseCard context={debugContext} />
         <MatchedFilesCard context={debugContext} />
         <DependencyTraceCard context={debugContext} />
+        <DebugTraceGraphCard context={debugContext} graphModel={graphModel} />
         <InspectionCard context={debugContext} />
         <RelatedFilesCard context={debugContext} />
         <ValidationCard context={debugContext} />
