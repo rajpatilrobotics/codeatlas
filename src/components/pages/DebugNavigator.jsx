@@ -5,6 +5,8 @@ import {
   AlertTriangle,
   Bug,
   CheckCircle2,
+  Clipboard,
+  Download,
   FileSearch,
   GitBranch,
   Lightbulb,
@@ -50,6 +52,11 @@ const INITIAL_AI_DEBUG_STATE = {
   error: '',
 };
 
+const INITIAL_REPORT_FEEDBACK = {
+  status: 'idle',
+  message: '',
+};
+
 function getRepositoryFileCount(repoData) {
   if (Array.isArray(repoData?.fileTree)) return repoData.fileTree.length;
   if (Array.isArray(repoData?.fileStructure)) return repoData.fileStructure.length;
@@ -70,6 +77,37 @@ function getConfidenceVariant(confidence) {
 function formatConfidence(confidence) {
   if (!confidence || confidence === 'none') return 'No trace yet';
   return `${confidence.charAt(0).toUpperCase()}${confidence.slice(1)} confidence`;
+}
+
+function formatListForMarkdown(items, formatter = item => item) {
+  const list = safeArray(items).map(formatter).filter(Boolean);
+  return list.length > 0 ? list.map(item => `- ${item}`).join('\n') : '- None detected';
+}
+
+function getDependencyMode(context) {
+  const trace = context?.dependencyTrace;
+  if (!context?.hasInput) return { label: 'Parser ready', variant: 'info', detail: 'Waiting for debug input.' };
+  if (trace?.available) {
+    return {
+      label: 'Dependency-aware',
+      variant: trace.coverage?.graphBackedSeeds > 0 ? 'success' : 'warning',
+      detail: `${trace.coverage?.graphBackedSeeds || 0} graph-backed seed${trace.coverage?.graphBackedSeeds === 1 ? '' : 's'}`,
+    };
+  }
+  return {
+    label: 'Parser-only',
+    variant: 'warning',
+    detail: trace?.reason || 'Dependency graph unavailable.',
+  };
+}
+
+function isLimitedParserContext(context) {
+  return Boolean(
+    context?.hasInput &&
+    safeArray(context.parsedFrames).length === 0 &&
+    safeArray(context.apiRoutes).length === 0 &&
+    safeArray(context.matchedFiles).length === 0
+  );
 }
 
 function redactDebugText(value) {
@@ -208,12 +246,86 @@ function buildDebugAIPayload(debugContext, errorText, repoData) {
   };
 }
 
+function buildDebugReportMarkdown(debugContext, errorText, aiDebugState) {
+  const topCandidate = safeArray(debugContext.rootCauseCandidates)[0];
+  const aiAnalysis = aiDebugState.analysis;
+  const dependencyMode = getDependencyMode(debugContext);
+  const redactedInput = redactDebugText(errorText).trim();
+
+  return [
+    '# CodeAtlas Debug Report',
+    '',
+    '## Status',
+    `- Mode: ${aiDebugState.status === 'enhanced' ? 'AI enhanced' : aiDebugState.status === 'fallback' ? 'Local fallback' : 'Deterministic local'}`,
+    `- Confidence: ${formatConfidence(debugContext.confidence)}`,
+    `- Dependency context: ${dependencyMode.label} (${dependencyMode.detail})`,
+    `- Parsed frames: ${debugContext.coverage.parsedFrames}`,
+    `- Matched files: ${debugContext.coverage.matchedFiles}`,
+    '',
+    '## Error Summary',
+    `- Type: ${debugContext.errorSummary.type}`,
+    `- Message: ${debugContext.errorSummary.message}`,
+    '',
+    '## Redacted Input',
+    redactedInput ? `\`\`\`text\n${redactedInput}\n\`\`\`` : '_No input provided._',
+    '',
+    '## Inspect First',
+    topCandidate
+      ? [
+          `- File: ${topCandidate.path}`,
+          `- Score: ${topCandidate.score}`,
+          `- Confidence: ${topCandidate.confidence}`,
+          `- Hypothesis: ${topCandidate.hypothesis?.label || 'General stack-frame failure'}`,
+          `- Reason: ${topCandidate.reason}`,
+        ].join('\n')
+      : '- No repository-backed root-cause candidate yet.',
+    '',
+    '## AI Analysis',
+    aiAnalysis
+      ? [
+          `- Summary: ${aiAnalysis.summary || 'Not provided'}`,
+          `- Probable root cause: ${aiAnalysis.probableRootCause || 'Not provided'}`,
+          `- Confidence: ${aiAnalysis.confidence || 'medium'}`,
+          '',
+          '### Suggested fixes',
+          formatListForMarkdown(aiAnalysis.suggestedFixes),
+        ].join('\n')
+      : '- AI enhancement has not been run.',
+    '',
+    '## Matched Files',
+    formatListForMarkdown(debugContext.matchedFiles, file => {
+      const line = file.references?.[0]?.line ? ` line ${file.references[0].line}` : '';
+      return `${file.path}${line} — ${file.reasons?.[0] || file.matchType || 'matched file'}`;
+    }),
+    '',
+    '## Dependency Trace',
+    debugContext.dependencyTrace?.available
+      ? formatListForMarkdown(debugContext.dependencyTrace.relatedFiles?.slice(0, 12), file => (
+          `${file.path} — ${file.reason || file.relationship || file.direction || 'related'}`
+        ))
+      : `- ${debugContext.dependencyTrace?.reason || 'Dependency graph unavailable.'}`,
+    '',
+    '## Inspection Order',
+    formatListForMarkdown(debugContext.inspectionOrder, item => (
+      `${item.path}${item.line ? ` line ${item.line}` : ''} — ${item.reason}`
+    )),
+    '',
+    '## Validation Checklist',
+    formatListForMarkdown(debugContext.validationChecklist, item => (
+      `${item.label}${item.command ? ` (${item.command})` : ''} — ${item.detail}`
+    )),
+    '',
+    '## Missing Context / Warnings',
+    formatListForMarkdown(debugContext.warnings),
+  ].join('\n');
+}
+
 function getDebugAIStatus(aiDebugState) {
   if (aiDebugState.status === 'loading') {
     return {
       label: 'Enhancing...',
       variant: 'medium',
-      detail: 'AI is reviewing the deterministic trace context.',
+      detail: 'AI is reviewing the trace; deterministic local analysis remains visible.',
     };
   }
   if (aiDebugState.status === 'enhanced') {
@@ -227,7 +339,7 @@ function getDebugAIStatus(aiDebugState) {
     return {
       label: 'Local fallback',
       variant: 'warning',
-      detail: aiDebugState.error || 'AI is unavailable right now; local deterministic analysis is still ready.',
+      detail: aiDebugState.error || 'AI is unavailable or returned unusable output; deterministic local analysis is still ready.',
     };
   }
 
@@ -244,6 +356,61 @@ function DebugMetric({ label, value }) {
       <span>{label}</span>
       <strong>{value}</strong>
     </div>
+  );
+}
+
+function DebugInspectSummary({ context }) {
+  const topCandidate = safeArray(context.rootCauseCandidates)[0];
+  const dependencyMode = getDependencyMode(context);
+
+  if (!context.hasInput) {
+    return (
+      <section className="ca-debug-inspect-summary ca-debug-inspect-summary--empty">
+        <div>
+          <span className="ca-debug-eyebrow">Inspect first</span>
+          <strong>Paste an error to build a debug report.</strong>
+          <p>Stack traces, API errors, browser console errors, and bug descriptions are parsed locally before AI enhancement.</p>
+        </div>
+        <Badge variant="info">Ready</Badge>
+      </section>
+    );
+  }
+
+  if (!topCandidate) {
+    return (
+      <section className="ca-debug-inspect-summary ca-debug-inspect-summary--limited">
+        <div>
+          <span className="ca-debug-eyebrow">Inspect first</span>
+          <strong>Limited parser context</strong>
+          <p>Add a file path, route, line number, function name, or stack frame to map this error to repository files.</p>
+        </div>
+        <div className="ca-debug-summary-badges">
+          <Badge variant="warning">Low confidence</Badge>
+          <Badge variant={dependencyMode.variant}>{dependencyMode.label}</Badge>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="ca-debug-inspect-summary">
+      <div>
+        <span className="ca-debug-eyebrow">Inspect first</span>
+        <strong>{topCandidate.path}</strong>
+        <p>{topCandidate.hypothesis?.label || topCandidate.reason || 'Review this matched file first.'}</p>
+      </div>
+      <div className="ca-debug-summary-badges">
+        <Badge variant={getConfidenceVariant(topCandidate.confidence)}>
+          {topCandidate.score} score
+        </Badge>
+        <Badge variant={getConfidenceVariant(context.confidence)}>
+          {formatConfidence(context.confidence)}
+        </Badge>
+        <Badge variant={dependencyMode.variant}>{dependencyMode.label}</Badge>
+        <span>{context.coverage.parsedFrames} frames</span>
+        <span>{context.coverage.matchedFiles} matches</span>
+      </div>
+    </section>
   );
 }
 
@@ -280,9 +447,23 @@ function EmptyResult({ hasInput }) {
       <strong>{hasInput ? 'No repository match yet' : 'Paste an error to start'}</strong>
       <span>
         {hasInput
-          ? 'The local parser did not find a repository-backed file path. Add a file, function, route, or stack frame for stronger matching.'
-          : 'Debug Navigator will parse stack frames, routes, status codes, and file references locally.'}
+          ? 'The local parser did not find a repository-backed file path. Add a file, function, route, line number, or stack frame for stronger matching.'
+          : 'Debug Navigator parses stack traces, API errors, browser console errors, and bug descriptions locally before optional AI enhancement.'}
       </span>
+    </div>
+  );
+}
+
+function LimitedContextNotice({ context }) {
+  if (!isLimitedParserContext(context)) return null;
+
+  return (
+    <div className="ca-debug-limited-notice">
+      <AlertTriangle size={16} />
+      <div>
+        <strong>Limited parser context</strong>
+        <span>Add a stack frame, repository path, API route, line number, or function name to unlock matched files, dependency-aware tracing, and stronger root-cause scoring.</span>
+      </div>
     </div>
   );
 }
@@ -840,6 +1021,7 @@ function DebugNavigator({
 }) {
   const [errorText, setErrorText] = useState('');
   const [aiDebugState, setAIDebugState] = useState(INITIAL_AI_DEBUG_STATE);
+  const [reportFeedback, setReportFeedback] = useState(INITIAL_REPORT_FEEDBACK);
   const repositoryFileCount = getRepositoryFileCount(repoData);
   const hasRepository = repositoryFileCount > 0;
   const hasArchitectureContext = Boolean(detailedArchitecture || repoData?.techStack);
@@ -852,14 +1034,24 @@ function DebugNavigator({
   }), [errorText, repoData, codeAnalysis]);
   const graphModel = useMemo(() => buildDebugTraceGraph(debugContext), [debugContext]);
   const aiStatus = getDebugAIStatus(aiDebugState);
+  const dependencyMode = getDependencyMode(debugContext);
   const canEnhanceWithAI = Boolean(
     debugContext.hasInput &&
     (debugContext.parsedFrames.length > 0 || debugContext.matchedFiles.length > 0 || debugContext.rootCauseCandidates.length > 0)
   );
+  const canExportReport = Boolean(debugContext.hasInput);
 
   const updateErrorText = useCallback((value) => {
     setErrorText(value);
     setAIDebugState(INITIAL_AI_DEBUG_STATE);
+    setReportFeedback(INITIAL_REPORT_FEEDBACK);
+  }, []);
+
+  const showReportFeedback = useCallback((status, message) => {
+    setReportFeedback({ status, message });
+    window.setTimeout(() => {
+      setReportFeedback(INITIAL_REPORT_FEEDBACK);
+    }, 2400);
   }, []);
 
   const handleEnhanceWithAI = useCallback(async () => {
@@ -901,6 +1093,38 @@ function DebugNavigator({
       });
     }
   }, [aiDebugState.status, canEnhanceWithAI, debugContext, errorText, repoData]);
+
+  const handleCopyReport = useCallback(async () => {
+    if (!canExportReport) return;
+
+    try {
+      const markdown = buildDebugReportMarkdown(debugContext, errorText, aiDebugState);
+      await navigator.clipboard.writeText(markdown);
+      showReportFeedback('success', 'Debug report copied to clipboard.');
+    } catch (error) {
+      showReportFeedback('error', error?.message || 'Could not copy debug report.');
+    }
+  }, [aiDebugState, canExportReport, debugContext, errorText, showReportFeedback]);
+
+  const handleExportReport = useCallback(() => {
+    if (!canExportReport) return;
+
+    try {
+      const markdown = buildDebugReportMarkdown(debugContext, errorText, aiDebugState);
+      const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = 'codeatlas-debug-report.md';
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+      showReportFeedback('success', 'Markdown report exported.');
+    } catch (error) {
+      showReportFeedback('error', error?.message || 'Could not export debug report.');
+    }
+  }, [aiDebugState, canExportReport, debugContext, errorText, showReportFeedback]);
 
   if (!hasRepository) {
     return (
@@ -957,6 +1181,8 @@ function DebugNavigator({
         <Badge variant={getConfidenceVariant(debugContext.confidence)}>
           {formatConfidence(debugContext.confidence)}
         </Badge>
+        <Badge variant="info">Deterministic local</Badge>
+        <Badge variant={dependencyMode.variant}>{dependencyMode.label}</Badge>
         <span>{debugContext.coverage.parsedFrames} parsed frames</span>
         <span>{debugContext.coverage.matchedFiles} matched files</span>
         <span>{debugContext.apiRoutes.length} API routes</span>
@@ -970,17 +1196,34 @@ function DebugNavigator({
           {aiDebugState.status === 'loading' && <Loader2 size={15} className="ca-debug-loading-icon" />}
           <span>{aiStatus.detail}</span>
         </div>
-        <button
-          type="button"
-          onClick={handleEnhanceWithAI}
-          disabled={!canEnhanceWithAI || aiDebugState.status === 'loading'}
-        >
-          <Sparkles size={15} />
-          Enhance with AI
-        </button>
+        <div className="ca-debug-report-actions">
+          <button
+            type="button"
+            onClick={handleEnhanceWithAI}
+            disabled={!canEnhanceWithAI || aiDebugState.status === 'loading'}
+          >
+            <Sparkles size={15} />
+            Enhance with AI
+          </button>
+          <button type="button" onClick={handleCopyReport} disabled={!canExportReport}>
+            <Clipboard size={15} />
+            Copy Report
+          </button>
+          <button type="button" onClick={handleExportReport} disabled={!canExportReport}>
+            <Download size={15} />
+            Export Markdown
+          </button>
+        </div>
       </div>
 
+      {reportFeedback.message && (
+        <div className={`ca-debug-report-feedback ca-debug-report-feedback--${reportFeedback.status}`}>
+          {reportFeedback.message}
+        </div>
+      )}
+
       <WarningsCard warnings={debugContext.warnings} />
+      <LimitedContextNotice context={debugContext} />
 
       <div className="ca-debug-quick-links" role="toolbar" aria-label="Debug Navigator quick links">
         <button type="button" onClick={() => onNavigate?.('repository-graph')}>
@@ -1000,6 +1243,8 @@ function DebugNavigator({
           Open Architecture V2
         </button>
       </div>
+
+      <DebugInspectSummary context={debugContext} />
 
       <div className="ca-debug-grid">
         <ErrorSummaryCard context={debugContext} />
