@@ -1215,7 +1215,14 @@ const handleAnalyze = async (urlOverride) => {
           />
         );
       case 'planner':
-        return <Planner />;
+        return (
+          <Planner
+            repoData={repoData}
+            codeAnalysis={codeAnalysis}
+            firstContributions={firstContributions}
+            onNavigate={setActiveTab}
+          />
+        );
       case 'debug-navigator':
         return <DebugNavigator />;
       case 'heatmap':
