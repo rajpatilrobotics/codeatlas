@@ -354,6 +354,8 @@ function buildMatchedFiles(frames, repoFiles, codeAnalysis) {
       reasons: [],
       alternatives: [],
       hasCodeAnalysis: codeFiles.has(match.path),
+      hasFunctionMatch: false,
+      functionMatches: [],
     };
 
     const codeMeta = codeFiles.get(match.path);
@@ -374,6 +376,10 @@ function buildMatchedFiles(frames, repoFiles, codeAnalysis) {
       functionName: frame.functionName,
       stackPosition: index + 1,
     });
+    existing.hasFunctionMatch = existing.hasFunctionMatch || functionMatched;
+    if (functionMatched && frame.functionName) {
+      existing.functionMatches = unique([...(existing.functionMatches || []), frame.functionName]).slice(0, 5);
+    }
     existing.reasons.push(
       `${match.matchType.replace(/-/g, ' ')} match for "${frame.fileReference}"`,
       frame.line ? `Stack trace points to line ${frame.line}` : '',
@@ -767,22 +773,515 @@ function buildValidationChecklist(repoData, errorSummary, matchedFiles) {
   return checklist.slice(0, 6);
 }
 
-function buildRootCauseCandidates(matchedFiles, errorSummary) {
+function clampScore(score) {
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function addEvidence(evidence, label, detail, weight) {
+  if (!label || !detail) return 0;
+  evidence.push({ label, detail, weight });
+  return weight || 0;
+}
+
+function getPrimaryReference(file) {
+  return safeArray(file?.references)
+    .filter(Boolean)
+    .sort((a, b) => (a.stackPosition || 99) - (b.stackPosition || 99))[0] || null;
+}
+
+function getMatchWeight(matchType) {
+  const value = String(matchType || '').toLowerCase();
+  if (value === 'exact' || value === 'normalized') return 25;
+  if (value === 'suffix') return 14;
+  if (value === 'basename') return 10;
+  if (value.includes('ambiguous')) return -8;
+  return 0;
+}
+
+function getFileSignals(path) {
+  const value = String(path || '').toLowerCase();
+  const filename = getFilename(value);
+  return {
+    api: /(^|\/)(api|routes?|controllers?|handlers?|endpoints?)(\/|$)|api_|_api|route/.test(value),
+    auth: /auth|oauth|login|logout|session|token|jwt|permission|middleware/.test(value),
+    database: /database|db|sql|sqlite|postgres|mysql|model|schema|storage|cache|persist/.test(value),
+    config: /config|settings|\.env|env\.|environment|secrets?|credential|\.ya?ml$|\.toml$|\.ini$|\.json$/.test(value),
+    env: /(^|\/)\.env|env\.|environment|secrets?|credential/.test(value),
+    packageFile: /package\.json|package-lock\.json|pnpm-lock|yarn\.lock|requirements\.txt|pyproject\.toml|poetry\.lock|pom\.xml|build\.gradle|go\.mod/.test(filename),
+    build: /webpack|vite|babel|tsconfig|dockerfile|docker-compose|makefile|ci|workflow|build|gradle|pom\.xml/.test(value),
+    frontend: /jsx|tsx|react|component|frontend|ui|view|page|static|client/.test(value),
+    security: /security|secret|credential|csrf|jwt|token|auth|oauth|permission/.test(value),
+    route: /route|router|navigation|endpoint|url/.test(value),
+    test: /(^|\/)(tests?|spec|__tests__)(\/|$)|\.test\.|\.spec\./.test(value),
+  };
+}
+
+function getErrorText(errorSummary) {
+  return `${errorSummary?.type || ''} ${errorSummary?.message || ''} ${errorSummary?.rawFirstLine || ''}`.toLowerCase();
+}
+
+function inferHypothesis(errorSummary, file, signals) {
+  const text = getErrorText(errorSummary);
+  const matched = regex => regex.test(text);
+
+  if (matched(/undefined|null|none|nullreference|nonetype|cannot read|cannot access|property .* undefined|map.*undefined|attributeerror|keyerror/)) {
+    return {
+      type: 'null-undefined-access',
+      label: 'Null/undefined access',
+      confidence: 'high',
+      rationale: 'Error text points to a missing value or unsafe property access.',
+    };
+  }
+
+  if (matched(/not configured|environment|env\b|api key|token not configured|missing.*config|credential|secret|configuration/)) {
+    return {
+      type: 'config-env',
+      label: 'Config or environment issue',
+      confidence: signals.config || signals.env || signals.api || signals.security ? 'high' : 'medium',
+      rationale: 'Error text points to missing runtime configuration, credentials, or environment setup.',
+    };
+  }
+
+  if (matched(/module not found|cannot find module|no module named|importerror|export .* not found|missing export|module resolution/)) {
+    return {
+      type: 'import-export',
+      label: 'Missing import/export or module resolution',
+      confidence: signals.packageFile || signals.build ? 'high' : 'medium',
+      rationale: 'Error text points to import, export, or local module resolution failure.',
+    };
+  }
+
+  if (matched(/database|sqlite|sql|db\b|connection failed|connection refused|persist|migration|schema|storage/)) {
+    return {
+      type: 'database-persistence',
+      label: 'Database or persistence issue',
+      confidence: signals.database ? 'high' : 'medium',
+      rationale: 'Error text or file path points to database access, connection, schema, or persistence behavior.',
+    };
+  }
+
+  if (matched(/401|403|unauthorized|forbidden|auth|oauth|session|login|permission|jwt|invalid token|token payload/)) {
+    return {
+      type: 'auth-session',
+      label: 'Authentication or session issue',
+      confidence: signals.auth || signals.security ? 'high' : 'medium',
+      rationale: 'Error text points to authentication, authorization, token, or session handling.',
+    };
+  }
+
+  if (matched(/404|not found|route|router|navigation|redirect|endpoint|url/)) {
+    return {
+      type: 'routing-navigation',
+      label: 'Routing or navigation issue',
+      confidence: signals.route || signals.api ? 'high' : 'medium',
+      rationale: 'Error text points to route registration, navigation, or endpoint lookup.',
+    };
+  }
+
+  if (matched(/500|502|503|504|fetch|network|request|response|timeout|http|api|json|payload|body|schema|validation|invalid.*response/)) {
+    return {
+      type: matched(/json|payload|body|schema|validation|invalid.*response/) ? 'response-validation' : 'async-api-network',
+      label: matched(/json|payload|body|schema|validation|invalid.*response/)
+        ? 'Missing API response validation'
+        : 'Async, network, or API failure',
+      confidence: signals.api ? 'high' : 'medium',
+      rationale: 'Error text points to request handling, response shape, status handling, or async failure.',
+    };
+  }
+
+  if (matched(/syntaxerror|compile|build failed|dependency|package|version|lockfile|webpack|vite|babel|typescript|typecheck/)) {
+    return {
+      type: 'build-package',
+      label: 'Build, package, or module setup issue',
+      confidence: signals.packageFile || signals.build ? 'high' : 'medium',
+      rationale: 'Error text points to build tooling, dependency versions, or package setup.',
+    };
+  }
+
+  if (signals.database) {
+    return {
+      type: 'database-persistence',
+      label: 'Database or persistence issue',
+      confidence: 'low',
+      rationale: 'The matched file is in a database-related path, but the error text is not specific.',
+    };
+  }
+
+  if (signals.auth || signals.security) {
+    return {
+      type: 'auth-session',
+      label: 'Authentication or session issue',
+      confidence: 'low',
+      rationale: 'The matched file is auth/security-related, but the error text is not specific.',
+    };
+  }
+
+  return {
+    type: 'general-stack-frame',
+    label: 'General stack-frame failure',
+    confidence: 'low',
+    rationale: `The parser matched ${file?.path || 'a repository file'}, but the error text does not identify a specific failure family.`,
+  };
+}
+
+function buildTraceRoleMap(dependencyTrace) {
+  const roleMap = new Map();
+
+  safeArray(dependencyTrace?.seedFiles).forEach(file => {
+    if (file?.path) roleMap.set(file.path, file);
+  });
+  safeArray(dependencyTrace?.relatedFiles).forEach(file => {
+    if (file?.path && !roleMap.has(file.path)) roleMap.set(file.path, file);
+  });
+
+  return roleMap;
+}
+
+function getDependencyRoleWeight(traceRole) {
+  if (!traceRole) return 0;
+  if (traceRole.direction === 'mentioned') return 18;
+  if (traceRole.direction === 'same-module') return 2;
+  if (traceRole.depth === 1) return 10;
+  if (traceRole.depth === 2) return 4;
+  return 0;
+}
+
+function addContextualSignalEvidence(evidence, hypothesis, signals, file, errorText) {
+  let score = 0;
+  const add = (label, detail, weight) => {
+    score += addEvidence(evidence, label, detail, weight);
+  };
+
+  if (file.module && file.module !== 'root') {
+    add('Repository layer', `File is in the ${file.module}/ area`, 4);
+  }
+
+  if (hypothesis.type === 'database-persistence' && signals.database) {
+    add('File type signal', 'Path is database, model, schema, storage, or persistence related', 14);
+  }
+  if (hypothesis.type === 'auth-session' && (signals.auth || signals.security)) {
+    add('File type signal', 'Path is authentication, token, session, or security related', 14);
+  }
+  if ((hypothesis.type === 'async-api-network' || hypothesis.type === 'response-validation') && signals.api) {
+    add('File type signal', 'Path is API, route, handler, or endpoint related', 12);
+  }
+  if (hypothesis.type === 'routing-navigation' && (signals.route || signals.api)) {
+    add('File type signal', 'Path is route, router, navigation, or endpoint related', 12);
+  }
+  if (hypothesis.type === 'config-env' && (signals.config || signals.env)) {
+    add('Config signal', 'Path is configuration, environment, credential, or settings related', 14);
+  }
+  if (hypothesis.type === 'config-env' && signals.api) {
+    add('API boundary signal', 'Runtime configuration issue is surfaced from an API/server path', 6);
+  }
+  if ((hypothesis.type === 'import-export' || hypothesis.type === 'build-package') && (signals.packageFile || signals.build)) {
+    add('Build/package signal', 'Path is package, dependency, build, or workflow related', 14);
+  }
+  if (/security|secret|credential|token|auth|permission|csrf|jwt/.test(errorText) && signals.security) {
+    add('Risky module signal', 'Error text and path both reference security-sensitive behavior', 12);
+  }
+  if (hypothesis.type === 'null-undefined-access' && (signals.frontend || signals.api)) {
+    add('Access boundary signal', 'Path is a UI/API boundary where missing response data often surfaces', 6);
+  }
+
+  return score;
+}
+
+function selectValidationScripts(repoData, hypothesisType) {
+  const scripts = getScriptEntries(repoData);
+  const priorityByType = {
+    'null-undefined-access': ['test', 'typecheck', 'lint', 'build', 'check'],
+    'response-validation': ['test', 'build', 'lint', 'typecheck', 'check'],
+    'config-env': ['build', 'test', 'lint', 'check'],
+    'async-api-network': ['test', 'build', 'lint', 'check'],
+    'auth-session': ['test', 'lint', 'build', 'check'],
+    'database-persistence': ['test', 'build', 'lint', 'check'],
+    'routing-navigation': ['test', 'build', 'lint', 'check'],
+    'import-export': ['build', 'test', 'typecheck', 'lint', 'check'],
+    'build-package': ['build', 'test', 'lint', 'check'],
+  };
+  const priority = priorityByType[hypothesisType] || ['test', 'lint', 'build', 'typecheck', 'check'];
+
+  return [...scripts]
+    .sort((a, b) => {
+      const aIndex = priority.findIndex(item => a.name.toLowerCase().includes(item));
+      const bIndex = priority.findIndex(item => b.name.toLowerCase().includes(item));
+      return (aIndex === -1 ? 99 : aIndex) - (bIndex === -1 ? 99 : bIndex) || a.name.localeCompare(b.name);
+    })
+    .slice(0, 2);
+}
+
+function buildCandidateValidationChecks(repoData, hypothesis, file) {
+  const checks = selectValidationScripts(repoData, hypothesis.type).map(script => ({
+    label: `Run npm script: ${script.name}`,
+    command: `npm run ${script.name}`,
+    detail: script.command,
+  }));
+
+  const manualByType = {
+    'null-undefined-access': 'Reproduce the stack path and verify the value is present before property/map access.',
+    'response-validation': 'Exercise the failing API response shape and verify empty/error payload handling.',
+    'config-env': 'Verify the required local/server environment value is present without printing secret contents.',
+    'async-api-network': 'Replay the failing request and confirm status, timeout, and response parsing behavior.',
+    'auth-session': 'Test the failing auth/session path with valid, missing, and expired credentials.',
+    'database-persistence': 'Run the failing database path and confirm connection, schema, and persistence assumptions.',
+    'routing-navigation': 'Open the route or endpoint directly and confirm the registered handler is reached.',
+    'import-export': 'Import the module from the closest entrypoint and confirm the symbol resolves.',
+    'build-package': 'Run the build or install path that exercises the dependency/config file.',
+  };
+
+  checks.push({
+    label: 'Reproduce original error',
+    command: '',
+    detail: manualByType[hypothesis.type] || `Re-run the failing flow after inspecting ${file.path}.`,
+  });
+
+  return checks.slice(0, 4);
+}
+
+function buildInspectionSteps(file, hypothesis, traceRole) {
+  const reference = getPrimaryReference(file);
+  const steps = [
+    reference?.line
+      ? `Open ${file.path} at line ${reference.line}${reference.column ? `:${reference.column}` : ''}.`
+      : `Open ${file.path} and inspect the matched repository location.`,
+  ];
+
+  if (reference?.functionName) {
+    steps.push(`Inspect ${reference.functionName} and its immediate inputs/return value.`);
+  }
+
+  const typeSteps = {
+    'null-undefined-access': 'Trace the value used at the failing access and confirm where it can become missing.',
+    'response-validation': 'Inspect request/response parsing and add validation at the boundary that receives external data.',
+    'config-env': 'Follow the config lookup path and confirm required variables are loaded before the handler runs.',
+    'async-api-network': 'Trace the async request path, status handling, timeout behavior, and error propagation.',
+    'auth-session': 'Check token/session parsing, middleware ordering, and unauthorized/expired-token branches.',
+    'database-persistence': 'Check connection setup, query inputs, schema assumptions, and error handling around persistence.',
+    'routing-navigation': 'Verify the route is registered and that callers use the same method/path signature.',
+    'import-export': 'Compare the imported symbol/name with the module export and local file resolution.',
+    'build-package': 'Check package/build config, dependency version, and generated/runtime path assumptions.',
+  };
+
+  if (typeSteps[hypothesis.type]) steps.push(typeSteps[hypothesis.type]);
+  if (traceRole?.sourcePath && traceRole.sourcePath !== file.path) {
+    steps.push(`Compare this file with dependency seed ${traceRole.sourcePath}.`);
+  }
+
+  return unique(steps).slice(0, 4);
+}
+
+function buildSafeFixHints(hypothesis) {
+  const hintsByType = {
+    'null-undefined-access': [
+      'Add a narrow guard or default value at the data boundary, not a broad catch-all.',
+      'Preserve existing behavior for valid values and add a focused regression test.',
+    ],
+    'response-validation': [
+      'Validate response shape before consuming nested fields or arrays.',
+      'Return a clear error/empty state for malformed payloads instead of throwing downstream.',
+    ],
+    'config-env': [
+      'Fail early with a clear missing-config message while keeping secret values hidden.',
+      'Keep local env setup out of commits and document only variable names.',
+    ],
+    'async-api-network': [
+      'Handle non-2xx responses, timeouts, and parse errors at the request boundary.',
+      'Keep retry/fallback behavior bounded so failures remain visible.',
+    ],
+    'auth-session': [
+      'Handle missing, invalid, and expired credentials explicitly.',
+      'Avoid widening auth bypass logic while fixing the failing path.',
+    ],
+    'database-persistence': [
+      'Validate connection/config before queries and keep database errors actionable.',
+      'Add a focused test around the query or connection path that failed.',
+    ],
+    'routing-navigation': [
+      'Align caller method/path with the registered route and preserve existing route aliases.',
+      'Add a smoke check for the endpoint or navigation path.',
+    ],
+    'import-export': [
+      'Fix the import/export name or local module path closest to the failing frame.',
+      'Avoid broad path alias changes unless the failure proves the alias is wrong.',
+    ],
+    'build-package': [
+      'Update only the package/build config involved in the failure.',
+      'Run build after the fix to catch dependency or bundler regressions.',
+    ],
+  };
+
+  return hintsByType[hypothesis.type] || [
+    'Make the smallest local fix around the matched frame.',
+    'Re-run the failing flow before broad refactors.',
+  ];
+}
+
+function buildMissingContext(file, hypothesis, traceRole) {
+  const reference = getPrimaryReference(file);
+  const missing = [];
+
+  if (!reference?.line) missing.push('No line number was available for this candidate.');
+  if (!reference?.functionName) missing.push('No function name was extracted for this stack frame.');
+  if (reference?.functionName && !file.hasFunctionMatch) {
+    missing.push('Code analysis did not confirm the stack function/class name.');
+  }
+  if (!file.hasCodeAnalysis) missing.push('Code analysis metadata was unavailable for this file.');
+  if (!traceRole) missing.push('Dependency graph role was unavailable for this candidate.');
+  if (hypothesis.type === 'general-stack-frame') {
+    missing.push('Error text did not match a specific deterministic failure family.');
+  }
+
+  return unique(missing).slice(0, 4);
+}
+
+function buildDirectDependencyCandidates(dependencyTrace, matchedFiles, codeAnalysis) {
+  const matchedPaths = new Set(safeArray(matchedFiles).map(file => file.path));
+  const codeFiles = getCodeAnalysisFileMap(codeAnalysis);
+
+  return safeArray(dependencyTrace?.relatedFiles)
+    .filter(file => (
+      file?.path &&
+      !matchedPaths.has(file.path) &&
+      file.graphBacked &&
+      file.depth === 1 &&
+      file.confidence === 'high' &&
+      (file.direction === 'upstream' || file.direction === 'downstream')
+    ))
+    .slice(0, 5)
+    .map(file => ({
+      path: file.path,
+      filename: file.filename || getFilename(file.path),
+      directory: file.directory || getDirectory(file.path),
+      module: file.module || getTopLevelModule(file.path),
+      matchType: 'dependency-neighbor',
+      confidence: file.confidence,
+      score: 0,
+      references: [],
+      reasons: safeArray(file.reasons).length > 0 ? file.reasons : [file.reason || file.relationship],
+      alternatives: [],
+      hasCodeAnalysis: codeFiles.has(file.path),
+      hasFunctionMatch: false,
+      functionMatches: [],
+      dependencyOnly: true,
+    }));
+}
+
+function scoreRootCauseCandidate(file, index, context) {
+  const { errorSummary, repoData } = context;
+  const errorText = getErrorText(errorSummary);
+  const signals = getFileSignals(file.path);
+  const hypothesis = inferHypothesis(errorSummary, file, signals);
+  const traceRole = context.traceRoleMap.get(file.path);
+  const evidence = [];
+  let score = 0;
+
+  const matchWeight = getMatchWeight(file.matchType);
+  if (matchWeight !== 0) {
+    score += addEvidence(
+      evidence,
+      'Path match',
+      `${String(file.matchType).replace(/-/g, ' ')} repository match`,
+      matchWeight
+    );
+  }
+
+  const reference = getPrimaryReference(file);
+  if (reference) {
+    const stackWeight = Math.max(4, 24 - ((reference.stackPosition || 1) - 1) * 4);
+    score += addEvidence(evidence, 'Stack order', `Frame ${reference.stackPosition || 1} in the pasted trace`, stackWeight);
+    if (reference.line) score += addEvidence(evidence, 'Line number', `Stack trace points to line ${reference.line}`, 12);
+    if (reference.column) score += addEvidence(evidence, 'Column number', `Stack trace points to column ${reference.column}`, 4);
+  }
+
+  if (file.hasFunctionMatch) {
+    score += addEvidence(
+      evidence,
+      'Code analysis match',
+      `${safeArray(file.functionMatches)[0] || 'Stack function'} appears in code analysis metadata`,
+      16
+    );
+  }
+
+  if (file.hasCodeAnalysis) {
+    score += addEvidence(evidence, 'Code analysis file', 'File is present in analyzed code metadata', 6);
+  }
+
+  const roleWeight = getDependencyRoleWeight(traceRole);
+  if (roleWeight) {
+    score += addEvidence(
+      evidence,
+      'Dependency role',
+      traceRole.direction === 'mentioned'
+        ? 'File is mentioned directly in the stack trace'
+        : `${traceRole.direction || 'related'} dependency context${traceRole.depth ? ` at depth ${traceRole.depth}` : ''}`,
+      roleWeight
+    );
+  }
+
+  score += addEvidence(evidence, 'Error pattern', hypothesis.rationale, hypothesis.type === 'general-stack-frame' ? 0 : 8);
+  score += addContextualSignalEvidence(evidence, hypothesis, signals, file, errorText);
+
+  if (file.dependencyOnly) {
+    score = Math.min(score, 62);
+  }
+
+  const finalScore = clampScore(score - index * 3);
+  const confidence = finalScore >= 75 ? 'high' : finalScore >= 45 ? 'medium' : 'low';
+  const hypothesisWithConfidence = {
+    ...hypothesis,
+    confidence: hypothesis.confidence === 'high' && confidence !== 'low'
+      ? 'high'
+      : confidence,
+  };
+
+  return {
+    path: file.path,
+    confidence,
+    score: finalScore,
+    title: index === 0 ? 'Inspect first' : (file.dependencyOnly ? 'Dependency candidate' : 'Related candidate'),
+    candidateType: file.dependencyOnly ? 'dependency' : 'stack',
+    reason: unique([
+      hypothesis.label,
+      evidence[0]?.detail,
+      evidence[1]?.detail,
+      evidence[2]?.detail,
+    ]).join(' · '),
+    hypothesis: hypothesisWithConfidence,
+    evidence: evidence
+      .filter(item => item.weight !== 0)
+      .sort((a, b) => Math.abs(b.weight || 0) - Math.abs(a.weight || 0))
+      .slice(0, 6),
+    inspectionSteps: buildInspectionSteps(file, hypothesisWithConfidence, traceRole),
+    safeFixHints: buildSafeFixHints(hypothesisWithConfidence).slice(0, 3),
+    validationChecks: buildCandidateValidationChecks(repoData, hypothesisWithConfidence, file),
+    missingContext: buildMissingContext(file, hypothesisWithConfidence, traceRole),
+  };
+}
+
+function buildRootCauseCandidates(matchedFiles, errorSummary, dependencyTrace, repoData, codeAnalysis, input) {
   if (matchedFiles.length === 0) return [];
 
-  return matchedFiles.slice(0, 5).map((file, index) => ({
-    path: file.path,
-    confidence: file.confidence,
-    score: Math.max(0, Math.min(100, file.score - index * 4)),
-    title: index === 0 ? 'Inspect first' : 'Related candidate',
-    reason: unique([
-      file.references[0]?.line ? `First relevant stack location is line ${file.references[0].line}` : '',
-      file.reasons[0],
-      /typeerror|undefined|null/i.test(`${errorSummary.type} ${errorSummary.message}`)
-        ? 'Error text suggests a missing or unexpected value near this path'
-        : '',
-    ]).join(' · '),
-  }));
+  const dependencyCandidates = buildDirectDependencyCandidates(dependencyTrace, matchedFiles, codeAnalysis);
+  const candidatePool = [...matchedFiles, ...dependencyCandidates].slice(0, 10);
+  const traceRoleMap = buildTraceRoleMap(dependencyTrace);
+
+  return candidatePool
+    .map((file, index) => scoreRootCauseCandidate(file, index, {
+      errorSummary,
+      input,
+      dependencyTrace,
+      repoData,
+      traceRoleMap,
+    }))
+    .sort((a, b) => b.score - a.score || a.path.localeCompare(b.path))
+    .slice(0, 5)
+    .map((candidate, index) => ({
+      ...candidate,
+      title: index === 0
+        ? 'Inspect first'
+        : (candidate.candidateType === 'dependency' ? 'Dependency candidate' : 'Related candidate'),
+    }));
 }
 
 function getOverallConfidence(matchedFiles, frames, input) {
@@ -819,7 +1318,14 @@ export function buildDebugTraceContext({
   const relatedRepoFiles = dependencyTrace.available && dependencyTrace.relatedFiles.length > 0
     ? dependencyTrace.relatedFiles
     : fallbackRelatedRepoFiles;
-  const rootCauseCandidates = buildRootCauseCandidates(matchedFiles, errorSummary);
+  const rootCauseCandidates = buildRootCauseCandidates(
+    matchedFiles,
+    errorSummary,
+    dependencyTrace,
+    repoData,
+    codeAnalysis,
+    input
+  );
   const validationChecklist = buildValidationChecklist(repoData, errorSummary, matchedFiles);
   const confidence = getOverallConfidence(matchedFiles, parsedFrames, input);
 

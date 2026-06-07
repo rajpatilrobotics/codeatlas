@@ -222,10 +222,73 @@ function RootCauseCard({ context }) {
         <div className="ca-debug-candidate-list">
           {candidates.map(candidate => (
             <div key={candidate.path} className="ca-debug-candidate">
-              <div>
+              <div className="ca-debug-candidate-body">
                 <span className="ca-debug-label">{candidate.title}</span>
                 <strong>{candidate.path}</strong>
                 <p>{candidate.reason}</p>
+                {candidate.hypothesis && (
+                  <div className="ca-debug-hypothesis">
+                    <Badge variant={getConfidenceVariant(candidate.hypothesis.confidence)}>
+                      {candidate.hypothesis.label}
+                    </Badge>
+                    <span>{candidate.hypothesis.rationale}</span>
+                  </div>
+                )}
+                {safeArray(candidate.evidence).length > 0 && (
+                  <div className="ca-debug-evidence-list" aria-label={`Evidence for ${candidate.path}`}>
+                    {candidate.evidence.slice(0, 6).map(item => (
+                      <span key={`${candidate.path}-${item.label}-${item.detail}`} className="ca-debug-evidence-chip">
+                        {item.label}
+                        {item.weight ? <em>{item.weight > 0 ? `+${item.weight}` : item.weight}</em> : null}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="ca-debug-candidate-panels">
+                  {safeArray(candidate.inspectionSteps).length > 0 && (
+                    <div className="ca-debug-candidate-panel">
+                      <h4>Inspect</h4>
+                      <ol>
+                        {candidate.inspectionSteps.slice(0, 4).map(step => (
+                          <li key={`${candidate.path}-inspect-${step}`}>{step}</li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
+                  {safeArray(candidate.safeFixHints).length > 0 && (
+                    <div className="ca-debug-candidate-panel">
+                      <h4>Safe fix hints</h4>
+                      <ul>
+                        {candidate.safeFixHints.slice(0, 3).map(hint => (
+                          <li key={`${candidate.path}-fix-${hint}`}>{hint}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {safeArray(candidate.validationChecks).length > 0 && (
+                    <div className="ca-debug-candidate-panel">
+                      <h4>Validate</h4>
+                      <ul>
+                        {candidate.validationChecks.slice(0, 3).map(check => (
+                          <li key={`${candidate.path}-validation-${check.label}`}>
+                            <span>{check.label}</span>
+                            {check.command && <code>{check.command}</code>}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {safeArray(candidate.missingContext).length > 0 && (
+                    <div className="ca-debug-candidate-panel ca-debug-candidate-panel--muted">
+                      <h4>Missing context</h4>
+                      <ul>
+                        {candidate.missingContext.slice(0, 3).map(item => (
+                          <li key={`${candidate.path}-missing-${item}`}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="ca-debug-score">
                 <strong>{candidate.score}</strong>
