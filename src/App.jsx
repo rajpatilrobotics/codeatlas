@@ -889,12 +889,20 @@ const handleAnalyze = async (urlOverride) => {
     }
 
     // ========== SECURITY SCANNER SECTION ==========
-    // PRIORITY FIX: Check sessionStorage FIRST (SecurityScanner data source)
+    // Check the repo-specific Security Scanner cache first.
     let securityData = null;
     
-    // Try sessionStorage first (this is what the UI uses)
     try {
-      const cached = sessionStorage.getItem('securityScanCache');
+      const securityCacheKey = repoData?.repoInfo
+        ? [
+            'securityScan',
+            repoData.repoInfo.url || repoData.repoInfo.name || 'repo',
+            repoData.repoInfo.updatedAt || 'unknown-update',
+            repoData.fileCount || repoData.fileTree?.length || 0,
+            codeAnalysis?.summary?.analyzedFiles || 0
+          ].join(':')
+        : 'securityScanCache';
+      const cached = sessionStorage.getItem(securityCacheKey) || sessionStorage.getItem('securityScanCache');
       console.log('Checking sessionStorage for security data:', cached ? 'Found' : 'Not found');
       if (cached) {
         securityData = JSON.parse(cached);
@@ -921,14 +929,19 @@ const handleAnalyze = async (urlOverride) => {
     const hasValidSecurityData = securityData && (
       securityData.overall_score !== undefined ||
       securityData.score !== undefined ||
-      securityData.issues !== undefined
+      securityData.issues !== undefined ||
+      securityData.findings !== undefined
     );
 
     if (hasValidSecurityData) {
       // Security Overview
       addSubtitle('Security Overview');
-      const score = securityData.overall_score || securityData.score;
-      const riskLevel = securityData.risk_level || securityData.riskLevel;
+      const score = typeof securityData.score === 'object'
+        ? securityData.score.overall
+        : (securityData.overall_score || securityData.score);
+      const riskLevel = typeof securityData.score === 'object'
+        ? securityData.score.level
+        : (securityData.risk_level || securityData.riskLevel);
       
       if (score !== undefined && score !== null) {
         addText(`Overall Security Score: ${score}/100`);
@@ -955,7 +968,7 @@ const handleAnalyze = async (urlOverride) => {
       }
 
       // Security Issues - DYNAMIC RENDERING
-      const issues = securityData.issues || [];
+      const issues = securityData.findings || securityData.issues || [];
       
       if (issues.length > 0) {
         addSubtitle(`Security Issues Found (${issues.length})`);
@@ -983,11 +996,11 @@ const handleAnalyze = async (urlOverride) => {
           // Description
           pdf.setFont('helvetica', 'normal');
           pdf.setFontSize(11);
-          if (issue.description) {
+          if (issue.description || issue.impact) {
             pdf.setFont('helvetica', 'bold');
-            addText('Description:', 5);
+            addText(issue.description ? 'Description:' : 'Impact:', 5);
             pdf.setFont('helvetica', 'normal');
-            addText(issue.description, 5);
+            addText(issue.description || issue.impact, 5);
           }
           
           // File location
@@ -999,11 +1012,11 @@ const handleAnalyze = async (urlOverride) => {
           }
           
           // Fix recommendation
-          if (issue.fix) {
+          if (issue.fix || issue.recommendation) {
             pdf.setFont('helvetica', 'bold');
             addText('Recommended Fix:', 5);
             pdf.setFont('helvetica', 'normal');
-            addText(issue.fix, 5);
+            addText(issue.fix || issue.recommendation, 5);
           }
           
           addSpace(5);
@@ -1189,6 +1202,7 @@ const handleAnalyze = async (urlOverride) => {
             repoData={repoData}
             codeAnalysis={codeAnalysis}
             isCodeAnalysisLoading={isCodeAnalysisLoading}
+            onNavigate={setActiveTab}
           />
         );
       case 'chat':
