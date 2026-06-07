@@ -724,6 +724,92 @@
   padding: 9px 10px;
 }
 
+.ca-planner-impact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ca-planner-impact-row {
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.16);
+  padding: 12px;
+}
+
+.ca-planner-impact-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ca-planner-impact-stats,
+.ca-planner-impact-modules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.ca-planner-impact-why,
+.ca-planner-impact-summary {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 10px 0 0;
+}
+
+.ca-planner-impact-summary {
+  color: var(--text-muted);
+}
+
+.ca-planner-impact-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.ca-planner-impact-files code,
+.ca-planner-impact-files span {
+  max-width: 260px;
+  border: 1px solid var(--border-primary);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 5px 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ca-planner-impact-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.ca-planner-impact-actions button {
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 9px 12px;
+}
+
+.ca-planner-impact-actions button:hover {
+  border-color: rgba(255, 255, 255, 0.32);
+  background: rgba(255, 255, 255, 0.09);
+}
+
 .ca-planner-warning-list {
   display: flex;
   flex-direction: column;

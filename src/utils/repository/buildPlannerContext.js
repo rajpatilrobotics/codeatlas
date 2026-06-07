@@ -1,9 +1,13 @@
+import { calculateBlastRadius } from './blastRadiusAnalysis.js';
+
 const MAX_MATCHED_FILES = 12;
 const MAX_MODULES = 8;
 const MAX_SERVICES = 8;
 const MAX_ENTRY_POINTS = 6;
 const MAX_DEPENDENCY_SIGNALS = 8;
 const MAX_SUGGESTED_FILES = 8;
+const MAX_BLAST_IMPACT_FILES = 5;
+const MAX_BLAST_IMPACTED_FILES = 8;
 
 const STOP_WORDS = new Set([
   'a',
@@ -121,6 +125,12 @@ function getDirectory(path) {
 function getTopLevelModule(path) {
   const parts = String(path || '').split('/').filter(Boolean);
   return parts.length > 1 ? parts[0] : 'root';
+}
+
+function normalizeRepositoryFiles(repoData) {
+  const primaryFiles = safeArray(repoData?.fileTree).map(getPath).filter(Boolean);
+  if (primaryFiles.length > 0) return unique(primaryFiles);
+  return unique(safeArray(repoData?.fileStructure).map(getPath).filter(Boolean));
 }
 
 function normalizeGraphNodeId(path) {
@@ -899,6 +909,94 @@ function buildMissingContext({ hasTask, matchedFiles, packageScripts, coverage, 
   return unique(missing).slice(0, 6);
 }
 
+function getImpactTraversalDepth(result) {
+  if (Number.isFinite(result?.graphEvidence?.maxDepth)) {
+    return result.graphEvidence.maxDepth;
+  }
+
+  return Math.max(
+    0,
+    ...safeArray(result?.rankedImpactedFiles)
+      .map(file => Number.isFinite(file?.distance) ? file.distance : 0)
+  );
+}
+
+function getImpactFileList(result) {
+  const rankedPaths = safeArray(result?.rankedImpactedFiles)
+    .map(file => getPath(file?.path))
+    .filter(Boolean);
+  const fallbackPaths = safeArray(result?.impactedFiles)
+    .map(getPath)
+    .filter(Boolean);
+
+  return unique(rankedPaths.length > 0 ? rankedPaths : fallbackPaths);
+}
+
+function getImpactWhy(result) {
+  const evidence = result?.graphEvidence || {};
+  const reason = safeArray(result?.impactReasons)
+    .map(item => item?.description || item?.label)
+    .find(Boolean);
+  const rankedReason = safeArray(result?.rankedImpactedFiles)
+    .map(item => item?.reason)
+    .find(Boolean);
+
+  if (result?.analysisMode === 'dependency-graph') {
+    const directEdges = evidence.directEdges || 0;
+    const transitiveFiles = evidence.transitiveFiles || 0;
+    return `Dependency graph evidence found ${directEdges} direct edge${directEdges === 1 ? '' : 's'} and ${transitiveFiles} transitive file${transitiveFiles === 1 ? '' : 's'}.`;
+  }
+
+  return reason || rankedReason || result?.impactSummary || 'Existing blast-radius utility found local impact evidence for this matched file.';
+}
+
+function buildBlastImpact(suggestedFiles, repoData) {
+  const repositoryFiles = normalizeRepositoryFiles(repoData);
+  const dependencyGraph = repoData?.dependencyGraph;
+
+  if (!dependencyGraph?.nodes?.length || repositoryFiles.length === 0) {
+    return {
+      available: false,
+      reason: 'Dependency graph or repository files unavailable.',
+      items: [],
+    };
+  }
+
+  const candidates = suggestedFiles.slice(0, MAX_BLAST_IMPACT_FILES);
+  const items = candidates.map(file => {
+    const result = calculateBlastRadius(
+      file.path,
+      repositoryFiles,
+      [],
+      dependencyGraph,
+      { direction: 'both' }
+    );
+    const impactedFiles = getImpactFileList(result);
+    const affectedModules = unique(impactedFiles.map(getTopLevelModule));
+
+    return {
+      path: file.path,
+      riskLevel: result?.severity || 'low',
+      affectedFilesCount: safeArray(result?.impactedFiles).length,
+      affectedModules,
+      traversalDepth: getImpactTraversalDepth(result),
+      impactSummary: result?.impactSummary || '',
+      whyImpact: getImpactWhy(result),
+      impactedFiles: impactedFiles.slice(0, MAX_BLAST_IMPACTED_FILES),
+      impactedFilesOverflow: Math.max(impactedFiles.length - MAX_BLAST_IMPACTED_FILES, 0),
+      analysisMode: result?.analysisMode || 'fallback',
+      confidence: result?.confidence || 'low',
+      isLimited: Boolean(result?.isLimited),
+    };
+  });
+
+  return {
+    available: true,
+    reason: '',
+    items,
+  };
+}
+
 function buildImplementationPlan({
   taskText,
   originalTokens,
@@ -913,6 +1011,7 @@ function buildImplementationPlan({
   warnings,
   confidence,
   score,
+  repoData,
 }) {
   const hasTask = originalTokens.length > 0;
   const intent = detectIntent(originalTokens, terms, matchedFiles, modules);
@@ -934,6 +1033,13 @@ function buildImplementationPlan({
     coverage,
     warnings,
   });
+  const blastImpact = hasTask
+    ? buildBlastImpact(suggestedFiles, repoData)
+    : {
+        available: false,
+        reason: 'Enter a task to calculate impact.',
+        items: [],
+      };
 
   return {
     mode: 'local-deterministic',
@@ -948,6 +1054,7 @@ function buildImplementationPlan({
     risks,
     validationChecklist,
     missingContext,
+    blastImpact,
   };
 }
 
@@ -997,6 +1104,7 @@ export function buildPlannerContext({ taskText = '', repoData = null, codeAnalys
     warnings,
     confidence,
     score: highestScore,
+    repoData,
   });
 
   return {

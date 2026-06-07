@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   FileSearch,
+  GitBranch,
   Lightbulb,
   Network,
   Route,
@@ -26,6 +27,7 @@ const CONFIDENCE_VARIANT = {
   high: 'success',
   medium: 'medium',
   low: 'low',
+  critical: 'critical',
   none: 'info',
 };
 
@@ -264,6 +266,92 @@ function AffectedSystemsCard({ plannerContext }) {
   );
 }
 
+function formatMode(mode) {
+  if (mode === 'dependency-graph') return 'graph';
+  if (!mode) return 'unknown';
+  return mode.replace(/-/g, ' ');
+}
+
+function BlastImpactCard({ plannerContext, onNavigate }) {
+  const { hasTask, plan } = plannerContext;
+  const blastImpact = plan?.blastImpact || {};
+  const items = blastImpact.items || [];
+
+  return (
+    <PlannerSectionCard
+      title="Blast Impact"
+      icon={GitBranch}
+      subtitle="Impact evidence from existing dependency graph and blast-radius utility"
+      className="ca-planner-wide-card ca-planner-impact-card"
+    >
+      {!hasTask ? (
+        <PlanEmptyState
+          hasTask={hasTask}
+          idleMessage="Enter a task to calculate impact."
+        />
+      ) : !blastImpact.available ? (
+        <PlanEmptyState
+          hasTask={hasTask}
+          message={blastImpact.reason || 'Dependency graph or repository files unavailable.'}
+        />
+      ) : items.length === 0 ? (
+        <PlanEmptyState
+          hasTask={hasTask}
+          message="No top matched files were available for blast-impact calculation."
+        />
+      ) : (
+        <div className="ca-planner-impact-list">
+          {items.map(item => (
+            <div className="ca-planner-impact-row" key={item.path}>
+              <div className="ca-planner-impact-row-top">
+                <span className="ca-planner-file-path" title={item.path}>{item.path}</span>
+                <Badge variant={CONFIDENCE_VARIANT[item.riskLevel] || 'info'}>
+                  {item.riskLevel}
+                </Badge>
+              </div>
+              <div className="ca-planner-impact-stats">
+                <Pill>{item.affectedFilesCount} affected files</Pill>
+                <Pill>{item.affectedModules.length} modules</Pill>
+                <Pill>d{item.traversalDepth}</Pill>
+                <Pill>{formatConfidence(item.confidence)}</Pill>
+                <Pill>{formatMode(item.analysisMode)}</Pill>
+                {item.isLimited && <Pill>capped</Pill>}
+              </div>
+              <p className="ca-planner-impact-why">{item.whyImpact}</p>
+              {item.impactSummary && (
+                <p className="ca-planner-impact-summary">{item.impactSummary}</p>
+              )}
+              {item.affectedModules.length > 0 && (
+                <div className="ca-planner-impact-modules">
+                  {item.affectedModules.map(module => <Pill key={module}>{module}</Pill>)}
+                </div>
+              )}
+              {item.impactedFiles.length > 0 && (
+                <div className="ca-planner-impact-files">
+                  {item.impactedFiles.map(file => (
+                    <code key={file} title={file}>{file}</code>
+                  ))}
+                  {item.impactedFilesOverflow > 0 && (
+                    <span>+{item.impactedFilesOverflow} more</span>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="ca-planner-impact-actions">
+        <button type="button" onClick={() => onNavigate?.('blast-radius')}>
+          Open Blast Radius
+        </button>
+        <button type="button" onClick={() => onNavigate?.('repository-graph')}>
+          Open Repository Graph
+        </button>
+      </div>
+    </PlannerSectionCard>
+  );
+}
+
 function RoadmapCard({ plannerContext }) {
   const { hasTask, plan } = plannerContext;
   const roadmap = plan?.roadmap || [];
@@ -452,7 +540,7 @@ function Planner({ repoData, codeAnalysis, firstContributions = [], onNavigate }
           <div>
             <div className="ca-planner-kicker">
               <Lightbulb size={16} />
-              Planner P3
+              Planner P4
             </div>
             <h2 className="ca-planner-title">AI Engineering Change Planner</h2>
             <p className="ca-planner-subtitle">
@@ -502,9 +590,10 @@ function Planner({ repoData, codeAnalysis, firstContributions = [], onNavigate }
           ))}
         </div>
         <div className="ca-planner-input-footer">
-          <Pill>AI disabled in P3</Pill>
+          <Pill>AI disabled in P4</Pill>
           <Pill>No backend planner API yet</Pill>
           <Pill>Local deterministic plan</Pill>
+          <Pill>Blast impact enabled</Pill>
         </div>
       </Card>
 
@@ -512,6 +601,7 @@ function Planner({ repoData, codeAnalysis, firstContributions = [], onNavigate }
         <PlanSummaryCard plannerContext={plannerContext} />
         <SuggestedFilesCard plannerContext={plannerContext} />
         <AffectedSystemsCard plannerContext={plannerContext} />
+        <BlastImpactCard plannerContext={plannerContext} onNavigate={onNavigate} />
         <RoadmapCard plannerContext={plannerContext} />
         <RisksCard plannerContext={plannerContext} />
         <ValidationCard plannerContext={plannerContext} />
