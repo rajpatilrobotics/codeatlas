@@ -3242,7 +3242,8 @@
 .ca-debug-candidate-list,
 .ca-debug-related-list,
 .ca-debug-validation-list,
-.ca-debug-reference-list {
+.ca-debug-reference-list,
+.ca-debug-trace-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -3252,7 +3253,8 @@
 .ca-debug-candidate,
 .ca-debug-related-row,
 .ca-debug-reference-row,
-.ca-debug-validation-row {
+.ca-debug-validation-row,
+.ca-debug-trace-row {
   display: flex;
   justify-content: space-between;
   gap: 14px;
@@ -3265,7 +3267,8 @@
 .ca-debug-file-row strong,
 .ca-debug-candidate strong,
 .ca-debug-related-row strong,
-.ca-debug-validation-row strong {
+.ca-debug-validation-row strong,
+.ca-debug-trace-row strong {
   display: block;
   color: var(--text-primary);
   overflow-wrap: anywhere;
@@ -3291,9 +3294,86 @@
 .ca-debug-file-meta span,
 .ca-debug-muted,
 .ca-debug-related-row span,
-.ca-debug-reference-row span {
+.ca-debug-reference-row span,
+.ca-debug-trace-row span {
   color: var(--text-muted);
   font-size: 12px;
+}
+
+.ca-debug-trace-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ca-debug-trace-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ca-debug-trace-summary span {
+  padding: 7px 9px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.ca-debug-trace-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-default);
+}
+
+.ca-debug-trace-group h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.ca-debug-trace-row {
+  align-items: flex-start;
+}
+
+.ca-debug-trace-row > div:first-child {
+  min-width: 0;
+}
+
+.ca-debug-trace-row strong {
+  margin-bottom: 4px;
+}
+
+.ca-debug-trace-meta {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  max-width: 180px;
+}
+
+.ca-debug-trace-meta span {
+  padding: 3px 7px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.ca-debug-dependency-unavailable {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
 }
 
 .ca-debug-reference-row {

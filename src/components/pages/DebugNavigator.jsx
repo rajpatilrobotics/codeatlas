@@ -252,6 +252,94 @@ function RelatedFilesCard({ context }) {
   );
 }
 
+function DependencyTraceGroup({ title, files, emptyText }) {
+  return (
+    <div className="ca-debug-trace-group">
+      <h3>{title}</h3>
+      {files.length === 0 ? (
+        <p className="ca-debug-muted">{emptyText}</p>
+      ) : (
+        <div className="ca-debug-trace-list">
+          {files.map(file => (
+            <div key={`${file.direction}-${file.path}`} className="ca-debug-trace-row">
+              <div>
+                <strong>{file.path}</strong>
+                <span>{file.reason || file.relationship || 'Related dependency context'}</span>
+              </div>
+              <div className="ca-debug-trace-meta">
+                <Badge variant={getConfidenceVariant(file.confidence)}>{file.confidence}</Badge>
+                {file.depth !== null && file.depth !== undefined && <span>depth {file.depth}</span>}
+                {file.graphBacked && <span>graph</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DependencyTraceCard({ context }) {
+  const trace = context.dependencyTrace;
+  const seedFiles = safeArray(trace?.seedFiles);
+  const relatedFiles = safeArray(trace?.relatedFiles);
+  const upstreamFiles = relatedFiles.filter(file => file.direction === 'upstream');
+  const downstreamFiles = relatedFiles.filter(file => file.direction === 'downstream');
+  const sameModuleFiles = relatedFiles.filter(file => file.direction === 'same-module');
+
+  return (
+    <Card title="Dependency-Aware Trace" icon={Network}>
+      {!context.hasInput ? (
+        <EmptyResult hasInput={context.hasInput} />
+      ) : !trace?.available ? (
+        <div className="ca-debug-dependency-unavailable">
+          <AlertTriangle size={16} />
+          <span>{trace?.reason || 'Dependency graph unavailable. Showing parser-only debug context.'}</span>
+        </div>
+      ) : (
+        <div className="ca-debug-trace-panel">
+          <div className="ca-debug-trace-summary">
+            <Badge variant={trace.coverage.graphBackedSeeds > 0 ? 'success' : 'warning'}>
+              {trace.coverage.graphBackedSeeds} graph-backed seed{trace.coverage.graphBackedSeeds === 1 ? '' : 's'}
+            </Badge>
+            <span>{trace.coverage.graphFiles} graph files</span>
+            <span>{trace.coverage.graphEdges} graph edges</span>
+            <span>{relatedFiles.length}/{trace.coverage.maxRelatedFiles} related</span>
+            {trace.isLimited && <span>limited</span>}
+          </div>
+
+          {seedFiles.length === 0 ? (
+            <p className="ca-debug-muted">{trace.reason}</p>
+          ) : (
+            <>
+              <DependencyTraceGroup
+                title="Mentioned stack files"
+                files={seedFiles}
+                emptyText="No stack files matched repository paths yet."
+              />
+              <DependencyTraceGroup
+                title="Upstream dependencies"
+                files={upstreamFiles}
+                emptyText="No direct or transitive imports found for the matched stack files."
+              />
+              <DependencyTraceGroup
+                title="Downstream impacted files"
+                files={downstreamFiles}
+                emptyText="No direct or transitive dependents found for the matched stack files."
+              />
+              <DependencyTraceGroup
+                title="Same-module hints"
+                files={sameModuleFiles}
+                emptyText="No same-module fallback hints were needed."
+              />
+            </>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function ValidationCard({ context }) {
   return (
     <Card title="Validation Checklist" icon={CheckCircle2}>
@@ -392,6 +480,7 @@ function DebugNavigator({
         <ErrorSummaryCard context={debugContext} />
         <RootCauseCard context={debugContext} />
         <MatchedFilesCard context={debugContext} />
+        <DependencyTraceCard context={debugContext} />
         <InspectionCard context={debugContext} />
         <RelatedFilesCard context={debugContext} />
         <ValidationCard context={debugContext} />
