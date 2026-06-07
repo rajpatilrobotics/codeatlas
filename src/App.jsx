@@ -1224,7 +1224,15 @@ const handleAnalyze = async (urlOverride) => {
           />
         );
       case 'debug-navigator':
-        return <DebugNavigator />;
+        return (
+          <DebugNavigator
+            repoData={repoData}
+            codeAnalysis={codeAnalysis}
+            detailedArchitecture={detailedArchitecture}
+            firstContributions={firstContributions}
+            onNavigate={setActiveTab}
+          />
+        );
       case 'heatmap':
         return <Heatmap />;
       case 'saved-workspaces':
