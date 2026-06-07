@@ -3159,6 +3159,58 @@
   border-radius: var(--radius-md);
 }
 
+.ca-debug-ai-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+}
+
+.ca-debug-ai-status-main {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.ca-debug-loading-icon {
+  flex-shrink: 0;
+  color: var(--accent-primary);
+  animation: ca-planner-spin 1s linear infinite;
+}
+
+.ca-debug-ai-status button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-sm);
+  color: #111;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ca-debug-ai-status button:not(:disabled):hover {
+  background: #fff;
+}
+
+.ca-debug-ai-status button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
 .ca-debug-warning-strip {
   display: flex;
   gap: 10px;
@@ -3190,6 +3242,10 @@
 }
 
 .ca-debug-graph-card {
+  grid-column: 1 / -1;
+}
+
+.ca-debug-ai-card {
   grid-column: 1 / -1;
 }
 
@@ -3383,6 +3439,159 @@
   color: var(--text-primary);
   font-family: var(--font-mono);
   font-size: 11px;
+}
+
+.ca-debug-ai-empty {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-tertiary);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+}
+
+.ca-debug-ai-empty svg {
+  flex-shrink: 0;
+  color: var(--accent-primary);
+}
+
+.ca-debug-ai-empty strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-primary);
+}
+
+.ca-debug-ai-empty p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.ca-debug-ai-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ca-debug-ai-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+}
+
+.ca-debug-ai-summary strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-primary);
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.ca-debug-ai-root {
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+}
+
+.ca-debug-ai-root p {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.ca-debug-ai-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ca-debug-ai-section {
+  min-width: 0;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+}
+
+.ca-debug-ai-section--warning {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.22);
+}
+
+.ca-debug-ai-section--muted {
+  border-style: dashed;
+}
+
+.ca-debug-ai-section h3 {
+  margin: 0 0 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.ca-debug-ai-section ul {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-left: 17px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.ca-debug-ai-section li {
+  overflow-wrap: anywhere;
+}
+
+.ca-debug-ai-section code {
+  display: inline-block;
+  margin-top: 4px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.ca-debug-ai-section li p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+}
+
+.ca-debug-ai-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ca-debug-ai-file-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 10px;
+  align-items: center;
+  padding: 9px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+}
+
+.ca-debug-ai-file-row strong {
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.ca-debug-ai-file-row span {
+  grid-column: 1 / -1;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .ca-debug-file-meta {

@@ -8,9 +8,11 @@ import {
   FileSearch,
   GitBranch,
   Lightbulb,
+  Loader2,
   Network,
   Route,
   SearchCode,
+  Sparkles,
   Target,
 } from 'lucide-react';
 import Badge from '../ui/Badge';
@@ -42,6 +44,12 @@ ValueError: invalid token payload`,
   },
 ];
 
+const INITIAL_AI_DEBUG_STATE = {
+  status: 'idle',
+  analysis: null,
+  error: '',
+};
+
 function getRepositoryFileCount(repoData) {
   if (Array.isArray(repoData?.fileTree)) return repoData.fileTree.length;
   if (Array.isArray(repoData?.fileStructure)) return repoData.fileStructure.length;
@@ -62,6 +70,172 @@ function getConfidenceVariant(confidence) {
 function formatConfidence(confidence) {
   if (!confidence || confidence === 'none') return 'No trace yet';
   return `${confidence.charAt(0).toUpperCase()}${confidence.slice(1)} confidence`;
+}
+
+function redactDebugText(value) {
+  return String(value || '')
+    .replace(/\bBearer\s+[A-Za-z0-9._~+/=-]{16,}/gi, 'Bearer [redacted]')
+    .replace(/\b(GITHUB_TOKEN|GROQ_API_KEY|GEMINI_API_KEY|OPENAI_API_KEY|ANTHROPIC_API_KEY|[A-Z0-9_]*API[_-]?KEY|[A-Z0-9_]*TOKEN|[A-Z0-9_]*SECRET)\s*[:=]\s*['"]?[^'"\s]+/gi, '$1=[redacted]')
+    .replace(/\bgh[pousr]_[A-Za-z0-9_]{20,}\b/g, '[redacted-github-token]')
+    .replace(/\bAIza[0-9A-Za-z_-]{20,}\b/g, '[redacted-gemini-key]')
+    .replace(/\bgsk_[0-9A-Za-z_-]{20,}\b/g, '[redacted-groq-key]')
+    .replace(/\b[A-Za-z0-9_-]{36,}\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}\b/g, '[redacted-token]')
+    .replace(/\b[A-Fa-f0-9]{48,}\b/g, '[redacted-secret]');
+}
+
+function normalizePackageScripts(repoData) {
+  return Object.entries(repoData?.packageJson?.scripts || {})
+    .map(([name, command]) => ({ name, command }))
+    .slice(0, 8);
+}
+
+function buildLocalDebugAnalysis(context) {
+  const candidates = safeArray(context.rootCauseCandidates);
+  const topCandidate = candidates[0];
+  const fallbackFiles = candidates.length > 0 ? candidates : safeArray(context.matchedFiles);
+
+  return {
+    summary: `${context.errorSummary?.type || 'Unknown error'}: ${context.errorSummary?.message || 'No message detected.'}`,
+    probableRootCause: topCandidate?.path
+      ? `${topCandidate.path}: ${topCandidate.reason || topCandidate.hypothesis?.label || 'Inspect this deterministic candidate first.'}`
+      : 'No repository-backed root cause identified yet.',
+    confidence: topCandidate?.confidence || context.confidence || 'low',
+    reasoning: [
+      topCandidate?.reason,
+      topCandidate?.hypothesis?.rationale,
+      ...safeArray(topCandidate?.evidence).map(item => `${item.label}: ${item.detail}`),
+    ].filter(Boolean).slice(0, 8),
+    suggestedFixes: safeArray(topCandidate?.safeFixHints).slice(0, 8),
+    filesToInspect: fallbackFiles.slice(0, 8).map((file, index) => ({
+      path: file.path,
+      reason: file.reason || file.reasons?.[0] || 'Matched by deterministic local debug context.',
+      priority: index === 0 ? 'high' : (file.confidence || 'medium'),
+    })).filter(item => item.path),
+    validationPlan: safeArray(context.validationChecklist).slice(0, 8).map(item => ({
+      label: item.label || 'Validate locally',
+      command: item.command || '',
+      detail: item.detail || '',
+    })),
+    risks: topCandidate?.confidence === 'low'
+      ? ['Local confidence is low; inspect matched evidence before changing code.']
+      : [],
+    missingContext: [
+      ...safeArray(topCandidate?.missingContext),
+      ...safeArray(context.warnings),
+    ].filter(Boolean).slice(0, 8),
+  };
+}
+
+function compactMatchedFile(file) {
+  return {
+    path: file.path,
+    confidence: file.confidence,
+    score: file.score,
+    matchType: file.matchType,
+    reasons: safeArray(file.reasons).slice(0, 4),
+    references: safeArray(file.references).slice(0, 3).map(reference => ({
+      line: reference.line || null,
+      column: reference.column || null,
+      functionName: reference.functionName || '',
+      stackPosition: reference.stackPosition || null,
+    })),
+  };
+}
+
+function compactRootCauseCandidate(candidate) {
+  return {
+    path: candidate.path,
+    confidence: candidate.confidence,
+    score: candidate.score,
+    reason: candidate.reason,
+    hypothesis: candidate.hypothesis,
+    evidence: safeArray(candidate.evidence).slice(0, 6),
+    inspectionSteps: safeArray(candidate.inspectionSteps).slice(0, 4),
+    safeFixHints: safeArray(candidate.safeFixHints).slice(0, 4),
+    validationChecks: safeArray(candidate.validationChecks).slice(0, 4),
+    missingContext: safeArray(candidate.missingContext).slice(0, 4),
+  };
+}
+
+function compactTraceFile(file) {
+  return {
+    path: file.path,
+    direction: file.direction,
+    relationship: file.relationship,
+    reason: file.reason,
+    depth: file.depth,
+    confidence: file.confidence,
+    graphBacked: Boolean(file.graphBacked),
+  };
+}
+
+function buildDebugAIPayload(debugContext, errorText, repoData) {
+  const localDebugAnalysis = buildLocalDebugAnalysis(debugContext);
+  const trace = debugContext.dependencyTrace || {};
+
+  return {
+    rawError: redactDebugText(errorText).slice(0, 6000),
+    errorSummary: debugContext.errorSummary,
+    parsedFrames: safeArray(debugContext.parsedFrames).slice(0, 10).map(frame => ({
+      fileReference: frame.fileReference,
+      functionName: frame.functionName,
+      line: frame.line,
+      column: frame.column,
+      sourceLine: frame.sourceLine,
+      raw: redactDebugText(frame.raw || ''),
+    })),
+    matchedFiles: safeArray(debugContext.matchedFiles).slice(0, 8).map(compactMatchedFile),
+    dependencyTrace: {
+      available: Boolean(trace.available),
+      reason: trace.reason || '',
+      seedFiles: safeArray(trace.seedFiles).slice(0, 12).map(compactTraceFile),
+      relatedFiles: safeArray(trace.relatedFiles).slice(0, 12).map(compactTraceFile),
+      tracePaths: safeArray(trace.tracePaths).slice(0, 12).map(path => ({
+        from: path.from,
+        to: path.to,
+        direction: path.direction,
+        depth: path.depth,
+        reason: path.reason,
+        relationship: path.relationship,
+      })),
+      coverage: trace.coverage || {},
+    },
+    rootCauseCandidates: safeArray(debugContext.rootCauseCandidates).slice(0, 5).map(compactRootCauseCandidate),
+    validationChecklist: safeArray(debugContext.validationChecklist).slice(0, 8),
+    packageScripts: normalizePackageScripts(repoData),
+    warnings: safeArray(debugContext.warnings).slice(0, 8),
+    localDebugAnalysis,
+  };
+}
+
+function getDebugAIStatus(aiDebugState) {
+  if (aiDebugState.status === 'loading') {
+    return {
+      label: 'Enhancing...',
+      variant: 'medium',
+      detail: 'AI is reviewing the deterministic trace context.',
+    };
+  }
+  if (aiDebugState.status === 'enhanced') {
+    return {
+      label: 'AI enhanced',
+      variant: 'success',
+      detail: 'AI analysis is shown alongside the local deterministic result.',
+    };
+  }
+  if (aiDebugState.status === 'fallback') {
+    return {
+      label: 'Local fallback',
+      variant: 'warning',
+      detail: aiDebugState.error || 'AI is unavailable right now; local deterministic analysis is still ready.',
+    };
+  }
+
+  return {
+    label: 'Deterministic local',
+    variant: 'info',
+    detail: 'Local parsing, dependency tracing, and scoring are available before AI runs.',
+  };
 }
 
 function DebugMetric({ label, value }) {
@@ -296,6 +470,114 @@ function RootCauseCard({ context }) {
               </div>
             </div>
           ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function AIDebugAnalysisCard({ context, aiDebugState }) {
+  const analysis = aiDebugState.analysis;
+
+  return (
+    <Card title="AI Root Cause Analysis" icon={Sparkles} className="ca-debug-ai-card">
+      {!context.hasInput ? (
+        <EmptyResult hasInput={context.hasInput} />
+      ) : aiDebugState.status === 'idle' || !analysis ? (
+        <div className="ca-debug-ai-empty">
+          <Sparkles size={20} />
+          <div>
+            <strong>Optional second pass</strong>
+            <p>Run AI enhancement when you want a concise explanation and fix plan based on the deterministic context above.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="ca-debug-ai-content">
+          <div className="ca-debug-ai-summary">
+            <div>
+              <span className="ca-debug-label">Summary</span>
+              <strong>{analysis.summary || 'AI analysis returned without a summary.'}</strong>
+            </div>
+            <Badge variant={getConfidenceVariant(analysis.confidence)}>
+              {analysis.confidence || 'medium'}
+            </Badge>
+          </div>
+
+          <div className="ca-debug-ai-root">
+            <span className="ca-debug-label">Probable root cause</span>
+            <p>{analysis.probableRootCause || 'No AI root cause was provided.'}</p>
+          </div>
+
+          <div className="ca-debug-ai-sections">
+            {safeArray(analysis.reasoning).length > 0 && (
+              <div className="ca-debug-ai-section">
+                <h3>Reasoning</h3>
+                <ul>
+                  {analysis.reasoning.slice(0, 6).map(item => (
+                    <li key={`ai-reason-${item}`}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {safeArray(analysis.suggestedFixes).length > 0 && (
+              <div className="ca-debug-ai-section">
+                <h3>Suggested fixes</h3>
+                <ul>
+                  {analysis.suggestedFixes.slice(0, 6).map(item => (
+                    <li key={`ai-fix-${item}`}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {safeArray(analysis.filesToInspect).length > 0 && (
+              <div className="ca-debug-ai-section">
+                <h3>Files to inspect</h3>
+                <div className="ca-debug-ai-file-list">
+                  {analysis.filesToInspect.slice(0, 6).map(file => (
+                    <div key={`ai-file-${file.path}`} className="ca-debug-ai-file-row">
+                      <strong>{file.path}</strong>
+                      <span>{file.reason}</span>
+                      <Badge variant={getConfidenceVariant(file.priority)}>{file.priority || 'medium'}</Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {safeArray(analysis.validationPlan).length > 0 && (
+              <div className="ca-debug-ai-section">
+                <h3>Validation plan</h3>
+                <ul>
+                  {analysis.validationPlan.slice(0, 6).map(item => (
+                    <li key={`ai-validation-${item.label}-${item.command}`}>
+                      <span>{item.label}</span>
+                      {item.command && <code>{item.command}</code>}
+                      {item.detail && <p>{item.detail}</p>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {safeArray(analysis.risks).length > 0 && (
+              <div className="ca-debug-ai-section ca-debug-ai-section--warning">
+                <h3>Risks</h3>
+                <ul>
+                  {analysis.risks.slice(0, 5).map(item => (
+                    <li key={`ai-risk-${item}`}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {safeArray(analysis.missingContext).length > 0 && (
+              <div className="ca-debug-ai-section ca-debug-ai-section--muted">
+                <h3>Missing context</h3>
+                <ul>
+                  {analysis.missingContext.slice(0, 5).map(item => (
+                    <li key={`ai-missing-${item}`}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </Card>
@@ -557,6 +839,7 @@ function DebugNavigator({
   onNavigate,
 }) {
   const [errorText, setErrorText] = useState('');
+  const [aiDebugState, setAIDebugState] = useState(INITIAL_AI_DEBUG_STATE);
   const repositoryFileCount = getRepositoryFileCount(repoData);
   const hasRepository = repositoryFileCount > 0;
   const hasArchitectureContext = Boolean(detailedArchitecture || repoData?.techStack);
@@ -568,6 +851,56 @@ function DebugNavigator({
     codeAnalysis,
   }), [errorText, repoData, codeAnalysis]);
   const graphModel = useMemo(() => buildDebugTraceGraph(debugContext), [debugContext]);
+  const aiStatus = getDebugAIStatus(aiDebugState);
+  const canEnhanceWithAI = Boolean(
+    debugContext.hasInput &&
+    (debugContext.parsedFrames.length > 0 || debugContext.matchedFiles.length > 0 || debugContext.rootCauseCandidates.length > 0)
+  );
+
+  const updateErrorText = useCallback((value) => {
+    setErrorText(value);
+    setAIDebugState(INITIAL_AI_DEBUG_STATE);
+  }, []);
+
+  const handleEnhanceWithAI = useCallback(async () => {
+    if (!canEnhanceWithAI || aiDebugState.status === 'loading') return;
+
+    setAIDebugState({ status: 'loading', analysis: null, error: '' });
+
+    try {
+      const response = await fetch('/api/ai/debug-navigator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildDebugAIPayload(debugContext, errorText, repoData)),
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result?.error || 'AI Debug Navigator request failed.');
+      }
+
+      if (result.mode === 'ai-enhanced') {
+        setAIDebugState({
+          status: 'enhanced',
+          analysis: result.analysis,
+          error: '',
+        });
+        return;
+      }
+
+      setAIDebugState({
+        status: 'fallback',
+        analysis: result.analysis || buildLocalDebugAnalysis(debugContext),
+        error: result.error || 'AI is unavailable right now; local deterministic analysis is still ready.',
+      });
+    } catch (error) {
+      setAIDebugState({
+        status: 'fallback',
+        analysis: buildLocalDebugAnalysis(debugContext),
+        error: error?.message || 'AI is unavailable right now; local deterministic analysis is still ready.',
+      });
+    }
+  }, [aiDebugState.status, canEnhanceWithAI, debugContext, errorText, repoData]);
 
   if (!hasRepository) {
     return (
@@ -599,7 +932,7 @@ function DebugNavigator({
           <textarea
             className="ca-debug-input"
             value={errorText}
-            onChange={(event) => setErrorText(event.target.value)}
+            onChange={(event) => updateErrorText(event.target.value)}
             placeholder="Paste stack trace, browser console error, API response, or broken-feature description..."
             rows={8}
           />
@@ -608,12 +941,12 @@ function DebugNavigator({
               <button
                 key={example.label}
                 type="button"
-                onClick={() => setErrorText(example.value)}
+                onClick={() => updateErrorText(example.value)}
               >
                 {example.label}
               </button>
             ))}
-            <button type="button" onClick={() => setErrorText('')} disabled={!errorText}>
+            <button type="button" onClick={() => updateErrorText('')} disabled={!errorText}>
               Clear
             </button>
           </div>
@@ -629,6 +962,22 @@ function DebugNavigator({
         <span>{debugContext.apiRoutes.length} API routes</span>
         <span>{hasArchitectureContext ? 'Architecture context available' : 'Architecture context unavailable'}</span>
         <span>{hasPlannerNotes ? 'Planner notes available' : 'Planner notes unavailable'}</span>
+      </div>
+
+      <div className={`ca-debug-ai-status ca-debug-ai-status--${aiDebugState.status}`}>
+        <div className="ca-debug-ai-status-main">
+          <Badge variant={aiStatus.variant}>{aiStatus.label}</Badge>
+          {aiDebugState.status === 'loading' && <Loader2 size={15} className="ca-debug-loading-icon" />}
+          <span>{aiStatus.detail}</span>
+        </div>
+        <button
+          type="button"
+          onClick={handleEnhanceWithAI}
+          disabled={!canEnhanceWithAI || aiDebugState.status === 'loading'}
+        >
+          <Sparkles size={15} />
+          Enhance with AI
+        </button>
       </div>
 
       <WarningsCard warnings={debugContext.warnings} />
@@ -655,6 +1004,7 @@ function DebugNavigator({
       <div className="ca-debug-grid">
         <ErrorSummaryCard context={debugContext} />
         <RootCauseCard context={debugContext} />
+        <AIDebugAnalysisCard context={debugContext} aiDebugState={aiDebugState} />
         <MatchedFilesCard context={debugContext} />
         <DependencyTraceCard context={debugContext} />
         <DebugTraceGraphCard context={debugContext} graphModel={graphModel} />
