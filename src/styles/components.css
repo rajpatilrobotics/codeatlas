@@ -297,7 +297,7 @@
 .ca-planner {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
 }
 
 .ca-planner-empty-card {
@@ -345,45 +345,47 @@
 }
 
 .ca-planner-title {
-  font-size: 28px;
+  font-size: 24px;
   line-height: 1.1;
   font-weight: 750;
   color: var(--text-primary);
-  margin: 0 0 10px;
+  margin: 0 0 8px;
 }
 
 .ca-planner-subtitle {
   color: var(--text-secondary);
-  font-size: 15px;
-  line-height: 1.6;
+  font-size: 14px;
+  line-height: 1.5;
   max-width: 780px;
   margin: 0;
 }
 
 .ca-planner-context-row {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
 }
 
 .ca-planner-context-stat {
   border: 1px solid var(--border-primary);
-  border-radius: 8px;
+  border-radius: 999px;
   background: rgba(255, 255, 255, 0.035);
-  padding: 12px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 11px;
 }
 
 .ca-planner-context-stat span {
-  display: block;
   color: var(--text-secondary);
-  font-size: 12px;
-  margin-bottom: 6px;
+  font-size: 11.5px;
+  margin: 0;
 }
 
 .ca-planner-context-stat strong {
   color: var(--text-primary);
-  font-size: 20px;
+  font-size: 13px;
   font-weight: 750;
 }
 
@@ -397,7 +399,7 @@
 
 .ca-planner-task-input {
   width: 100%;
-  min-height: 136px;
+  min-height: 108px;
   resize: vertical;
   border: 1px solid var(--border-primary);
   border-radius: 10px;
@@ -442,7 +444,42 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-top: 10px;
+}
+
+.ca-planner-action-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
   margin-top: 14px;
+}
+
+.ca-planner-action-summary-item {
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 10px 11px;
+  min-width: 0;
+}
+
+.ca-planner-action-summary-item span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+
+.ca-planner-action-summary-item strong {
+  color: var(--text-primary);
+  display: block;
+  font-size: 13px;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ca-planner-ai-controls {
@@ -453,7 +490,7 @@
   border: 1px solid var(--border-primary);
   border-radius: 10px;
   background: rgba(0, 0, 0, 0.16);
-  margin-top: 14px;
+  margin-top: 10px;
   padding: 10px;
 }
 
@@ -594,10 +631,247 @@
   background: rgba(0, 0, 0, 0.16);
 }
 
+.ca-planner-workbench {
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.04), transparent 36%),
+    var(--surface-card);
+}
+
+.ca-planner-workbench-header {
+  align-items: center;
+  border-bottom: 1px solid var(--border-primary);
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  margin: -2px -2px 14px;
+  padding: 0 0 14px;
+}
+
+.ca-planner-workbench-header > div:first-child {
+  min-width: 160px;
+}
+
+.ca-planner-workbench-header span {
+  color: var(--text-muted);
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.ca-planner-workbench-header strong {
+  color: var(--text-primary);
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.ca-planner-tabs {
+  align-items: center;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--border-primary);
+  border-radius: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+}
+
+.ca-planner-tabs button {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  padding: 8px 11px;
+}
+
+.ca-planner-tabs button:hover,
+.ca-planner-tabs button.active {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.075);
+  color: var(--text-primary);
+}
+
+.ca-planner-workbench-body {
+  min-height: 260px;
+}
+
+.ca-planner-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ca-planner-overview-primary,
+.ca-planner-overview-card {
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.05), transparent 34%),
+    rgba(0, 0, 0, 0.16);
+}
+
+.ca-planner-overview-primary {
+  grid-column: 1 / -1;
+}
+
+.ca-planner-overview-heading,
+.ca-planner-overview-card-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.ca-planner-overview-heading span {
+  color: var(--text-muted);
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+
+.ca-planner-overview-heading h3,
+.ca-planner-overview-card h3 {
+  color: var(--text-primary);
+  font-size: 17px;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.ca-planner-overview-primary p,
+.ca-planner-overview-card p,
+.ca-planner-validation-preview p,
+.ca-planner-overview-impact p {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 10px 0 0;
+}
+
+.ca-planner-overview-metrics,
+.ca-planner-overview-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.ca-planner-overview-card-header {
+  margin-bottom: 10px;
+}
+
+.ca-planner-overview-card-header button {
+  border: 1px solid var(--border-primary);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  padding: 6px 9px;
+  white-space: nowrap;
+}
+
+.ca-planner-overview-card-header button:hover {
+  border-color: rgba(255, 255, 255, 0.32);
+  color: var(--text-primary);
+}
+
+.ca-planner-overview-card-wide {
+  grid-column: span 2;
+}
+
+.ca-planner-mini-list,
+.ca-planner-overview-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ca-planner-mini-row {
+  align-items: center;
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 8px 9px;
+}
+
+.ca-planner-mini-row span,
+.ca-planner-overview-impact > span {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ca-planner-mini-empty {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.ca-planner-overview-impact > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 9px;
+}
+
+.ca-planner-overview-step {
+  align-items: flex-start;
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  display: flex;
+  gap: 10px;
+  padding: 9px;
+}
+
+.ca-planner-overview-step > span {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--border-primary);
+  border-radius: 999px;
+  color: var(--text-primary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 800;
+  height: 24px;
+  justify-content: center;
+  width: 24px;
+}
+
+.ca-planner-overview-step strong,
+.ca-planner-validation-preview strong {
+  color: var(--text-primary);
+  display: block;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 .ca-planner-output-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+
+.ca-planner-output-grid-compact {
+  gap: 12px;
 }
 
 .ca-planner-wide-card,
@@ -735,7 +1009,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 560px;
+  max-height: 440px;
   overflow: auto;
   padding-right: 2px;
 }
@@ -810,10 +1084,24 @@
   margin-top: 4px;
 }
 
+.ca-planner-reason-details {
+  margin-top: 9px;
+}
+
+.ca-planner-reason-details summary {
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 750;
+}
+
 .ca-planner-system-groups {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  max-height: 520px;
+  overflow: auto;
+  padding-right: 2px;
 }
 
 .ca-planner-system-group h4 {
@@ -858,6 +1146,10 @@
   font-size: 12px;
   line-height: 1.45;
   margin: 9px 0 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 .ca-planner-compact-list {
@@ -877,6 +1169,9 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  max-height: 620px;
+  overflow: auto;
+  padding-right: 2px;
 }
 
 .ca-planner-impact-row {
@@ -1109,9 +1404,12 @@
     flex-direction: column;
   }
 
-  .ca-planner-context-row,
   .ca-planner-output-grid {
     grid-template-columns: 1fr;
+  }
+
+  .ca-planner-action-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .ca-planner-chip-grid {
@@ -1120,6 +1418,23 @@
 
   .ca-planner-summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .ca-planner-workbench-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ca-planner-tabs {
+    overflow-x: auto;
+  }
+
+  .ca-planner-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ca-planner-overview-card-wide {
+    grid-column: auto;
   }
 
   .ca-planner-ai-controls {
@@ -1139,6 +1454,16 @@
   .ca-planner-wide-card,
   .ca-planner-summary-card {
     grid-column: auto;
+  }
+}
+
+@media (max-width: 560px) {
+  .ca-planner-action-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .ca-planner-tabs button {
+    flex: 1 0 auto;
   }
 }
 

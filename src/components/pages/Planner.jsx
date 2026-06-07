@@ -27,6 +27,14 @@ const EXAMPLE_PROMPTS = [
   'Improve security scanner',
 ];
 
+const PLANNER_VIEWS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'context', label: 'Context' },
+  { id: 'impact', label: 'Impact' },
+  { id: 'roadmap', label: 'Roadmap' },
+  { id: 'validate', label: 'Validate' },
+];
+
 const CONFIDENCE_VARIANT = {
   high: 'success',
   medium: 'medium',
@@ -452,58 +460,6 @@ function PlannerSectionCard({ title, icon: Icon, subtitle, children, className =
   );
 }
 
-function PlanSummaryCard({ plannerContext }) {
-  const { hasTask, plan } = plannerContext;
-  const isAIEnhanced = plan?.mode === 'ai-enhanced';
-
-  return (
-    <PlannerSectionCard
-      title="Plan Summary"
-      icon={Lightbulb}
-      subtitle={isAIEnhanced ? 'AI-enhanced using local Planner context' : 'Deterministic planning from local repo context'}
-      className="ca-planner-summary-card"
-    >
-      {!hasTask ? (
-        <PlanEmptyState hasTask={hasTask} />
-      ) : (
-        <>
-          <div className="ca-planner-plan-mode">
-            <span>{isAIEnhanced ? 'AI enhanced plan' : 'Deterministic context plan'}</span>
-            {isAIEnhanced ? (
-              <>
-                <Pill>Groq/Gemini routed</Pill>
-                <Pill>Local fallback ready</Pill>
-              </>
-            ) : (
-              <>
-                <Pill>No AI call yet</Pill>
-                <Pill>Local fallback ready</Pill>
-              </>
-            )}
-            {plan.riskLevel && <Pill>{plan.riskLevel} risk</Pill>}
-          </div>
-          <div className="ca-planner-summary-grid">
-            <div className="ca-planner-summary-item">
-              <span>Task title</span>
-              <strong>{plan.taskTitle}</strong>
-            </div>
-            <div className="ca-planner-summary-item">
-              <span>Likely intent</span>
-              <strong>{plan.intent.label}</strong>
-            </div>
-            <div className="ca-planner-summary-item">
-              <span>Confidence</span>
-              <strong>{formatConfidence(plan.confidence)}</strong>
-              <ConfidenceMeter score={plan.score} />
-            </div>
-          </div>
-          <p className="ca-planner-summary-rationale">{plan.intent.rationale}</p>
-        </>
-      )}
-    </PlannerSectionCard>
-  );
-}
-
 function SuggestedFilesCard({ plannerContext }) {
   const { hasTask, plan } = plannerContext;
   const suggestedFiles = plan?.suggestedFiles || [];
@@ -537,11 +493,14 @@ function SuggestedFilesCard({ plannerContext }) {
                 {file.language && <Pill>{file.language}</Pill>}
               </div>
               {file.why.length > 0 && (
-                <ul className="ca-planner-reason-list">
-                  {file.why.map(reason => (
-                    <li key={reason}>{reason}</li>
-                  ))}
-                </ul>
+                <details className="ca-planner-reason-details">
+                  <summary>{file.why.length} match reason{file.why.length === 1 ? '' : 's'}</summary>
+                  <ul className="ca-planner-reason-list">
+                    {file.why.map(reason => (
+                      <li key={reason}>{reason}</li>
+                    ))}
+                  </ul>
+                </details>
               )}
             </div>
           ))}
@@ -881,10 +840,255 @@ function MissingContextCard({ plannerContext }) {
   );
 }
 
+function PlannerActionSummary({ plannerContext, aiStatus, planModeLabel }) {
+  const { hasTask, plan } = plannerContext;
+  const suggestedCount = safeArray(plan?.suggestedFiles).length;
+  const blastImpact = plan?.blastImpact || {};
+  const impactLabel = blastImpact.available
+    ? `${safeArray(blastImpact.items).length} impact checks`
+    : 'Impact unavailable';
+
+  const summaryItems = hasTask ? [
+    { label: 'Mode', value: planModeLabel },
+    { label: 'Confidence', value: formatConfidence(plan?.confidence) },
+    { label: 'Risk', value: plan?.riskLevel ? `${plan.riskLevel} risk` : 'Not classified' },
+    { label: 'Files', value: `${suggestedCount} suggested` },
+    { label: 'Impact', value: impactLabel },
+  ] : [
+    { label: 'Status', value: aiStatus.label },
+    { label: 'Next step', value: 'Enter a task' },
+  ];
+
+  return (
+    <div className="ca-planner-action-summary" aria-label="Planner action summary">
+      {summaryItems.map(item => (
+        <div className="ca-planner-action-summary-item" key={item.label}>
+          <span>{item.label}</span>
+          <strong>{item.value}</strong>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PlannerMiniFileList({ files, emptyText = 'No files matched yet.' }) {
+  if (files.length === 0) {
+    return <p className="ca-planner-mini-empty">{emptyText}</p>;
+  }
+
+  return (
+    <div className="ca-planner-mini-list">
+      {files.map(file => (
+        <div className="ca-planner-mini-row" key={file.path}>
+          <span title={file.path}>{file.path}</span>
+          <Badge variant={CONFIDENCE_VARIANT[file.confidence] || 'info'}>
+            {file.score || 0}%
+          </Badge>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PlannerOverviewPanel({ plannerContext, onSelectView }) {
+  const { hasTask, plan } = plannerContext;
+
+  if (!hasTask) {
+    return (
+      <PlannerSectionCard
+        title="Overview"
+        icon={Lightbulb}
+        subtitle="Your first-screen execution summary will appear here"
+        className="ca-planner-wide-card"
+      >
+        <PlanEmptyState hasTask={hasTask} />
+      </PlannerSectionCard>
+    );
+  }
+
+  const affectedSystems = plan?.affectedSystems || {};
+  const topModules = safeArray(affectedSystems.modules).slice(0, 3);
+  const topServices = safeArray(affectedSystems.services).slice(0, 3);
+  const topEntryPoints = safeArray(affectedSystems.entryPoints).slice(0, 2);
+  const roadmap = safeArray(plan?.roadmap).slice(0, 3);
+  const checklist = safeArray(plan?.validationChecklist);
+  const blastItems = safeArray(plan?.blastImpact?.items);
+  const affectedPreviewItems = unique([
+    ...topModules.map(module => module.name),
+    ...topServices.map(service => service.path || service.name),
+    ...topEntryPoints.map(entry => entry.path),
+  ]).slice(0, 7);
+  const riskRank = { critical: 4, high: 3, medium: 2, low: 1 };
+  const highestImpact = blastItems
+    .slice()
+    .sort((a, b) => (riskRank[b.riskLevel] || 0) - (riskRank[a.riskLevel] || 0) || (b.affectedFilesCount || 0) - (a.affectedFilesCount || 0))[0];
+
+  return (
+    <div className="ca-planner-overview-grid">
+      <Card className="ca-planner-overview-primary">
+        <div className="ca-planner-overview-heading">
+          <div>
+            <span>Plan Summary</span>
+            <h3>{plan?.taskTitle || 'Engineering change'}</h3>
+          </div>
+          <Badge variant={CONFIDENCE_VARIANT[plan?.confidence] || 'info'}>
+            {formatConfidence(plan?.confidence)}
+          </Badge>
+        </div>
+        <p>{plan?.intent?.rationale || 'Planner will summarize the selected task once repository context is matched.'}</p>
+        <div className="ca-planner-overview-metrics">
+          <Pill>{plan?.intent?.label || 'Unknown intent'}</Pill>
+          {plan?.riskLevel && <Pill>{plan.riskLevel} risk</Pill>}
+          <Pill>{safeArray(plan?.suggestedFiles).length} files</Pill>
+        </div>
+      </Card>
+
+      <Card className="ca-planner-overview-card">
+        <div className="ca-planner-overview-card-header">
+          <h3>Priority Files</h3>
+          <button type="button" onClick={() => onSelectView('context')}>View all</button>
+        </div>
+        <PlannerMiniFileList files={safeArray(plan?.suggestedFiles).slice(0, 3)} />
+      </Card>
+
+      <Card className="ca-planner-overview-card">
+        <div className="ca-planner-overview-card-header">
+          <h3>Affected Systems</h3>
+          <button type="button" onClick={() => onSelectView('context')}>Open context</button>
+        </div>
+        <div className="ca-planner-overview-chip-list">
+          {affectedPreviewItems.map(item => <Pill key={item}>{item}</Pill>)}
+          {affectedPreviewItems.length === 0 && (
+            <p className="ca-planner-mini-empty">No affected systems matched yet.</p>
+          )}
+        </div>
+      </Card>
+
+      <Card className="ca-planner-overview-card">
+        <div className="ca-planner-overview-card-header">
+          <h3>Highest Impact</h3>
+          <button type="button" onClick={() => onSelectView('impact')}>Open impact</button>
+        </div>
+        {highestImpact ? (
+          <div className="ca-planner-overview-impact">
+            <span title={highestImpact.path}>{highestImpact.path}</span>
+            <div>
+              <Badge variant={CONFIDENCE_VARIANT[highestImpact.riskLevel] || 'info'}>
+                {highestImpact.riskLevel}
+              </Badge>
+              <Pill>{highestImpact.affectedFilesCount} files</Pill>
+              <Pill>d{highestImpact.traversalDepth}</Pill>
+            </div>
+            <p>{highestImpact.whyImpact || highestImpact.impactSummary}</p>
+          </div>
+        ) : (
+          <p className="ca-planner-mini-empty">{plan?.blastImpact?.reason || 'Impact evidence is unavailable for this task.'}</p>
+        )}
+      </Card>
+
+      <Card className="ca-planner-overview-card ca-planner-overview-card-wide">
+        <div className="ca-planner-overview-card-header">
+          <h3>Next Steps</h3>
+          <button type="button" onClick={() => onSelectView('roadmap')}>Full roadmap</button>
+        </div>
+        {roadmap.length === 0 ? (
+          <p className="ca-planner-mini-empty">No roadmap generated yet.</p>
+        ) : (
+          <div className="ca-planner-overview-steps">
+            {roadmap.map((step, index) => (
+              <div className="ca-planner-overview-step" key={step.id || `${step.title}-${index}`}>
+                <span>{index + 1}</span>
+                <div>
+                  <strong>{step.title}</strong>
+                  <p>{step.detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Card className="ca-planner-overview-card">
+        <div className="ca-planner-overview-card-header">
+          <h3>Validation Preview</h3>
+          <button type="button" onClick={() => onSelectView('validate')}>Validate</button>
+        </div>
+        {checklist.length === 0 ? (
+          <p className="ca-planner-mini-empty">No validation command found yet.</p>
+        ) : (
+          <div className="ca-planner-validation-preview">
+            <strong>{checklist[0].command || checklist[0].label}</strong>
+            <p>{checklist[0].detail}</p>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+function PlannerWorkbench({ activeView, onSelectView, plannerContext, displayPlannerContext, onNavigate }) {
+  const tabLabel = PLANNER_VIEWS.find(view => view.id === activeView)?.label || 'Overview';
+
+  return (
+    <Card className="ca-planner-workbench">
+      <div className="ca-planner-workbench-header">
+        <div>
+          <span>Planner Workspace</span>
+          <strong>{tabLabel}</strong>
+        </div>
+        <div className="ca-planner-tabs" role="tablist" aria-label="Planner views">
+          {PLANNER_VIEWS.map(view => (
+            <button
+              key={view.id}
+              type="button"
+              className={activeView === view.id ? 'active' : ''}
+              onClick={() => onSelectView(view.id)}
+              role="tab"
+              aria-selected={activeView === view.id}
+            >
+              {view.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="ca-planner-workbench-body">
+        {activeView === 'overview' && (
+          <PlannerOverviewPanel plannerContext={displayPlannerContext} onSelectView={onSelectView} />
+        )}
+        {activeView === 'context' && (
+          <div className="ca-planner-output-grid ca-planner-output-grid-compact" aria-label="Planner context">
+            <SuggestedFilesCard plannerContext={displayPlannerContext} />
+            <AffectedSystemsCard plannerContext={displayPlannerContext} />
+          </div>
+        )}
+        {activeView === 'impact' && (
+          <div className="ca-planner-output-grid ca-planner-output-grid-compact" aria-label="Planner impact">
+            <BlastImpactCard plannerContext={plannerContext} onNavigate={onNavigate} />
+          </div>
+        )}
+        {activeView === 'roadmap' && (
+          <div className="ca-planner-output-grid ca-planner-output-grid-compact" aria-label="Planner roadmap">
+            <RoadmapCard plannerContext={displayPlannerContext} />
+            <RisksCard plannerContext={displayPlannerContext} />
+          </div>
+        )}
+        {activeView === 'validate' && (
+          <div className="ca-planner-output-grid ca-planner-output-grid-compact" aria-label="Planner validation">
+            <ValidationCard plannerContext={displayPlannerContext} />
+            <MissingContextCard plannerContext={displayPlannerContext} />
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 function Planner({ repoData, codeAnalysis, firstContributions = [], onNavigate }) {
   const [taskText, setTaskText] = useState('');
   const [aiPlannerState, setAIPlannerState] = useState(INITIAL_AI_STATE);
   const [planActionFeedback, setPlanActionFeedback] = useState('');
+  const [activePlannerView, setActivePlannerView] = useState('overview');
   const hasRepository = Boolean(repoData?.repoInfo || getRepositoryFileCount(repoData) > 0);
 
   const contextStats = useMemo(() => {
@@ -908,6 +1112,7 @@ function Planner({ repoData, codeAnalysis, firstContributions = [], onNavigate }
   useEffect(() => {
     setAIPlannerState(INITIAL_AI_STATE);
     setPlanActionFeedback('');
+    setActivePlannerView('overview');
   }, [taskText, repoData, codeAnalysis]);
 
   const displayPlannerContext = useMemo(() => (
@@ -1055,8 +1260,7 @@ function Planner({ repoData, codeAnalysis, firstContributions = [], onNavigate }
             </div>
             <h2 className="ca-planner-title">AI Engineering Change Planner</h2>
             <p className="ca-planner-subtitle">
-              Enter a feature request, bug, migration, or refactor goal. CodeAtlas builds
-              a deterministic local implementation plan first, then can optionally enhance it with AI.
+              Turn a feature request, bug, migration, or refactor goal into a repo-aware execution plan.
             </p>
           </div>
           <Badge variant={CONFIDENCE_VARIANT[displayPlannerContext.confidence] || 'info'}>
@@ -1086,7 +1290,7 @@ function Planner({ repoData, codeAnalysis, firstContributions = [], onNavigate }
           value={taskText}
           onChange={(event) => setTaskText(event.target.value)}
           placeholder="Paste a ticket, bug report, migration goal, or feature request..."
-          rows={5}
+          rows={4}
         />
         <div className="ca-planner-example-row" aria-label="Example planner prompts">
           {EXAMPLE_PROMPTS.map(prompt => (
@@ -1100,6 +1304,11 @@ function Planner({ repoData, codeAnalysis, firstContributions = [], onNavigate }
             </button>
           ))}
         </div>
+        <PlannerActionSummary
+          plannerContext={displayPlannerContext}
+          aiStatus={aiStatus}
+          planModeLabel={planModeLabel}
+        />
         <div className="ca-planner-ai-controls">
           <div className={`ca-planner-status-panel ca-planner-status-${aiPlannerState.status}`}>
             <div className="ca-planner-status-main">
@@ -1184,16 +1393,13 @@ function Planner({ repoData, codeAnalysis, firstContributions = [], onNavigate }
         </div>
       </Card>
 
-      <div className="ca-planner-output-grid" aria-label="Planner output">
-        <PlanSummaryCard plannerContext={displayPlannerContext} />
-        <SuggestedFilesCard plannerContext={displayPlannerContext} />
-        <AffectedSystemsCard plannerContext={displayPlannerContext} />
-        <BlastImpactCard plannerContext={plannerContext} onNavigate={onNavigate} />
-        <RoadmapCard plannerContext={displayPlannerContext} />
-        <RisksCard plannerContext={displayPlannerContext} />
-        <ValidationCard plannerContext={displayPlannerContext} />
-        <MissingContextCard plannerContext={displayPlannerContext} />
-      </div>
+      <PlannerWorkbench
+        activeView={activePlannerView}
+        onSelectView={setActivePlannerView}
+        plannerContext={plannerContext}
+        displayPlannerContext={displayPlannerContext}
+        onNavigate={onNavigate}
+      />
     </div>
   );
 }
