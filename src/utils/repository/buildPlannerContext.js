@@ -3,6 +3,7 @@ const MAX_MODULES = 8;
 const MAX_SERVICES = 8;
 const MAX_ENTRY_POINTS = 6;
 const MAX_DEPENDENCY_SIGNALS = 8;
+const MAX_SUGGESTED_FILES = 8;
 
 const STOP_WORDS = new Set([
   'a',
@@ -553,6 +554,403 @@ function buildWarnings({ repoData, codeAnalysis, records, matchedFiles, taskText
   return warnings;
 }
 
+function titleFromTask(taskText) {
+  const trimmed = String(taskText || '').trim().replace(/\s+/g, ' ');
+  if (!trimmed) return 'Untitled engineering change';
+  return trimmed.length > 96 ? `${trimmed.slice(0, 93)}...` : trimmed;
+}
+
+function detectIntent(originalTokens, terms, matchedFiles, modules) {
+  const termSet = new Set(terms);
+  const layerSet = new Set(matchedFiles.map(file => file.layer).filter(Boolean));
+  const moduleNames = modules.map(module => module.name).filter(Boolean);
+
+  const checks = [
+    {
+      key: 'auth',
+      label: 'Authentication or session change',
+      terms: ['auth', 'authentication', 'login', 'oauth', 'session', 'token', 'jwt'],
+      rationale: 'Task terms and matched files point at authentication, sessions, or token handling.',
+    },
+    {
+      key: 'rate-limit',
+      label: 'API protection or rate-limiting change',
+      terms: ['rate', 'limit', 'limiter', 'throttle', 'quota', 'middleware'],
+      rationale: 'Task terms point at request throttling, middleware, or API protection.',
+    },
+    {
+      key: 'data',
+      label: 'Data layer or persistence change',
+      terms: ['database', 'db', 'sqlite', 'postgres', 'mysql', 'model', 'schema', 'migration', 'storage', 'pool'],
+      rationale: 'Task terms and matched files point at persistence, models, storage, or migration work.',
+    },
+    {
+      key: 'security',
+      label: 'Security analysis or hardening change',
+      terms: ['security', 'scanner', 'scan', 'vulnerability', 'secret', 'permission', 'audit'],
+      rationale: 'Task terms point at security scanning, hardening, or sensitive-code review.',
+    },
+    {
+      key: 'api',
+      label: 'API or service change',
+      terms: ['api', 'route', 'router', 'endpoint', 'service', 'handler', 'controller'],
+      rationale: 'Task terms and matched files point at API/service behavior.',
+    },
+    {
+      key: 'frontend',
+      label: 'Frontend or UI change',
+      terms: ['frontend', 'ui', 'client', 'component', 'page', 'react', 'next', 'static'],
+      rationale: 'Task terms and matched files point at client-facing UI code.',
+    },
+    {
+      key: 'testing',
+      label: 'Testing or validation change',
+      terms: ['test', 'testing', 'spec', 'pytest', 'jest', 'playwright', 'cypress'],
+      rationale: 'Task terms and matched files point at test coverage or validation work.',
+    },
+    {
+      key: 'devops',
+      label: 'Build, deployment, or operations change',
+      terms: ['docker', 'deploy', 'ci', 'workflow', 'github', 'actions', 'kubernetes', 'config'],
+      rationale: 'Task terms and matched files point at deployment, CI, or runtime configuration.',
+    },
+  ];
+
+  const selected = checks.find(check => (
+    check.terms.some(term => termSet.has(term)) ||
+    check.terms.some(term => layerSet.has(term)) ||
+    moduleNames.some(name => check.terms.some(term => name.toLowerCase().includes(term)))
+  ));
+
+  if (selected) {
+    return {
+      ...selected,
+      matchedTerms: selected.terms.filter(term => termSet.has(term) || layerSet.has(term)),
+    };
+  }
+
+  return {
+    key: originalTokens.length > 0 ? 'general' : 'none',
+    label: originalTokens.length > 0 ? 'General codebase change' : 'No task entered',
+    rationale: originalTokens.length > 0
+      ? 'No specialized intent dominated, so the plan stays scoped to the highest-confidence repository matches.'
+      : 'Enter a task before deterministic planning can begin.',
+    matchedTerms: [],
+  };
+}
+
+function getFileAction(file, intent) {
+  const layer = String(file.layer || '').toLowerCase();
+  if (isTestLikeFile(file)) return 'Update or add focused regression coverage';
+  if (layer === 'auth') return 'Review and update authentication/session behavior';
+  if (layer === 'data') return 'Review persistence, model, or migration impact';
+  if (layer === 'api' || layer === 'service') return 'Update request/service handling';
+  if (layer === 'frontend') return 'Update user-facing flow or client integration';
+  if (layer === 'devops' || layer === 'config') return 'Update configuration or delivery wiring';
+  if (intent?.key === 'security') return 'Review security-sensitive behavior';
+  return 'Review and update if the change touches this path';
+}
+
+function buildSuggestedFiles(matchedFiles, intent) {
+  return matchedFiles.slice(0, MAX_SUGGESTED_FILES).map(file => ({
+    path: file.path,
+    action: getFileAction(file, intent),
+    confidence: file.confidence,
+    score: file.score,
+    layer: file.layer,
+    language: file.language,
+    why: unique([
+      ...file.reasons,
+      file.isGraphBacked ? 'Dependency graph can provide impact context for this file' : '',
+    ]).slice(0, 4),
+  }));
+}
+
+function isTestLikeFile(file) {
+  const path = String(file?.path || '').toLowerCase();
+  return file?.layer === 'testing' || /(^|\/)(tests?|specs?)(\/|$)|(^|[._-])(test|spec)[._-]/.test(path);
+}
+
+function summarizeAffectedSystems(modules, services, entryPoints, dependencySignals) {
+  return {
+    modules: modules.map(module => ({
+      name: module.name,
+      score: module.score,
+      confidence: module.confidence,
+      fileCount: module.fileCount,
+      layers: module.layers || [],
+      matchedFiles: module.matchedFiles,
+      reason: module.reasons[0] || 'Matched through repository context',
+    })),
+    services: services.map(service => ({
+      name: service.name,
+      path: service.path,
+      layer: service.layer,
+      score: service.score,
+      confidence: service.confidence,
+      reason: service.reasons[0] || 'Matched as a service-like file',
+    })),
+    entryPoints: entryPoints.map(entry => ({
+      path: entry.path,
+      score: entry.score,
+      confidence: entry.confidence,
+      reason: entry.reasons[0] || 'Likely entry point from path or graph centrality',
+    })),
+    dependencies: dependencySignals.map(dep => ({
+      name: dep.name,
+      type: dep.type,
+      category: dep.category || dep.type,
+      score: dep.score,
+      confidence: dep.confidence,
+      reason: dep.reason || 'Matched dependency or technology signal',
+    })),
+  };
+}
+
+function fileListText(files, fallback = 'the matched files') {
+  const paths = files.map(file => file.path).filter(Boolean);
+  if (paths.length === 0) return fallback;
+  if (paths.length === 1) return paths[0];
+  return `${paths.slice(0, 3).join(', ')}${paths.length > 3 ? ` and ${paths.length - 3} more` : ''}`;
+}
+
+function buildRoadmap({ suggestedFiles, modules, entryPoints, packageScripts, intent }) {
+  if (suggestedFiles.length === 0) return [];
+
+  const primaryFiles = suggestedFiles.filter(file => !isTestLikeFile(file)).slice(0, 4);
+  const testFiles = suggestedFiles.filter(isTestLikeFile).slice(0, 3);
+  const primaryModuleNames = modules.slice(0, 3).map(module => module.name).join(', ');
+  const scriptNames = packageScripts.slice(0, 3).map(script => `npm run ${script.name}`);
+
+  return [
+    {
+      id: 'scope',
+      title: 'Confirm scope against matched repository context',
+      detail: `Treat this as a ${intent.label.toLowerCase()} and start with ${primaryModuleNames || 'the highest-confidence matched module'}.`,
+      files: entryPoints.slice(0, 2).map(entry => entry.path),
+    },
+    {
+      id: 'read',
+      title: 'Read the existing implementation path',
+      detail: `Inspect ${fileListText(primaryFiles)} before editing so the change follows existing patterns.`,
+      files: primaryFiles.map(file => file.path),
+    },
+    {
+      id: 'implement',
+      title: 'Apply the smallest coherent code change',
+      detail: `Make the behavior change in the highest-confidence files first, then update adjacent service or data paths only when the dependency context requires it.`,
+      files: primaryFiles.slice(0, 5).map(file => file.path),
+    },
+    {
+      id: 'tests',
+      title: testFiles.length > 0 ? 'Update matched tests' : 'Add or identify focused regression coverage',
+      detail: testFiles.length > 0
+        ? `Use ${fileListText(testFiles)} as the first validation targets.`
+        : 'No strong test-file match was found, so identify the nearest existing test area before merging.',
+      files: testFiles.map(file => file.path),
+    },
+    {
+      id: 'validate',
+      title: 'Run available validation checks',
+      detail: scriptNames.length > 0
+        ? `Start with ${scriptNames.join(', ')}.`
+        : 'No package.json scripts were available; use the repository documented test/build command or the matched test files.',
+      files: [],
+    },
+  ];
+}
+
+function buildRisks({ confidence, suggestedFiles, modules, coverage, intent }) {
+  const risks = [];
+  const highCouplingFiles = suggestedFiles.filter(file => file.score >= 70).slice(0, 3);
+  const sensitiveLayers = new Set(suggestedFiles.map(file => file.layer).filter(layer => (
+    ['auth', 'data', 'security', 'config', 'devops'].includes(layer)
+  )));
+
+  if (confidence !== 'high') {
+    risks.push({
+      level: confidence === 'medium' ? 'medium' : 'high',
+      title: 'Matcher confidence is limited',
+      detail: 'The local matcher did not find a high-confidence target set, so confirm the target module before implementation.',
+    });
+  }
+
+  if (sensitiveLayers.size > 0) {
+    risks.push({
+      level: 'high',
+      title: 'Sensitive system area',
+      detail: `The plan touches ${Array.from(sensitiveLayers).join(', ')} context, so review security, data, and rollback behavior carefully.`,
+    });
+  }
+
+  if (highCouplingFiles.length > 0) {
+    risks.push({
+      level: 'medium',
+      title: 'Potentially broad dependency impact',
+      detail: `${fileListText(highCouplingFiles)} ranked highly and may affect adjacent modules.`,
+    });
+  }
+
+  if ((coverage.graphFiles || 0) === 0) {
+    risks.push({
+      level: 'medium',
+      title: 'No dependency graph evidence',
+      detail: 'Planner could not use dependency graph coverage, so impact confidence is lower.',
+    });
+  }
+
+  if (!suggestedFiles.some(isTestLikeFile)) {
+    risks.push({
+      level: 'medium',
+      title: 'No matched test files',
+      detail: 'The matcher did not find a strong existing test target, so validation planning needs manual confirmation.',
+    });
+  }
+
+  if (modules.length > 4) {
+    risks.push({
+      level: 'medium',
+      title: 'Multiple modules involved',
+      detail: `Matched context spans ${modules.length} modules, so keep the first implementation pass narrow.`,
+    });
+  }
+
+  if (risks.length === 0 && suggestedFiles.length > 0) {
+    risks.push({
+      level: 'low',
+      title: 'Scoped local plan',
+      detail: `The deterministic plan found a focused ${intent.label.toLowerCase()} target set with available repo context.`,
+    });
+  }
+
+  return risks.slice(0, 6);
+}
+
+function buildValidationChecklist({ packageScripts, suggestedFiles, intent }) {
+  const checklist = [];
+  const testFiles = suggestedFiles.filter(isTestLikeFile);
+  const scriptPriority = ['test', 'tests', 'lint', 'build', 'typecheck', 'check'];
+  const orderedScripts = [...packageScripts].sort((a, b) => {
+    const aIndex = scriptPriority.findIndex(name => a.name.toLowerCase().includes(name));
+    const bIndex = scriptPriority.findIndex(name => b.name.toLowerCase().includes(name));
+    return (aIndex === -1 ? 99 : aIndex) - (bIndex === -1 ? 99 : bIndex) || a.name.localeCompare(b.name);
+  });
+
+  orderedScripts.slice(0, 5).forEach(script => {
+    checklist.push({
+      type: 'script',
+      command: `npm run ${script.name}`,
+      label: `Run package script: ${script.name}`,
+      detail: script.command,
+      source: 'package.json',
+    });
+  });
+
+  if (testFiles.length > 0) {
+    checklist.push({
+      type: 'tests',
+      label: 'Run or update matched test files',
+      detail: fileListText(testFiles),
+      source: 'matched repository files',
+    });
+  }
+
+  checklist.push({
+    type: 'review',
+    label: `Review ${intent.label.toLowerCase()} behavior manually`,
+    detail: 'Confirm the changed flow against the original task before merging.',
+    source: 'deterministic planner',
+  });
+
+  if (packageScripts.length === 0) {
+    checklist.unshift({
+      type: 'manual',
+      label: 'Identify the repository-specific test command',
+      detail: 'No package.json scripts were available in the analysis payload.',
+      source: 'missing package scripts',
+    });
+  }
+
+  return checklist.slice(0, 8);
+}
+
+function buildMissingContext({ hasTask, matchedFiles, packageScripts, coverage, warnings }) {
+  const missing = [];
+
+  if (!hasTask) {
+    missing.push('A task, ticket, bug report, or feature request is required before planning.');
+  }
+  if (matchedFiles.length === 0 && hasTask) {
+    missing.push('No strong file matches were found; add a module, file, API, or technology keyword.');
+  }
+  if ((coverage.graphFiles || 0) === 0) {
+    missing.push('Dependency graph coverage is unavailable for this plan.');
+  }
+  if ((coverage.analyzedFiles || 0) === 0) {
+    missing.push('Code-analysis metadata is unavailable, so definition matching is limited.');
+  }
+  if (packageScripts.length === 0) {
+    missing.push('No package.json scripts were available for command-level validation.');
+  }
+  warnings
+    .filter(warning => !warning.startsWith('Enter a task'))
+    .forEach(warning => missing.push(warning));
+
+  return unique(missing).slice(0, 6);
+}
+
+function buildImplementationPlan({
+  taskText,
+  originalTokens,
+  terms,
+  matchedFiles,
+  modules,
+  services,
+  entryPoints,
+  dependencySignals,
+  packageScripts,
+  coverage,
+  warnings,
+  confidence,
+  score,
+}) {
+  const hasTask = originalTokens.length > 0;
+  const intent = detectIntent(originalTokens, terms, matchedFiles, modules);
+  const suggestedFiles = buildSuggestedFiles(matchedFiles, intent);
+  const affectedSystems = summarizeAffectedSystems(modules, services, entryPoints, dependencySignals);
+  const roadmap = hasTask
+    ? buildRoadmap({ suggestedFiles, modules, entryPoints, packageScripts, intent })
+    : [];
+  const risks = hasTask
+    ? buildRisks({ confidence, suggestedFiles, modules, coverage, intent })
+    : [];
+  const validationChecklist = hasTask
+    ? buildValidationChecklist({ packageScripts, suggestedFiles, intent })
+    : [];
+  const missingContext = buildMissingContext({
+    hasTask,
+    matchedFiles,
+    packageScripts,
+    coverage,
+    warnings,
+  });
+
+  return {
+    mode: 'local-deterministic',
+    isGenerated: hasTask && suggestedFiles.length > 0,
+    taskTitle: titleFromTask(taskText),
+    intent,
+    confidence,
+    score,
+    affectedSystems,
+    suggestedFiles,
+    roadmap,
+    risks,
+    validationChecklist,
+    missingContext,
+  };
+}
+
 export function buildPlannerContext({ taskText = '', repoData = null, codeAnalysis = null } = {}) {
   const originalTokens = tokenize(taskText);
   const terms = expandTerms(originalTokens);
@@ -575,27 +973,47 @@ export function buildPlannerContext({ taskText = '', repoData = null, codeAnalys
     ...modules.map(module => module.score),
     ...dependencySignals.map(dep => dep.score)
   );
+  const confidence = getConfidence(highestScore);
+  const packageScripts = getPackageScripts(repoData?.packageJson);
+  const coverage = {
+    repositoryFiles: records.length,
+    graphFiles: safeArray(repoData?.dependencyGraph?.nodes).length,
+    graphEdges: safeArray(repoData?.dependencyGraph?.edges).length,
+    analyzedFiles: safeArray(codeAnalysis?.files).length || codeAnalysis?.summary?.analyzedFiles || 0,
+    packageDependencies: getPackageEntries(repoData?.packageJson).length,
+  };
+  const warnings = buildWarnings({ repoData, codeAnalysis, records, matchedFiles, taskText });
+  const plan = buildImplementationPlan({
+    taskText,
+    originalTokens,
+    terms,
+    matchedFiles,
+    modules,
+    services,
+    entryPoints,
+    dependencySignals,
+    packageScripts,
+    coverage,
+    warnings,
+    confidence,
+    score: highestScore,
+  });
 
   return {
     taskText,
     hasTask: originalTokens.length > 0,
     matchedTerms: terms,
-    confidence: getConfidence(highestScore),
+    confidence,
     score: highestScore,
     matchedFiles,
     modules,
     services,
     entryPoints,
     dependencySignals,
-    packageScripts: getPackageScripts(repoData?.packageJson),
-    coverage: {
-      repositoryFiles: records.length,
-      graphFiles: safeArray(repoData?.dependencyGraph?.nodes).length,
-      graphEdges: safeArray(repoData?.dependencyGraph?.edges).length,
-      analyzedFiles: safeArray(codeAnalysis?.files).length || codeAnalysis?.summary?.analyzedFiles || 0,
-      packageDependencies: getPackageEntries(repoData?.packageJson).length,
-    },
-    warnings: buildWarnings({ repoData, codeAnalysis, records, matchedFiles, taskText }),
+    packageScripts,
+    coverage,
+    warnings,
+    plan,
   };
 }
 

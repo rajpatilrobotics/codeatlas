@@ -57,29 +57,92 @@ function ConfidenceMeter({ score }) {
   );
 }
 
-function MatchedFilesCard({ plannerContext }) {
-  const { hasTask, matchedFiles } = plannerContext;
-
+function PlanEmptyState({ hasTask, message, idleMessage = 'Enter a task to generate a local deterministic plan.' }) {
   return (
-    <Card className="ca-planner-placeholder-card ca-planner-context-card">
+    <div className="ca-planner-placeholder-surface">
+      <SearchCode size={18} />
+      <span>{hasTask ? message : idleMessage}</span>
+    </div>
+  );
+}
+
+function PlannerSectionCard({ title, icon: Icon, subtitle, children, className = '' }) {
+  return (
+    <Card className={`ca-planner-placeholder-card ${className}`}>
       <div className="ca-planner-placeholder-header">
         <span className="ca-planner-placeholder-icon">
-          <FileSearch size={18} />
+          <Icon size={18} />
         </span>
         <div>
-          <h3>Matched Files</h3>
-          <small>{hasTask ? `${matchedFiles.length} real file matches` : 'Waiting for task input'}</small>
+          <h3>{title}</h3>
+          {subtitle && <small>{subtitle}</small>}
         </div>
       </div>
+      {children}
+    </Card>
+  );
+}
 
-      {matchedFiles.length === 0 ? (
+function PlanSummaryCard({ plannerContext }) {
+  const { hasTask, plan } = plannerContext;
+
+  return (
+    <PlannerSectionCard
+      title="Plan Summary"
+      icon={Lightbulb}
+      subtitle="Local deterministic planning, not AI-generated"
+      className="ca-planner-summary-card"
+    >
+      {!hasTask ? (
+        <PlanEmptyState hasTask={hasTask} />
+      ) : (
+        <>
+          <div className="ca-planner-plan-mode">
+            <span>Local deterministic plan</span>
+            <Pill>No AI call</Pill>
+            <Pill>No backend planner API</Pill>
+          </div>
+          <div className="ca-planner-summary-grid">
+            <div className="ca-planner-summary-item">
+              <span>Task title</span>
+              <strong>{plan.taskTitle}</strong>
+            </div>
+            <div className="ca-planner-summary-item">
+              <span>Likely intent</span>
+              <strong>{plan.intent.label}</strong>
+            </div>
+            <div className="ca-planner-summary-item">
+              <span>Confidence</span>
+              <strong>{formatConfidence(plan.confidence)}</strong>
+              <ConfidenceMeter score={plan.score} />
+            </div>
+          </div>
+          <p className="ca-planner-summary-rationale">{plan.intent.rationale}</p>
+        </>
+      )}
+    </PlannerSectionCard>
+  );
+}
+
+function SuggestedFilesCard({ plannerContext }) {
+  const { hasTask, plan } = plannerContext;
+  const suggestedFiles = plan?.suggestedFiles || [];
+
+  return (
+    <PlannerSectionCard
+      title="Suggested Files"
+      icon={FileSearch}
+      subtitle={hasTask ? `${suggestedFiles.length} files selected from real repo context` : 'Waiting for task input'}
+      className="ca-planner-context-card"
+    >
+      {suggestedFiles.length === 0 ? (
         <MatchEmptyState
           hasTask={hasTask}
           message="No strong file matches found from the current repository data."
         />
       ) : (
         <div className="ca-planner-match-list">
-          {matchedFiles.map(file => (
+          {suggestedFiles.map(file => (
             <div className="ca-planner-file-match" key={file.path}>
               <div className="ca-planner-match-main">
                 <span className="ca-planner-file-path" title={file.path}>{file.path}</span>
@@ -87,15 +150,15 @@ function MatchedFilesCard({ plannerContext }) {
                   {file.score}%
                 </Badge>
               </div>
+              <div className="ca-planner-suggested-action">{file.action}</div>
               <ConfidenceMeter score={file.score} />
               <div className="ca-planner-match-meta">
                 {file.layer && <Pill>{file.layer}</Pill>}
                 {file.language && <Pill>{file.language}</Pill>}
-                {file.isGraphBacked && <Pill>graph-backed</Pill>}
               </div>
-              {file.reasons.length > 0 && (
+              {file.why.length > 0 && (
                 <ul className="ca-planner-reason-list">
-                  {file.reasons.map(reason => (
+                  {file.why.map(reason => (
                     <li key={reason}>{reason}</li>
                   ))}
                 </ul>
@@ -104,26 +167,26 @@ function MatchedFilesCard({ plannerContext }) {
           ))}
         </div>
       )}
-    </Card>
+    </PlannerSectionCard>
   );
 }
 
 function AffectedSystemsCard({ plannerContext }) {
-  const { hasTask, modules, services, entryPoints, dependencySignals } = plannerContext;
+  const { hasTask, plan } = plannerContext;
+  const affectedSystems = plan?.affectedSystems || {};
+  const modules = affectedSystems.modules || [];
+  const services = affectedSystems.services || [];
+  const entryPoints = affectedSystems.entryPoints || [];
+  const dependencySignals = affectedSystems.dependencies || [];
   const hasContext = modules.length > 0 || services.length > 0 || entryPoints.length > 0 || dependencySignals.length > 0;
 
   return (
-    <Card className="ca-planner-placeholder-card ca-planner-context-card">
-      <div className="ca-planner-placeholder-header">
-        <span className="ca-planner-placeholder-icon">
-          <Network size={18} />
-        </span>
-        <div>
-          <h3>Affected Systems</h3>
-          <small>{hasTask ? 'Modules, services, entry points, and dependency signals' : 'Waiting for task input'}</small>
-        </div>
-      </div>
-
+    <PlannerSectionCard
+      title="Affected Systems"
+      icon={Network}
+      subtitle={hasTask ? 'Modules, services, entry points, and dependency signals' : 'Waiting for task input'}
+      className="ca-planner-context-card"
+    >
       {!hasContext ? (
         <MatchEmptyState
           hasTask={hasTask}
@@ -141,12 +204,12 @@ function AffectedSystemsCard({ plannerContext }) {
                       <strong>{module.name}</strong>
                       <span>{module.fileCount} files · {module.score}%</span>
                     </div>
-                    {module.layers.length > 0 && (
+                    {(module.layers || []).length > 0 && (
                       <div className="ca-planner-mini-pill-row">
                         {module.layers.map(layer => <Pill key={layer}>{layer}</Pill>)}
                       </div>
                     )}
-                    <p>{module.reasons[0]}</p>
+                    <p>{module.reason}</p>
                   </div>
                 ))}
               </div>
@@ -197,22 +260,143 @@ function AffectedSystemsCard({ plannerContext }) {
           )}
         </div>
       )}
-    </Card>
+    </PlannerSectionCard>
   );
 }
 
-function DeferredPlannerCard({ title, icon: Icon, description, children }) {
+function RoadmapCard({ plannerContext }) {
+  const { hasTask, plan } = plannerContext;
+  const roadmap = plan?.roadmap || [];
+
   return (
-    <Card className="ca-planner-placeholder-card">
-      <div className="ca-planner-placeholder-header">
-        <span className="ca-planner-placeholder-icon">
-          <Icon size={18} />
-        </span>
-        <h3>{title}</h3>
-      </div>
-      <p>{description}</p>
-      {children}
-    </Card>
+    <PlannerSectionCard
+      title="Implementation Roadmap"
+      icon={Route}
+      subtitle="Deterministic steps from matched files and repo metadata"
+      className="ca-planner-wide-card"
+    >
+      {roadmap.length === 0 ? (
+        <PlanEmptyState
+          hasTask={hasTask}
+          message="No roadmap was generated because the matcher did not find enough repository context."
+        />
+      ) : (
+        <div className="ca-planner-roadmap-list">
+          {roadmap.map((step, index) => (
+            <div className="ca-planner-roadmap-step" key={step.id}>
+              <span className="ca-planner-step-index">{index + 1}</span>
+              <div>
+                <strong>{step.title}</strong>
+                <p>{step.detail}</p>
+                {step.files.length > 0 && (
+                  <div className="ca-planner-step-files">
+                    {step.files.map(file => <Pill key={file}>{file}</Pill>)}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </PlannerSectionCard>
+  );
+}
+
+function RisksCard({ plannerContext }) {
+  const { hasTask, plan } = plannerContext;
+  const risks = plan?.risks || [];
+
+  return (
+    <PlannerSectionCard
+      title="Risks"
+      icon={AlertTriangle}
+      subtitle="Local risk signals from confidence, layers, and coverage"
+    >
+      {risks.length === 0 ? (
+        <PlanEmptyState
+          hasTask={hasTask}
+          message="No risk summary was generated because there were no matched files."
+        />
+      ) : (
+        <div className="ca-planner-warning-list">
+          {risks.map(risk => (
+            <div className={`ca-planner-warning-row ca-planner-risk-${risk.level}`} key={`${risk.level}-${risk.title}`}>
+              <AlertTriangle size={15} />
+              <div>
+                <strong>{risk.title}</strong>
+                <span>{risk.detail}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </PlannerSectionCard>
+  );
+}
+
+function ValidationCard({ plannerContext }) {
+  const { hasTask, plan } = plannerContext;
+  const checklist = plan?.validationChecklist || [];
+
+  return (
+    <PlannerSectionCard
+      title="Validation Checklist"
+      icon={CheckCircle2}
+      subtitle="Uses real package.json scripts when available"
+    >
+      {checklist.length === 0 ? (
+        <PlanEmptyState
+          hasTask={hasTask}
+          message="No validation checklist was generated because no task context was matched."
+        />
+      ) : (
+        <div className="ca-planner-checklist">
+          {checklist.map(item => (
+            <div className="ca-planner-check-row" key={`${item.type}-${item.label}`}>
+              <CheckCircle2 size={15} />
+              <div>
+                <strong>{item.command || item.label}</strong>
+                {item.command && <span>{item.label}</span>}
+                <p>{item.detail}</p>
+                <small>{item.source}</small>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </PlannerSectionCard>
+  );
+}
+
+function MissingContextCard({ plannerContext }) {
+  const { hasTask, plan } = plannerContext;
+  const missingContext = plan?.missingContext || [];
+
+  return (
+    <PlannerSectionCard
+      title="Missing Context"
+      icon={SearchCode}
+      subtitle="What still needs developer confirmation"
+      className="ca-planner-wide-card"
+    >
+      {!hasTask ? (
+        <PlanEmptyState hasTask={hasTask} />
+      ) : missingContext.length === 0 ? (
+        <div className="ca-planner-warning-row ca-planner-risk-low">
+          <CheckCircle2 size={15} />
+          <span>Planner has task text, repository files, analysis metadata, and validation signals for this local plan.</span>
+        </div>
+      ) : (
+        <div className="ca-planner-warning-list">
+          {missingContext.map(item => (
+            <div className="ca-planner-warning-row" key={item}>
+              <SearchCode size={15} />
+              <span>{item}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </PlannerSectionCard>
   );
 }
 
@@ -268,12 +452,12 @@ function Planner({ repoData, codeAnalysis, firstContributions = [], onNavigate }
           <div>
             <div className="ca-planner-kicker">
               <Lightbulb size={16} />
-              Planner P2
+              Planner P3
             </div>
             <h2 className="ca-planner-title">AI Engineering Change Planner</h2>
             <p className="ca-planner-subtitle">
-              Enter a feature request, bug, migration, or refactor goal. CodeAtlas now
-              matches it against real repository files, modules, services, and entry points.
+              Enter a feature request, bug, migration, or refactor goal. CodeAtlas builds
+              a deterministic local implementation plan from matched repository context.
             </p>
           </div>
           <Badge variant={CONFIDENCE_VARIANT[plannerContext.confidence] || 'info'}>
@@ -318,70 +502,20 @@ function Planner({ repoData, codeAnalysis, firstContributions = [], onNavigate }
           ))}
         </div>
         <div className="ca-planner-input-footer">
-          <Pill>AI disabled in P2</Pill>
+          <Pill>AI disabled in P3</Pill>
           <Pill>No backend planner API yet</Pill>
-          <Pill>Local repo matcher active</Pill>
+          <Pill>Local deterministic plan</Pill>
         </div>
       </Card>
 
-      <div className="ca-planner-output-grid" aria-label="Future planner output sections">
-        <MatchedFilesCard plannerContext={plannerContext} />
+      <div className="ca-planner-output-grid" aria-label="Local deterministic planner output">
+        <PlanSummaryCard plannerContext={plannerContext} />
+        <SuggestedFilesCard plannerContext={plannerContext} />
         <AffectedSystemsCard plannerContext={plannerContext} />
-
-        <DeferredPlannerCard
-          title="Implementation Roadmap"
-          icon={Route}
-          description="Roadmap generation starts in P3. P2 only retrieves and ranks repository context."
-        >
-          <div className="ca-planner-placeholder-surface">
-            <SearchCode size={18} />
-            <span>
-              {plannerContext.hasTask
-                ? `${plannerContext.matchedFiles.length} matched files ready for future planning.`
-                : 'Enter a task before roadmap generation is enabled.'}
-            </span>
-          </div>
-        </DeferredPlannerCard>
-
-        <DeferredPlannerCard
-          title="Risks"
-          icon={AlertTriangle}
-          description="P2 reports matcher confidence and missing-data warnings only, not final delivery risk."
-        >
-          <div className="ca-planner-warning-list">
-            {plannerContext.warnings.map(warning => (
-              <div className="ca-planner-warning-row" key={warning}>
-                <AlertTriangle size={15} />
-                <span>{warning}</span>
-              </div>
-            ))}
-            {plannerContext.warnings.length === 0 && (
-              <div className="ca-planner-warning-row">
-                <CheckCircle2 size={15} />
-                <span>Matcher has repository files, graph data, and code-analysis metadata available.</span>
-              </div>
-            )}
-          </div>
-        </DeferredPlannerCard>
-
-        <DeferredPlannerCard
-          title="Validation Checklist"
-          icon={CheckCircle2}
-          description="Checklist generation starts in P3. Available package scripts are shown as real validation signals."
-        >
-          {plannerContext.packageScripts.length > 0 ? (
-            <div className="ca-planner-script-grid">
-              {plannerContext.packageScripts.slice(0, 8).map(script => (
-                <Pill key={script.name}>{script.name}</Pill>
-              ))}
-            </div>
-          ) : (
-            <div className="ca-planner-placeholder-surface">
-              <SearchCode size={18} />
-              <span>No package scripts were available in the analyzed repository data.</span>
-            </div>
-          )}
-        </DeferredPlannerCard>
+        <RoadmapCard plannerContext={plannerContext} />
+        <RisksCard plannerContext={plannerContext} />
+        <ValidationCard plannerContext={plannerContext} />
+        <MissingContextCard plannerContext={plannerContext} />
       </div>
     </div>
   );
