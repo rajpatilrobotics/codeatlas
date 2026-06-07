@@ -31,7 +31,7 @@ export const STATIC_COMMANDS = [
   { id: 'nav-risky', label: 'Show risky modules', group: 'Intelligence', icon: AlertTriangle, tabId: 'security', keywords: 'risk high security modules' },
   { id: 'nav-dashboard', label: 'Open Dashboard', group: 'Workflows', icon: LayoutDashboard, tabId: 'dashboard', keywords: 'home mission control' },
   { id: 'nav-blast', label: 'Open Blast Radius', group: 'Intelligence', icon: Target, tabId: 'blast-radius', keywords: 'blast impact radius' },
-  { id: 'nav-heatmap', label: 'Open Heatmap', group: 'Intelligence', icon: Flame, tabId: 'heatmap', keywords: 'heatmap activity hotspots' },
+  { id: 'nav-heatmap', label: 'Open Danger Zone Heatmap', group: 'Intelligence', icon: Flame, tabId: 'heatmap', keywords: 'heatmap risk danger zones risky files modules' },
   { id: 'nav-workspaces', label: 'Open recent workspaces', group: 'Workspaces', icon: FolderOpen, tabId: 'saved-workspaces', keywords: 'workspace saved recent' },
   { id: 'action-new-repo', label: 'Switch repository', group: 'Actions', icon: RefreshCw, action: 'new-analysis', keywords: 'switch repo change github' },
 ];

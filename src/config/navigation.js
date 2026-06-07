@@ -34,7 +34,7 @@ export const NAV_SECTIONS = [
       { id: 'blast-radius', label: 'Blast Radius', subtitle: 'Impact analysis for changes', icon: Target, future: true },
       { id: 'planner', label: 'Planner', subtitle: 'Plan and analyze system changes', icon: Lightbulb, future: true },
       { id: 'debug-navigator', label: 'Debug Navigator', subtitle: 'Trace and debug flows', icon: Bug, future: true },
-      { id: 'heatmap', label: 'Heatmap', subtitle: 'Code activity and hotspots', icon: Flame, future: true },
+      { id: 'heatmap', label: 'Heatmap', subtitle: 'Risk concentration and danger zones', icon: Flame, future: true },
     ],
   },
   {

@@ -1234,7 +1234,13 @@ const handleAnalyze = async (urlOverride) => {
           />
         );
       case 'heatmap':
-        return <Heatmap />;
+        return (
+          <Heatmap
+            repoData={repoData}
+            codeAnalysis={codeAnalysis}
+            onNavigate={setActiveTab}
+          />
+        );
       case 'saved-workspaces':
         return <SavedWorkspaces />;
       default:
