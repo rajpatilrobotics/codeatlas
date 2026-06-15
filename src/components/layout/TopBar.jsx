@@ -57,6 +57,9 @@ function TopBar({
               className="topbar-action-btn topbar-action-btn-primary"
               onClick={onDownloadPDF}
               disabled={isGeneratingPDF}
+              aria-busy={isGeneratingPDF}
+              aria-live="polite"
+              title={isGeneratingPDF ? (pdfProgress || 'Generating PDF report') : 'Download PDF report'}
             >
               {isGeneratingPDF ? pdfProgress || 'Generating...' : 'Download PDF'}
             </button>

@@ -18,6 +18,7 @@ import Badge from '../ui/Badge';
 import EmptyState from '../ui/EmptyState';
 import Pill from '../ui/Pill';
 import { buildPlannerContext } from '../../utils/repository/buildPlannerContext';
+import { clearPdfState, savePdfState } from '../../services/pdf/pdfSessionBridge';
 
 const EXAMPLE_PROMPTS = [
   'Add OAuth login',
@@ -1127,6 +1128,24 @@ function Planner({ repoData, codeAnalysis, firstContributions = [], onNavigate }
   );
   const canEnhanceWithAI = Boolean(plannerContext.hasTask && plannerContext.plan?.isGenerated);
   const planModeLabel = getPlanModeLabel(displayPlannerContext, aiPlannerState);
+
+  useEffect(() => {
+    if (!repoData) return;
+
+    if (!hasGeneratedPlan) {
+      clearPdfState('planner', repoData);
+      return;
+    }
+
+    savePdfState('planner', repoData, {
+      status: 'generated',
+      taskText,
+      mode: planModeLabel,
+      plan: displayPlannerContext.plan,
+      aiStatus: aiPlannerState.status,
+      aiError: aiPlannerState.error || ''
+    });
+  }, [repoData, hasGeneratedPlan, taskText, planModeLabel, displayPlannerContext, aiPlannerState]);
 
   const handleEnhanceWithAI = useCallback(async () => {
     if (!canEnhanceWithAI || aiPlannerState.status === 'loading') return;

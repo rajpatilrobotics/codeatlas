@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactFlow, { Background, Controls, Handle, MiniMap, Position } from 'reactflow';
 import 'reactflow/dist/style.css';
 import {
@@ -22,6 +22,7 @@ import Card from '../ui/Card';
 import EmptyState from '../ui/EmptyState';
 import { buildDebugTraceContext } from '../../utils/repository/buildDebugTraceContext';
 import { buildDebugTraceGraph } from '../../utils/repository/buildDebugTraceGraph';
+import { clearPdfState, savePdfState } from '../../services/pdf/pdfSessionBridge';
 
 const EXAMPLE_INPUTS = [
   {
@@ -318,6 +319,38 @@ function buildDebugReportMarkdown(debugContext, errorText, aiDebugState) {
     '## Missing Context / Warnings',
     formatListForMarkdown(debugContext.warnings),
   ].join('\n');
+}
+
+function buildPdfDebugSnapshot(debugContext) {
+  return {
+    hasInput: Boolean(debugContext.hasInput),
+    confidence: debugContext.confidence,
+    coverage: debugContext.coverage,
+    errorSummary: {
+      type: redactDebugText(debugContext.errorSummary?.type || ''),
+      message: redactDebugText(debugContext.errorSummary?.message || '')
+    },
+    parsedFrames: safeArray(debugContext.parsedFrames).slice(0, 10).map(frame => ({
+      fileReference: frame.fileReference,
+      functionName: frame.functionName,
+      line: frame.line,
+      column: frame.column,
+      raw: redactDebugText(frame.raw || '')
+    })),
+    matchedFiles: safeArray(debugContext.matchedFiles).slice(0, 12),
+    rootCauseCandidates: safeArray(debugContext.rootCauseCandidates).slice(0, 8),
+    dependencyTrace: {
+      available: Boolean(debugContext.dependencyTrace?.available),
+      reason: debugContext.dependencyTrace?.reason || '',
+      relatedFiles: safeArray(debugContext.dependencyTrace?.relatedFiles).slice(0, 12),
+      tracePaths: safeArray(debugContext.dependencyTrace?.tracePaths).slice(0, 12),
+      coverage: debugContext.dependencyTrace?.coverage || {}
+    },
+    inspectionOrder: safeArray(debugContext.inspectionOrder).slice(0, 10),
+    validationChecklist: safeArray(debugContext.validationChecklist).slice(0, 10),
+    warnings: safeArray(debugContext.warnings).slice(0, 10),
+    apiRoutes: safeArray(debugContext.apiRoutes).slice(0, 10)
+  };
 }
 
 function getDebugAIStatus(aiDebugState) {
@@ -1033,6 +1066,34 @@ function DebugNavigator({
     codeAnalysis,
   }), [errorText, repoData, codeAnalysis]);
   const graphModel = useMemo(() => buildDebugTraceGraph(debugContext), [debugContext]);
+  useEffect(() => {
+    if (!repoData) return;
+
+    if (!debugContext.hasInput) {
+      clearPdfState('debug-navigator', repoData);
+      return;
+    }
+
+    savePdfState('debug-navigator', repoData, {
+      hasInput: true,
+      redactedInput: redactDebugText(errorText),
+      debugContext: buildPdfDebugSnapshot(debugContext),
+      graphSummary: {
+        nodes: safeArray(graphModel.nodes).map(node => ({
+          id: node.id,
+          label: node.data?.label || node.id,
+          type: node.data?.type || node.type || ''
+        })),
+        edges: safeArray(graphModel.edges).map(edge => ({
+          id: edge.id,
+          source: edge.source,
+          target: edge.target,
+          label: edge.label || edge.data?.label || ''
+        }))
+      },
+      aiStatus: aiDebugState.status
+    });
+  }, [repoData, errorText, debugContext, graphModel, aiDebugState.status]);
   const aiStatus = getDebugAIStatus(aiDebugState);
   const dependencyMode = getDependencyMode(debugContext);
   const canEnhanceWithAI = Boolean(
