@@ -3,6 +3,7 @@ import { Target, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import Card from '../ui/Card';
 import EmptyState from '../ui/EmptyState';
 import { calculateBlastRadius } from '../../utils/repository/blastRadiusAnalysis.js';
+import { clearPdfState, savePdfState } from '../../services/pdf/pdfSessionBridge';
 
 const IMPACTED_FILE_DISPLAY_LIMIT = 80;
 const SERVICE_DISPLAY_LIMIT = 18;
@@ -358,6 +359,22 @@ function BlastRadius({ repoData }) {
       setSelectedFile(filteredRepositoryFiles[0]);
     }
   }, [filteredRepositoryFiles, selectedFile]);
+
+  useEffect(() => {
+    if (!repoData) return;
+
+    if (!blastRadius) {
+      clearPdfState('blast-radius', repoData);
+      return;
+    }
+
+    savePdfState('blast-radius', repoData, {
+      selectedFile,
+      impactDirection,
+      blastRadius,
+      reasoning
+    });
+  }, [repoData, selectedFile, impactDirection, blastRadius, reasoning]);
 
   const handleFileSearchChange = (event) => {
     setFileSearch(event.target.value);
