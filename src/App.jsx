@@ -1186,7 +1186,15 @@ const handleAnalyze = async (urlOverride) => {
           <OnboardingGuide
             repoData={repoData}
             codeAnalysis={codeAnalysis}
+            detailedArchitecture={detailedArchitecture}
+            aiSummary={aiSummary}
+            quickStartGuide={quickStartGuide}
+            commonIssues={commonIssues}
+            firstContributions={firstContributions}
             isCodeAnalysisLoading={isCodeAnalysisLoading}
+            isQuickStartLoading={isQuickStartLoading}
+            isIssuesLoading={isIssuesLoading}
+            isContributionsLoading={isContributionsLoading}
           />
         );
       case 'documentation':

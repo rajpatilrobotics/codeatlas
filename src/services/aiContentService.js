@@ -5,6 +5,10 @@
  */
 
 import { generateText, generateStructuredJSON, isAIProviderFailure } from './ai/aiService.js';
+import {
+  buildLegacyOnboardingSteps,
+  buildOnboardingGuideModel,
+} from '../utils/onboardingGuideModel.js';
 
 /**
  * Structured JSON schema for AI responses
@@ -118,64 +122,19 @@ function buildFallbackSecurityAnalysis(repoData, codeAnalysis) {
   };
 }
 
-function buildFallbackOnboardingGuide(repoData) {
-  const repoName = getRepoName(repoData);
-  const techStack = getTechStackList(repoData).slice(0, 5);
-  const scripts = Object.keys(repoData?.packageJson?.scripts || {});
-  const keyFiles = getKeyFilePaths(repoData, 5);
-
+function withLegacyOnboardingSteps(model) {
   return {
-    steps: [
-      {
-        title: 'Project Overview & Goals',
-        description: `Start by reading the README and repository metadata to understand what ${repoName} does and who it serves.`,
-        actions: ['Read the README', 'Review the repository description', 'Identify the main user-facing workflows'],
-        icon: '🚀',
-        duration: '10 minutes',
-        difficulty: 'Beginner'
-      },
-      {
-        title: 'Environment Setup',
-        description: scripts.length > 0
-          ? `Install dependencies and use the available scripts: ${scripts.slice(0, 5).join(', ')}.`
-          : 'Install dependencies and check the README for the local development command.',
-        actions: ['Install dependencies', 'Check required environment variables', 'Run the local development command'],
-        icon: '🧰',
-        duration: '20 minutes',
-        difficulty: 'Beginner'
-      },
-      {
-        title: 'Codebase Orientation',
-        description: keyFiles.length > 0
-          ? `Use key files like ${keyFiles.join(', ')} as starting points for navigation.`
-          : 'Identify the main entry points, configuration files, and feature directories.',
-        actions: ['Open the main entry point', 'Trace one primary workflow', 'Map important folders to their responsibilities'],
-        icon: '🧭',
-        duration: '25 minutes',
-        difficulty: 'Beginner'
-      },
-      {
-        title: 'Development Workflow',
-        description: techStack.length > 0
-          ? `Follow the existing patterns for ${techStack.join(', ')} and keep changes scoped.`
-          : 'Follow the existing project conventions and keep changes scoped.',
-        actions: ['Run the app locally', 'Make a small local change', 'Run available checks before committing'],
-        icon: '✅',
-        duration: '30 minutes',
-        difficulty: 'Intermediate'
-      },
-      {
-        title: 'First Contribution',
-        description: 'Start with documentation, tests, or a small bug fix before touching broad architecture.',
-        actions: ['Pick one small task', 'Confirm the expected behavior', 'Open a focused pull request'],
-        icon: '🤝',
-        duration: '45 minutes',
-        difficulty: 'Intermediate'
-      }
-    ],
-    source: 'fallback',
-    warning: 'AI provider quota or rate limits prevented live onboarding generation.'
+    ...model,
+    steps: buildLegacyOnboardingSteps(model)
   };
+}
+
+function buildFallbackOnboardingGuide(repoData) {
+  return withLegacyOnboardingSteps({
+    ...buildOnboardingGuideModel({ repoData }),
+    source: 'fallback',
+    warning: 'AI provider quota or rate limits prevented live onboarding enhancement.'
+  });
 }
 
 /**
@@ -483,52 +442,56 @@ export async function generateOnboardingGuide(repoData) {
     throw new Error('Repository data is required');
   }
 
-  const { repoInfo, readme, techStack, packageJson } = repoData;
+  const evidenceModel = buildOnboardingGuideModel({ repoData });
+  const prompt = `You are improving copy for an evidence-backed developer onboarding guide.
 
-  const prompt = `You are a developer advocate. Create an onboarding guide for this repository.
+Rules:
+- Use only the repository evidence in the JSON below.
+- Do not add files, scripts, services, risks, or technologies that are not present.
+- Keep checklist ids unchanged.
+- Return concise copy that helps a new contributor understand what to do next.
 
-Repository: ${repoInfo?.name || 'Unknown'}
-Description: ${repoInfo?.description || 'No description'}
-Language: ${repoInfo?.language || 'Unknown'}
+Evidence-backed model:
+${JSON.stringify(evidenceModel).substring(0, 6000)}
 
-Tech Stack: ${Object.values(techStack || {}).flat().join(', ')}
-
-${packageJson ? `Available Scripts: ${Object.keys(packageJson.scripts || {}).join(', ')}` : ''}
-
-README Content: ${readme?.substring(0, 2000) || 'No README available'}
-
-Create an onboarding guide in JSON format with:
+Return JSON:
 {
-  "steps": [
+  "summary": "",
+  "checklistNotes": [
     {
-      "title": "",
-      "description": "",
-      "actions": ["action1", "action2"],
-      "icon": "emoji",
-      "duration": "time estimate",
-      "difficulty": "Beginner" | "Intermediate" | "Advanced"
+      "id": "",
+      "description": ""
     }
   ]
-}
-
-Include steps for:
-1. Project Overview & Goals
-2. Environment Setup
-3. Codebase Orientation
-4. Development Workflow
-5. First Contribution
-6. Testing & Quality Assurance
-7. Best Practices & Code Style
-8. Resources & Documentation`;
+}`;
 
   try {
-    const onboarding = await generateStructuredJSON(prompt, {
-      steps: []
+    const enhancement = await generateStructuredJSON(prompt, {
+      summary: "",
+      checklistNotes: []
     }, {
       temperature: 0.6,
       maxTokens: 1500,
     });
-    return onboarding;
+
+    const notesById = new Map(
+      (enhancement.checklistNotes || [])
+        .filter(note => note?.id && note?.description)
+        .map(note => [note.id, note.description])
+    );
+    const enhancedModel = {
+      ...evidenceModel,
+      checklist: evidenceModel.checklist.map(item => ({
+        ...item,
+        description: notesById.get(item.id) || item.description
+      })),
+      aiContext: {
+        ...evidenceModel.aiContext,
+        summary: enhancement.summary || evidenceModel.aiContext.summary
+      }
+    };
+
+    return withLegacyOnboardingSteps(enhancedModel);
   } catch (error) {
     console.error('Error generating onboarding guide:', error);
     if (isAIProviderFailure(error)) {
