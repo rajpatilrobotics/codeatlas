@@ -72,6 +72,7 @@ function HeroSection({ repoUrl, onUrlChange, onAnalyze, isAnalyzing }) {
         <form onSubmit={handleSubmit} className="hero-form">
           <div className="hero-input-wrapper">
             <input
+              id="repo-url-input"
               type="text"
               className={`hero-input ${error ? 'hero-input-error' : ''}`}
               placeholder="https://github.com/username/repository"

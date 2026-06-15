@@ -65,10 +65,17 @@ export async function generateChat(messages, options = {}) {
   }
 
   try {
-    const contents = messages.map(msg => ({
-      role: msg.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: msg.content }]
-    }));
+    const systemInstruction = messages
+      .filter(msg => msg.role === 'system' && msg.content)
+      .map(msg => msg.content)
+      .join('\n\n');
+
+    const contents = messages
+      .filter(msg => msg.role !== 'system' && msg.content)
+      .map(msg => ({
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: msg.content }]
+      }));
 
     const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
       method: 'POST',
@@ -76,6 +83,9 @@ export async function generateChat(messages, options = {}) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        ...(systemInstruction
+          ? { systemInstruction: { parts: [{ text: systemInstruction }] } }
+          : {}),
         contents: contents,
         generationConfig: {
           temperature: options.temperature || 0.7,

@@ -92,7 +92,20 @@ export async function analyzeRepository(repoUrl) {
             'Repository not found or is private. Please check the URL and ensure the repository is public.'
         );
       } else if (response.status === 403) {
-        throw new Error(errorData.error || 'GitHub API rate limit exceeded. Please try again later.');
+        const resetAt = errorData.rateLimit?.reset
+          ? new Date(errorData.rateLimit.reset * 1000).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit'
+            })
+          : null;
+        const resetText = resetAt ? ` The anonymous GitHub quota resets around ${resetAt}.` : '';
+        const tokenText = errorData.authentication === 'anonymous'
+          ? ' Add GITHUB_TOKEN in your local .env and restart `vercel dev` for reliable analysis.'
+          : '';
+
+        throw new Error(
+          `${errorData.error || 'GitHub API rate limit exceeded. Please try again later.'}${resetText}${tokenText}`
+        );
       } else if (response.status === 500) {
         throw new Error(errorData.error || 'Server configuration error. Please contact support.');
       }
