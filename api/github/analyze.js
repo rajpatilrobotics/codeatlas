@@ -354,12 +354,10 @@ module.exports = async (req, res) => {
     const analysisStartedAt = Date.now();
     const { repoUrl } = req.body;
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+    const hasGitHubToken = Boolean(GITHUB_TOKEN);
 
-    if (!GITHUB_TOKEN) {
-      console.error('GITHUB_TOKEN not configured');
-      return res.status(500).json({ 
-        error: 'GitHub token not configured on server. Please add GITHUB_TOKEN to environment variables.' 
-      });
+    if (!hasGitHubToken) {
+      console.warn('GITHUB_TOKEN not configured. Falling back to unauthenticated GitHub requests for public repositories.');
     }
 
     const parsed = parseGitHubUrl(repoUrl);
@@ -380,8 +378,11 @@ module.exports = async (req, res) => {
 
     if (!repoResponse.ok) {
       if (repoResponse.status === 404) {
-        return res.status(404).json({ 
-          error: 'Repository not found or is private' 
+        return res.status(404).json({
+          error: hasGitHubToken
+            ? 'Repository not found or is private'
+            : 'Repository not found, is private, or is unavailable without authentication',
+          authentication: hasGitHubToken ? 'token' : 'anonymous'
         });
       }
       if (repoResponse.status === 403) {
@@ -390,9 +391,12 @@ module.exports = async (req, res) => {
           { headers }
         );
         const rateLimit = await rateLimitResponse.json();
-        return res.status(403).json({ 
-          error: 'GitHub API rate limit exceeded',
-          rateLimit: rateLimit.rate
+        return res.status(403).json({
+          error: hasGitHubToken
+            ? 'GitHub API rate limit exceeded'
+            : 'GitHub API rate limit exceeded for unauthenticated requests. Add GITHUB_TOKEN to analyze more repositories or retry later.',
+          rateLimit: rateLimit.rate,
+          authentication: hasGitHubToken ? 'token' : 'anonymous'
         });
       }
       throw new Error(`GitHub API error: ${repoResponse.status}`);

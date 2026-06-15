@@ -3,6 +3,9 @@ import React from 'react';
 function CTASection() {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.setTimeout(() => {
+      document.getElementById('repo-url-input')?.focus();
+    }, 300);
   };
 
   return (
@@ -17,7 +20,7 @@ function CTASection() {
           </p>
           
           <button onClick={scrollToTop} className="cta-button">
-            Analyze Repository
+            Enter Repository URL
           </button>
         </div>
 

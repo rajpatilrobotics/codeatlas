@@ -1331,6 +1331,18 @@ const handleAnalyze = async (urlOverride) => {
           <LandingHeader onLogoClick={handleNewAnalysis} />
           <main className="main-content">
             <div className="single-column">
+              {error && (
+                <div className="homepage-analysis-error message-banner error-banner" role="alert">
+                  <span className="error-text">{error}</span>
+                  <button
+                    type="button"
+                    className="retry-button"
+                    onClick={() => setError(null)}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
               <HeroSection
                 repoUrl={repoUrl}
                 onUrlChange={setRepoUrl}
@@ -1389,7 +1401,7 @@ const handleAnalyze = async (urlOverride) => {
 
           {analysisComplete && (
             <div ref={resultsRef} className="results-section">
-              <PageHeader tabId={activeTab} />
+              {activeTab !== 'chat' && <PageHeader tabId={activeTab} />}
               <div className="tab-content-wrapper">
                 {renderTabContent()}
               </div>
